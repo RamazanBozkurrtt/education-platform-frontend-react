@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Luma Academy is a modern education platform dashboard built with React, Vite, Tailwind CSS, React Query, and an API-ready architecture."
+    />
+    <script>
+      (() => {
+        const storedLanguage = localStorage.getItem('luma.language');
+        const language =
+          storedLanguage === 'tr' || storedLanguage === 'en'
+            ? storedLanguage
+            : navigator.language.toLowerCase().startsWith('tr')
+              ? 'tr'
+              : 'en';
+        const storedTheme = localStorage.getItem('luma.theme');
+        const theme =
+          storedTheme === 'light' || storedTheme === 'dark'
+            ? storedTheme
+            : window.matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark';
+        document.documentElement.lang = language;
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
+    <title>Luma Academy</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
