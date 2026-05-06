@@ -7,6 +7,7 @@ import PageHeader from '../components/PageHeader'
 import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
 import Loader from '../components/ui/Loader'
+import QueryErrorState from '../components/ui/QueryErrorState'
 import { useLanguage } from '../hooks/useLanguage'
 import { searchService } from '../services/searchService'
 
@@ -18,7 +19,7 @@ const SearchPage = () => {
   const [level, setLevel] = useState('')
   const deferredQuery = useDeferredValue(query)
 
-  const { data, isFetching, isLoading } = useQuery({
+  const { data, error, isFetching, isLoading } = useQuery({
     queryKey: ['search-results', language, deferredQuery, category, level],
     queryFn: () =>
       searchService.search({
@@ -33,6 +34,10 @@ const SearchPage = () => {
     setCategory('')
     setLevel('')
   }, [language])
+
+  if (error) {
+    return <QueryErrorState error={error} />
+  }
 
   if (isLoading || !data) {
     return <Loader label={t('loader.searchExperience')} />
@@ -62,8 +67,8 @@ const SearchPage = () => {
               <button
                 className={`rounded-full border px-3 py-2 text-sm transition ${
                   category
-                    ? 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-white'
-                    : 'border-cyan-300/30 bg-cyan-400/12 text-cyan-100'
+                    ? 'border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/16 hover:text-white'
+                    : 'border-white/14 bg-[color:var(--surface-strong)] text-slate-100'
                 }`}
                 onClick={() => setCategory('')}
                 type="button"
@@ -75,8 +80,8 @@ const SearchPage = () => {
                   key={item}
                   className={`rounded-full border px-3 py-2 text-sm transition ${
                     category === item
-                      ? 'border-cyan-300/30 bg-cyan-400/12 text-cyan-100'
-                      : 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-white'
+                      ? 'border-white/14 bg-[color:var(--surface-strong)] text-slate-100'
+                      : 'border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/16 hover:text-white'
                   }`}
                   onClick={() => setCategory(item)}
                   type="button"
@@ -93,8 +98,8 @@ const SearchPage = () => {
               <button
                 className={`rounded-full border px-3 py-2 text-sm transition ${
                   level
-                    ? 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-white'
-                    : 'border-cyan-300/30 bg-cyan-400/12 text-cyan-100'
+                    ? 'border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/16 hover:text-white'
+                    : 'border-white/14 bg-[color:var(--surface-strong)] text-slate-100'
                 }`}
                 onClick={() => setLevel('')}
                 type="button"
@@ -106,8 +111,8 @@ const SearchPage = () => {
                   key={item}
                   className={`rounded-full border px-3 py-2 text-sm transition ${
                     level === item
-                      ? 'border-cyan-300/30 bg-cyan-400/12 text-cyan-100'
-                      : 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-white'
+                      ? 'border-white/14 bg-[color:var(--surface-strong)] text-slate-100'
+                      : 'border-white/10 bg-white/[0.03] text-slate-400 hover:border-white/16 hover:text-white'
                   }`}
                   onClick={() => setLevel(item)}
                   type="button"
@@ -130,7 +135,7 @@ const SearchPage = () => {
               </div>
               <div className="flex min-w-0 flex-wrap items-center gap-3">
                 {isFetching ? (
-                  <span className="rounded-full border border-sky-300/18 bg-sky-400/10 px-3 py-1 text-xs font-semibold text-sky-100">
+                  <span className="rounded-md border border-white/10 bg-white/[0.03] px-3 py-1 text-xs font-semibold text-slate-200">
                     {t('searchPage.updating')}
                   </span>
                 ) : null}

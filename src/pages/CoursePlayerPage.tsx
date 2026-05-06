@@ -7,18 +7,14 @@ import PageHeader from '../components/PageHeader'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Loader from '../components/ui/Loader'
+import QueryErrorState from '../components/ui/QueryErrorState'
 import { useCart } from '../hooks/useCart'
 import { useLanguage } from '../hooks/useLanguage'
 import { useLibrary } from '../hooks/useLibrary'
+import { normalizeApiError } from '../shared/errors/normalizeApiError'
+import { courseMediaService } from '../services/courseMediaService'
 import { courseService } from '../services/courseService'
 import { ROUTES } from '../utils/constants'
-
-const sampleVideoSources = [
-  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-]
 
 const CoursePlayerPage = () => {
   const { t } = useTranslation()
@@ -27,7 +23,10 @@ const CoursePlayerPage = () => {
   const { addCourse, isInCart } = useCart()
   const { isPurchased } = useLibrary()
   const [activeModuleIndex, setActiveModuleIndex] = useState(0)
-  const { data, isLoading } = useQuery({
+  const [activeVideoSource, setActiveVideoSource] = useState('')
+  const [isVideoLoading, setIsVideoLoading] = useState(false)
+  const [videoErrorMessage, setVideoErrorMessage] = useState<string | null>(null)
+  const { data, error, isLoading } = useQuery({
     queryKey: ['course-player', language, slug],
     queryFn: () => courseService.getCourseBySlug(slug, language),
   })
@@ -36,13 +35,79 @@ const CoursePlayerPage = () => {
     setActiveModuleIndex(0)
   }, [data?.id])
 
+  useEffect(() => {
+    return () => {
+      if (activeVideoSource) {
+        URL.revokeObjectURL(activeVideoSource)
+      }
+    }
+  }, [activeVideoSource])
+
+  if (error) {
+    return <QueryErrorState error={error} />
+  }
+
   if (isLoading || !data) {
     return <Loader label={t('loader.courseDetails')} />
   }
 
   const purchased = isPurchased(data.id)
   const activeModule = data.modules[activeModuleIndex] ?? data.modules[0]
-  const activeVideoSource = sampleVideoSources[activeModuleIndex % sampleVideoSources.length]
+
+  useEffect(() => {
+    let isCancelled = false
+
+    const loadVideo = async () => {
+      if (!purchased || !activeModule) {
+        setVideoErrorMessage(null)
+        setActiveVideoSource('')
+        return
+      }
+
+      setIsVideoLoading(true)
+      setVideoErrorMessage(null)
+
+      try {
+        const videoBlob = await courseMediaService.downloadLessonVideoBlob(data.id, activeModule.id)
+
+        if (isCancelled) {
+          return
+        }
+
+        const nextVideoSource = URL.createObjectURL(videoBlob)
+        setActiveVideoSource((currentSource) => {
+          if (currentSource) {
+            URL.revokeObjectURL(currentSource)
+          }
+
+          return nextVideoSource
+        })
+      } catch (loadError) {
+        if (isCancelled) {
+          return
+        }
+
+        setActiveVideoSource((currentSource) => {
+          if (currentSource) {
+            URL.revokeObjectURL(currentSource)
+          }
+
+          return ''
+        })
+        setVideoErrorMessage(normalizeApiError(loadError).message)
+      } finally {
+        if (!isCancelled) {
+          setIsVideoLoading(false)
+        }
+      }
+    }
+
+    void loadVideo()
+
+    return () => {
+      isCancelled = true
+    }
+  }, [activeModule, data.id, purchased])
 
   if (!purchased) {
     return (
@@ -122,15 +187,27 @@ const CoursePlayerPage = () => {
           <div className={`h-1.5 bg-gradient-to-r ${data.accent}`} />
           <div className="p-6">
             <div className="overflow-hidden rounded-[28px] border border-white/8 bg-slate-950/70">
-              <video
-                className="aspect-video w-full bg-slate-950 object-cover"
-                controls
-                key={`${data.id}-${activeModule.id}`}
-                preload="metadata"
-              >
-                <source src={activeVideoSource} type="video/mp4" />
-              </video>
+              {activeModule ? (
+                <video
+                  className="aspect-video w-full bg-slate-950 object-cover"
+                  controls
+                  key={`${data.id}-${activeModule.id}`}
+                  preload="metadata"
+                >
+                  {activeVideoSource ? <source src={activeVideoSource} type="video/mp4" /> : null}
+                </video>
+              ) : (
+                <div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-slate-400">
+                  {t('player.chooseLesson')}
+                </div>
+              )}
             </div>
+            {isVideoLoading ? (
+              <p className="mt-3 text-sm text-cyan-200">{t('loader.courseDetails')}</p>
+            ) : null}
+            {videoErrorMessage ? (
+              <p className="mt-3 text-sm text-rose-300">{videoErrorMessage}</p>
+            ) : null}
 
             <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_260px]">
               <div>

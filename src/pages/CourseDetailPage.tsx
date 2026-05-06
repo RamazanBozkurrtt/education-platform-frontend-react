@@ -9,6 +9,7 @@ import PageHeader from '../components/PageHeader'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Loader from '../components/ui/Loader'
+import QueryErrorState from '../components/ui/QueryErrorState'
 import { courseService } from '../services/courseService'
 import { ROUTES } from '../utils/constants'
 import { formatCurrency } from '../utils/helpers'
@@ -19,10 +20,14 @@ const CourseDetailPage = () => {
   const { addCourse, isInCart } = useCart()
   const { isPurchased } = useLibrary()
   const { slug = '' } = useParams()
-  const { data, isLoading } = useQuery({
+  const { data, error, isLoading } = useQuery({
     queryKey: ['course', language, slug],
     queryFn: () => courseService.getCourseBySlug(slug, language),
   })
+
+  if (error) {
+    return <QueryErrorState error={error} />
+  }
 
   if (isLoading || !data) {
     return <Loader label={t('loader.courseDetails')} />

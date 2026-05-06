@@ -1,8 +1,9 @@
 import {
   BookOpen,
+  BookOpenCheck,
   ChevronLeft,
-  ChevronRight,
   CreditCard,
+  GraduationCap,
   LayoutDashboard,
   Search,
   ShoppingCart,
@@ -33,6 +34,7 @@ const Sidebar = ({
 
   const navigationItems = [
     { label: t('nav.dashboard'), to: ROUTES.dashboard, icon: LayoutDashboard },
+    { label: t('nav.myCourses'), to: ROUTES.myCourses, icon: BookOpenCheck },
     { label: t('nav.courses'), to: ROUTES.courses, icon: BookOpen },
     { label: t('nav.cart'), to: ROUTES.cart, icon: ShoppingCart, badge: itemCount },
     { label: t('nav.payment'), to: ROUTES.payment, icon: CreditCard },
@@ -43,7 +45,7 @@ const Sidebar = ({
     <>
     <div
       className={cn(
-        'theme-overlay fixed inset-0 z-30 backdrop-blur-sm transition-opacity lg:hidden',
+        'theme-overlay fixed inset-0 z-30 transition-opacity lg:hidden',
         mobileOpen ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0',
       )}
       onClick={onCloseMobile}
@@ -51,22 +53,42 @@ const Sidebar = ({
 
     <aside
       className={cn(
-        'glass-panel fixed inset-y-4 left-4 z-40 flex w-[280px] flex-col rounded-[24px] border border-white/8 px-4 py-5 transition-all duration-300 ease-out lg:static lg:inset-auto lg:m-4 lg:h-[calc(100vh-2rem)]',
+        'glass-panel fixed inset-y-4 left-4 z-40 flex w-[288px] flex-col rounded-lg border border-white/10 px-4 py-5 transition-all duration-300 ease-out lg:static lg:inset-auto lg:h-[calc(100vh-2rem)]',
         collapsed ? 'lg:w-[96px]' : 'lg:w-[280px]',
         mobileOpen ? 'translate-x-0' : '-translate-x-[115%] lg:translate-x-0',
       )}
     >
-      <div className="mb-8 flex items-center justify-between">
-        <div className={cn('overflow-hidden transition-all', collapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100')}>
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300/80">{t('nav.workspace')}</p>
-          <h2 className="theme-heading mt-2 text-xl font-semibold">{APP_NAME}</h2>
-        </div>
+      <div className="mb-6 flex items-center justify-between border-b border-white/8 pb-5">
+        <button
+          className={cn(
+            'flex items-center gap-3 rounded-md bg-transparent p-0 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-[color:var(--primary)]/35',
+            collapsed ? 'cursor-pointer' : 'cursor-default',
+          )}
+          disabled={!collapsed}
+          onClick={collapsed ? onToggleCollapsed : undefined}
+          title={collapsed ? 'Expand sidebar' : undefined}
+          type="button"
+        >
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
+            <GraduationCap className="h-5 w-5" />
+          </div>
+          <div className={cn('overflow-hidden transition-all', collapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100')}>
+            <p className="theme-subtle text-[11px] uppercase tracking-[0.28em]">{t('nav.workspace')}</p>
+            <h2 className="theme-heading mt-1 text-lg font-semibold tracking-tight">{APP_NAME}</h2>
+            <p className="theme-muted mt-1 text-xs"></p>
+          </div>
+        </button>
         <div className="flex items-center gap-2">
           <Button className="lg:hidden" onClick={onCloseMobile} size="sm" variant="ghost">
             <X className="h-4 w-4" />
           </Button>
-          <Button className="hidden lg:inline-flex" onClick={onToggleCollapsed} size="sm" variant="ghost">
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          <Button
+            className={cn('hidden lg:inline-flex', collapsed && 'lg:hidden')}
+            onClick={onToggleCollapsed}
+            size="sm"
+            variant="ghost"
+          >
+            <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -77,8 +99,8 @@ const Sidebar = ({
             key={item.to}
             className={({ isActive }) =>
               cn(
-                'group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-slate-400 transition-all hover:bg-white/6 hover:text-white',
-                isActive && 'border border-sky-400/20 bg-sky-500/10 text-sky-100',
+                'group flex items-center gap-3 rounded-md border border-transparent px-3 py-3 text-sm font-medium text-slate-400 transition-colors hover:border-white/8 hover:bg-[color:var(--surface-muted)] hover:text-slate-100',
+                isActive && 'border-white/10 bg-[color:var(--surface-muted)] text-slate-100',
                 collapsed && 'lg:justify-center',
               )
             }
@@ -94,7 +116,7 @@ const Sidebar = ({
             >
               <span className="truncate">{item.label}</span>
               {item.badge && item.badge > 0 ? (
-                <span className="rounded-full border border-sky-400/18 bg-sky-400/10 px-2 py-0.5 text-[11px] font-semibold text-sky-100">
+                <span className="rounded-md border border-white/10 bg-[color:var(--surface-muted)] px-2 py-0.5 text-[11px] font-semibold text-slate-200">
                   {item.badge}
                 </span>
               ) : null}
@@ -102,15 +124,6 @@ const Sidebar = ({
           </NavLink>
         ))}
       </nav>
-
-      <div className="mt-auto rounded-[22px] border border-sky-400/12 bg-sky-500/8 p-4">
-        <div className={cn(collapsed ? 'lg:hidden' : 'block')}>
-          <p className="text-xs uppercase tracking-[0.24em] text-cyan-200">{t('nav.performance')}</p>
-          <p className="theme-text mt-3 text-sm leading-6">
-            {t('nav.engagementSummary')}
-          </p>
-        </div>
-      </div>
     </aside>
   </>
   )

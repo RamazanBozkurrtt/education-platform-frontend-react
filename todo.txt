@@ -1,0 +1,4 @@
+15.04.2026 Ana sayfanın beyaz modu bozuk ve tasarımı güzel değil tasarımlar
+daha çok yatay formda olmalı. Bir de menü butonlarına basınca sayfa kaymadan direkt gidiyor.
+Kurslara basınca farklı bir sayfaya geçecek ve arama alanı ile kurslar aranabilecek filtre
+özelliği de olacak.

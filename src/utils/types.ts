@@ -9,6 +9,13 @@ export interface User {
   roleLabelKey: string
   avatarColor: string
   initials: string
+  profileCompleted?: boolean
+  firstName?: string
+  lastName?: string
+  headline?: string
+  biography?: string
+  avatarUrl?: string
+  socialLinks?: Record<string, string>
 }
 
 export interface AuthPayload {
@@ -17,16 +24,101 @@ export interface AuthPayload {
   name?: string
 }
 
-export interface AuthResponse {
-  token: string
+export interface ChangePasswordPayload {
+  oldPassword: string
+  newPassword: string
+}
+
+export interface ApiEnvelope<T> {
+  success: boolean
+  status: number
+  message: string
+  data?: T
+  errors?: ApiErrorBag
+  timestamp: number
+}
+
+export type ApiErrorBag =
+  | string
+  | string[]
+  | Record<string, string | string[]>
+
+export interface NormalizedApiError {
+  message: string
+  details: string[]
+  fieldErrors: Record<string, string>
+}
+
+export interface AuthClaims {
+  sub?: string
+  email?: string
+  name?: string
+  preferred_username?: string
+  given_name?: string
+  family_name?: string
+  roles?: string[] | string
+  authorities?: string[] | string
+  scope?: string[] | string
+  exp?: number
+  iat?: number
+  [key: string]: unknown
+}
+
+export type AuthTokens = {
+  access_token: string
+  refresh_token: string
+  reactivation_link?: string | null
+}
+
+export interface AuthSessionSnapshot {
+  accessToken: string
+  refreshToken: string
+  claims: AuthClaims | null
   user: User
+}
+
+export interface RegisteredUserData {
+  id: number
+  email: string
+  createdAt: string
+  updatedAt: string
+  locked: boolean
+  userStatus: 'ACTUAL' | 'DEACTIVATED'
+}
+
+export type LoginSuccessData = AuthTokens
+
+export interface UserProfileResponse {
+  email: string
+  firstName?: string
+  lastName?: string
+  headline?: string
+  biography?: string
+  avatarUrl?: string
+  socialLinks?: Record<string, string>
+}
+
+export interface AuthActionResult {
+  status: 'authenticated' | 'deactivated'
+  message?: string
+  reactivationLink?: string
+  session?: AuthSessionSnapshot
+}
+
+export interface UserProfilePayload {
+  email?: string
+  firstName?: string
+  lastName?: string
+  headline?: string
+  biography?: string
+  avatarUrl?: string
+  socialLinks?: Record<string, string>
 }
 
 export interface MetricCard {
   label: string
   value: string
-  change: string
-  trend: 'up' | 'down'
+  progress: number
   tone: 'cyan' | 'emerald' | 'amber' | 'indigo'
 }
 
@@ -44,14 +136,20 @@ export interface CourseModule {
   duration: string
   type: string
   completed: boolean
+  description?: string
+  order?: number
+  videoUrl?: string
 }
 
 export interface Course {
   id: string
   slug: string
   title: string
+  imageUrl: string
   category: string
+  categoryKey: string
   level: string
+  levelKey: string
   duration: string
   lessons: number
   progress: number

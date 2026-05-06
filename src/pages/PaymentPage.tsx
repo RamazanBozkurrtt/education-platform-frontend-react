@@ -9,6 +9,9 @@ import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
 import { useCart } from '../hooks/useCart'
 import { useLibrary } from '../hooks/useLibrary'
+import { useAuth } from '../hooks/useAuth'
+import { enrollmentService } from '../services/enrollmentService'
+import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { ROUTES } from '../utils/constants'
 import { formatCurrency } from '../utils/helpers'
 import type { CartItem } from '../utils/types'
@@ -95,11 +98,14 @@ const PaymentPage = () => {
   const { t } = useTranslation()
   const { clearCart, courseIds, itemCount, items, subtotal, tax, total } = useCart()
   const { purchaseCourses } = useLibrary()
+  const { isAuthenticated, user } = useAuth()
   const [method, setMethod] = useState<PaymentMethod>('card')
   const [cardForm, setCardForm] = useState<CardForm>(initialCardForm)
   const [invoiceForm, setInvoiceForm] = useState<InvoiceForm>(initialInvoiceForm)
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const [submitted, setSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [recentlyPurchasedItems, setRecentlyPurchasedItems] = useState<CartItem[]>([])
 
@@ -136,14 +142,30 @@ const PaymentPage = () => {
     setSubmitted(false)
   }
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     setSubmitted(true)
+    setPaymentError(null)
 
-    if (!hasErrors) {
+    if (hasErrors) {
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+
+      if (isAuthenticated) {
+        await enrollmentService.createEnrollments(courseIds, user?.id)
+      }
+
       setRecentlyPurchasedItems(items)
       purchaseCourses(courseIds)
       clearCart()
       setIsModalOpen(true)
+    } catch (error) {
+      const appError = normalizeApiError(error)
+      setPaymentError(appError.message)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -329,7 +351,13 @@ const PaymentPage = () => {
                 </>
               )}
 
-              <Button className="mt-8 w-full" onClick={handleConfirm} size="lg">
+              {paymentError ? (
+                <p className="mt-6 rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                  {paymentError}
+                </p>
+              ) : null}
+
+              <Button className="mt-8 w-full" disabled={isSubmitting} onClick={handleConfirm} size="lg">
                 {method === 'card' ? t('payment.confirmPayment') : t('payment.confirmInvoiceRequest')}
               </Button>
             </>

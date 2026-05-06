@@ -5,9 +5,11 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { CART_STORAGE_KEY } from '../utils/constants'
-import { getCourses } from '../utils/mockData'
 import { useLanguage } from './useLanguage'
+import { useAuth } from './useAuth'
+import { courseService } from '../services/courseService'
 import type { CartItem } from '../utils/types'
 
 interface CartContextValue {
@@ -27,26 +29,47 @@ const CartContext = createContext<CartContextValue | undefined>(undefined)
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { language } = useLanguage()
-  const [courseIds, setCourseIds] = useState<string[]>(() => {
-    const storedCart = localStorage.getItem(CART_STORAGE_KEY)
+  const { isBootstrapping, user } = useAuth()
+  const storageScope = user?.id ? encodeURIComponent(user.id) : 'guest'
+  const storageKey = `${CART_STORAGE_KEY}.${storageScope}`
+  const [courseIds, setCourseIds] = useState<string[]>([])
+  const [hydratedStorageKey, setHydratedStorageKey] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (isBootstrapping) {
+      return
+    }
+
+    const storedCart = localStorage.getItem(storageKey)
 
     if (!storedCart) {
-      return []
+      setCourseIds([])
+      setHydratedStorageKey(storageKey)
+      return
     }
 
     try {
       const parsed = JSON.parse(storedCart) as string[]
-      return Array.isArray(parsed) ? parsed : []
+      setCourseIds(Array.isArray(parsed) ? parsed : [])
     } catch {
-      return []
+      setCourseIds([])
     }
-  })
+
+    setHydratedStorageKey(storageKey)
+  }, [isBootstrapping, storageKey])
 
   useEffect(() => {
-    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(courseIds))
-  }, [courseIds])
+    if (isBootstrapping || hydratedStorageKey !== storageKey) {
+      return
+    }
 
-  const localizedCourses = getCourses(language)
+    localStorage.setItem(storageKey, JSON.stringify(courseIds))
+  }, [courseIds, hydratedStorageKey, isBootstrapping, storageKey])
+
+  const { data: localizedCourses = [] } = useQuery({
+    queryKey: ['public-courses', language],
+    queryFn: () => courseService.getCourses(language),
+  })
   const items = courseIds
     .map((courseId) => {
       const course = localizedCourses.find((entry) => entry.id === courseId)

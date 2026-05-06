@@ -28,8 +28,8 @@ const Modal = ({ children, description, onClose, open, title }: ModalProps) => {
   }
 
   return (
-    <div className="theme-overlay fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-md">
-      <div className="glass-panel w-full max-w-2xl rounded-[32px] border border-white/10 p-6 shadow-2xl">
+    <div className="theme-overlay fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="glass-panel w-full max-w-2xl rounded-lg border border-white/10 p-6 shadow-xl">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <h3 className="theme-heading text-2xl font-semibold">{title}</h3>

@@ -1,50 +1,113 @@
-import { Outlet } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { Link, Outlet } from 'react-router-dom'
+import { useTheme } from '../hooks/useTheme'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import ThemeToggle from '../components/ui/ThemeToggle'
-import { APP_NAME } from '../utils/constants'
+import { APP_NAME, ROUTES } from '../utils/constants'
+import { cn } from '../utils/helpers'
+import authBackground from '../assets/AuthPages/auth_background.png'
 
 const AuthLayout = () => {
-  const { t } = useTranslation()
+  const { theme } = useTheme()
+  const isLight = theme === 'light'
 
   return (
-    <main className="surface-grid page-shell flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.05),transparent_45%)]" />
-      <div className="glass-panel relative z-10 grid w-full max-w-6xl overflow-hidden rounded-[28px] border border-white/10 lg:grid-cols-[1.15fr_0.85fr]">
-      <section className="hidden flex-col justify-between border-r border-white/8 bg-slate-950/30 p-10 lg:flex">
-        <div>
-          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">
-            {t('auth.badge')}
-          </span>
-          <h1 className="theme-heading mt-6 max-w-md text-5xl font-semibold leading-tight">
-            {t('auth.heroTitle')}
-          </h1>
-          <p className="theme-muted mt-6 max-w-xl text-base leading-8">
-            {t('auth.heroDescription', { appName: APP_NAME })}
-          </p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            { value: '84%', label: t('auth.completionRate') },
-            { value: '12k', label: t('auth.lessonsWatched') },
-            { value: '4.9', label: t('auth.learnerRating') },
-          ].map((item) => (
-            <div key={item.label} className="rounded-[24px] border border-white/8 bg-white/5 p-4">
-              <p className="theme-heading text-2xl font-semibold">{item.value}</p>
-              <p className="theme-muted mt-2 text-sm">{item.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-      <section className="p-6 sm:p-10">
-        <div className="mb-8 flex flex-wrap justify-end gap-3">
+    <main className="page-shell relative h-[100dvh] overflow-hidden px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+      <div
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${authBackground})` }}
+      />
+      <div
+        className={cn(
+          'absolute inset-0',
+          isLight
+            ? 'bg-[radial-gradient(circle_at_left,rgba(15,76,129,0.08),transparent_30%),linear-gradient(180deg,rgba(247,249,252,0.38)_0%,rgba(238,243,248,0.5)_100%)]'
+            : 'bg-[radial-gradient(circle_at_left,rgba(41,65,107,0.16),transparent_26%),linear-gradient(180deg,rgba(13,21,33,0.42)_0%,rgba(17,27,42,0.56)_100%)]',
+        )}
+      />
+
+      <div className="relative z-10 mx-auto flex max-w-[1480px] justify-end">
+        <div className="flex flex-wrap gap-3">
           <LanguageSwitcher />
           <ThemeToggle />
         </div>
-        <Outlet />
-      </section>
-    </div>
-  </main>
+      </div>
+
+      <div className="relative z-10 mx-auto grid h-[calc(100dvh-5.5rem)] w-full max-w-[1480px] items-center gap-8 lg:grid-cols-[1fr_520px]">
+        <section className="hidden h-full items-center lg:flex">
+          <div className="max-w-3xl">
+            <Link
+              aria-label={`${APP_NAME} landing page`}
+              className={cn(
+                'group relative inline-flex rounded-3xl px-6 py-4 transition-all duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                isLight
+                  ? 'focus-visible:ring-sky-700/45 focus-visible:ring-offset-slate-50'
+                  : 'focus-visible:ring-sky-300/45 focus-visible:ring-offset-slate-950',
+              )}
+              to={ROUTES.home}
+            >
+              <span
+                className={cn(
+                  'pointer-events-none absolute inset-x-6 bottom-3 h-[3px] origin-left scale-x-0 rounded-full transition-transform duration-500 group-hover:scale-x-100 group-focus-visible:scale-x-100',
+                  isLight
+                    ? 'bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500'
+                    : 'bg-gradient-to-r from-sky-300 via-cyan-200 to-emerald-200',
+                )}
+              />
+              <h1
+                className={cn(
+                  'theme-heading text-7xl font-semibold leading-none tracking-[-0.08em] transition-all duration-500 group-hover:-translate-y-1 group-focus-visible:-translate-y-1 xl:text-[7.5rem]',
+                  isLight ? 'group-hover:text-sky-800' : 'group-hover:text-sky-50',
+                )}
+              >
+                {APP_NAME}
+              </h1>
+            </Link>
+          </div>
+        </section>
+
+        <section className="flex h-full items-center justify-center lg:justify-end">
+          <div
+            className={cn(
+              'w-full max-w-[520px] rounded-[32px] border p-6 shadow-[0_24px_80px_rgba(15,23,42,0.08)] backdrop-blur-sm sm:p-8',
+              isLight
+                ? 'border-slate-900/10 bg-white/28'
+                : 'border-white/10 bg-[linear-gradient(180deg,rgba(10,17,30,0.32),rgba(15,23,36,0.24))]',
+            )}
+          >
+            <div className="mb-8 lg:hidden">
+              <Link
+                aria-label={`${APP_NAME} landing page`}
+                className={cn(
+                  'group relative inline-flex rounded-2xl px-2 py-1 transition-all duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                  isLight
+                    ? 'focus-visible:ring-sky-700/45 focus-visible:ring-offset-slate-50 hover:bg-white/35'
+                    : 'focus-visible:ring-sky-300/45 focus-visible:ring-offset-slate-950 hover:bg-white/8',
+                )}
+                to={ROUTES.home}
+              >
+                <span
+                  className={cn(
+                    'pointer-events-none absolute inset-x-2 bottom-0 h-[2px] origin-left scale-x-0 rounded-full transition-transform duration-500 group-hover:scale-x-100 group-focus-visible:scale-x-100',
+                    isLight
+                      ? 'bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500'
+                      : 'bg-gradient-to-r from-sky-300 via-cyan-200 to-emerald-200',
+                  )}
+                />
+                <h1
+                  className={cn(
+                    'theme-heading text-4xl font-semibold tracking-[-0.06em] transition-all duration-500 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5',
+                    isLight ? 'group-hover:text-sky-800' : 'group-hover:text-sky-50',
+                  )}
+                >
+                  {APP_NAME}
+                </h1>
+              </Link>
+            </div>
+            <Outlet />
+          </div>
+        </section>
+      </div>
+    </main>
   )
 }
 

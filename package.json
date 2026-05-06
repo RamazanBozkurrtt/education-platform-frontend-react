@@ -5,7 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:local": "vite --mode local",
+    "dev:docker": "vite --mode docker",
     "build": "tsc && vite build",
+    "build:docker": "tsc && vite build --mode docker",
+    "build:prod": "tsc && vite build --mode production",
     "preview": "vite preview"
   },
   "devDependencies": {

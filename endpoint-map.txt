@@ -1,0 +1,123 @@
+Gateway base URL (docker): http://localhost:8090
+Not: Course endpointleri hem /courses/** hem /api/v1/courses/** çalışıyor; frontend için /api/v1/courses/** kullanman daha temiz olur.
+Body şemaları
+•
+RegisterRequest: { email, password(min 6) }
+•
+AuthenticationRequest: { email, password }
+•
+RefreshTokenRequest: { refresh_token }
+•
+ChangePasswordRequest: { oldPassword, newPassword(min 6) }
+•
+UserProfileRequest: { email?, firstName?, lastName?, headline?, biography?, avatarUrl?, socialLinks? }
+•
+CourseCreateRequest / CourseUpdateRequest: { title, description, price, categoryId?, learningOutcomes[exactly 4], tags? }
+•
+LessonCreateRequest / LessonUpdateRequest: { title, summaryTitle(1-2 kelime), videoUrl, duration, orderIndex, completed }
+•
+EnrollmentCreateRequest: { courseId, userId? } (userId yoksa token’daki user kullanılıyor)
+•
+InstructorSummariesRequest: { instructorIds: string[] (max 500) }
+•
+InstructorStatusUpdateRequest: { status: ACTUAL|PENDING|BANNED|DEACTIVATED }
+Auth Service
+•
+POST /api/v1/auth/register body:RegisterRequest
+•
+POST /api/v1/auth/login body:AuthenticationRequest
+•
+POST /api/v1/auth/refresh-token body:RefreshTokenRequest
+•
+GET /api/v1/auth/reactivate-account?token=...
+•
+POST /api/v1/auth/logout header:Authorization: Bearer ...
+•
+DELETE /api/v1/auth/me header:Authorization: Bearer ...
+•
+PUT /api/v1/auth/change-password header:Authorization: Bearer ... body:ChangePasswordRequest
+•
+GET /api/v1/test/getText (test)
+User Service
+•
+GET /api/v1/users?pageNumber=0&pageSize=10
+•
+GET /api/v1/users/{id}
+•
+GET /api/v1/users/me header:Authorization
+•
+PUT /api/v1/users/{id} body:UserProfileRequest
+•
+PUT /api/v1/users/me header:Authorization body:UserProfileRequest
+•
+PUT /api/v1/users/me/avatar header:Authorization multipart:file
+•
+GET /api/v1/users/public/avatar/{profileId}
+•
+POST /api/v1/users body:UserProfileRequest
+Course Service
+•
+POST /api/v1/courses header:Authorization body:CourseCreateRequest
+•
+GET /api/v1/courses/public/{id}
+•
+GET /api/v1/courses/public?pageNumber=0&pageSize=10
+•
+GET /api/v1/courses/{id} header:Authorization
+•
+GET /api/v1/courses?pageNumber=0&pageSize=10 header:Authorization
+•
+GET /api/v1/courses/me?pageNumber=0&pageSize=10 header:Authorization
+•
+PUT /api/v1/courses/{id} header:Authorization body:CourseUpdateRequest
+•
+DELETE /api/v1/courses/{id} header:Authorization
+•
+POST /api/v1/courses/{id}/lessons header:Authorization body:LessonCreateRequest
+•
+PUT /api/v1/courses/{courseId}/lessons/{lessonId} header:Authorization body:LessonUpdateRequest
+•
+DELETE /api/v1/courses/{courseId}/lessons/{lessonId} header:Authorization
+•
+POST /api/v1/courses/{id}/publish header:Authorization
+•
+GET /api/v1/courses/{courseId}/lessons/{lessonId}/video header:Authorization (Range destekli streaming)
+•
+GET /api/v1/courses/public/{courseId}/image
+•
+GET /api/v1/courses/{courseId}/image header:Authorization
+•
+PUT /api/v1/courses/{courseId}/image header:Authorization multipart:file
+•
+DELETE /api/v1/courses/{courseId}/image header:Authorization
+•
+PUT /api/v1/courses/{courseId}/lessons/{lessonId}/video header:Authorization multipart:file
+•
+DELETE /api/v1/courses/{courseId}/lessons/{lessonId}/video header:Authorization
+Enrollment Service
+•
+POST /api/v1/enrollments header:Authorization body:EnrollmentCreateRequest
+•
+GET /api/v1/enrollments/{id} header:Authorization
+•
+GET /api/v1/enrollments/me?pageNumber=0&pageSize=10 header:Authorization
+•
+GET /api/v1/enrollments/by-course/{courseId}?pageNumber=0&pageSize=10 header:Authorization (admin)
+•
+DELETE /api/v1/enrollments/{id} header:Authorization
+Internal endpointler (frontend için değil, servisler arası)
+•
+GET /api/v1/internal/instructors/{id}/summary header:X-Internal-Api-Key
+•
+POST /api/v1/internal/instructors/summaries header:X-Internal-Api-Key body:InstructorSummariesRequest
+•
+PATCH /api/v1/internal/instructors/{id}/status header:X-Internal-Api-Key body:InstructorStatusUpdateRequest
+•
+GET /api/v1/internal/instructor-projections/{id}/summary header:X-Internal-Api-Key
+•
+POST /api/v1/internal/instructor-projections/reconcile/{id} header:X-Internal-Api-Key
+•
+POST /api/v1/internal/instructor-projections/reconcile header:X-Internal-Api-Key body:InstructorSummariesRequest
+Search Service
+•
+HTTP REST endpoint yok (sadece Kafka/gRPC akışı var).

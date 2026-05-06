@@ -9,18 +9,54 @@ import StatCard from '../components/StatCard'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Loader from '../components/ui/Loader'
+import QueryErrorState from '../components/ui/QueryErrorState'
 import Modal from '../components/ui/Modal'
 import { courseService } from '../services/courseService'
 import { ROUTES } from '../utils/constants'
+import { useAuth } from '../hooks/useAuth'
+import type { AuthClaims } from '../utils/types'
+
+const resolveDashboardAudience = (claims: AuthClaims | null) => {
+  const candidates = [claims?.roles, claims?.authorities, claims?.scope]
+
+  for (const candidate of candidates) {
+    const values = Array.isArray(candidate)
+      ? candidate
+      : typeof candidate === 'string'
+        ? candidate.split(/\s+/)
+        : []
+
+    for (const value of values) {
+      if (typeof value !== 'string') {
+        continue
+      }
+
+      const normalized = value.trim().toUpperCase().replace(/^ROLE_/, '')
+
+      if (normalized === 'ADMIN' || normalized === 'INSTRUCTOR') {
+        return 'instructor' as const
+      }
+    }
+  }
+
+  return 'student' as const
+}
 
 const DashboardPage = () => {
   const { t } = useTranslation()
   const { language } = useLanguage()
+  const { isAuthenticated, isBootstrapping, user, claims } = useAuth()
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false)
-  const { data, isLoading } = useQuery({
-    queryKey: ['dashboard-overview', language],
-    queryFn: () => courseService.getDashboardOverview(language),
+  const audience = resolveDashboardAudience(claims)
+  const { data, error, isLoading } = useQuery({
+    queryKey: ['dashboard-overview', user?.id, language, audience],
+    queryFn: () => courseService.getDashboardOverview(language, audience),
+    enabled: !isBootstrapping && isAuthenticated && Boolean(user),
   })
+
+  if (error) {
+    return <QueryErrorState error={error} />
+  }
 
   if (isLoading || !data) {
     return <Loader label={t('loader.dashboardMetrics')} />
@@ -48,7 +84,7 @@ const DashboardPage = () => {
         title={t('dashboard.title')}
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
         {data.metrics.map((metric) => (
           <StatCard key={metric.label} {...metric} />
         ))}
@@ -59,17 +95,17 @@ const DashboardPage = () => {
           <div className="border-b border-white/8 px-6 py-6">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
               <div className="max-w-xl">
-                <div className={`mb-5 h-1.5 w-20 rounded-full bg-gradient-to-r ${data.focusCourse.accent}`} />
-                <span className="rounded-full border border-white/12 bg-slate-950/30 px-3 py-1 text-xs font-semibold text-slate-100">
+                <div className="mb-5 h-1 w-16 rounded-sm bg-[color:var(--primary)]" />
+                <span className="rounded-md border border-white/10 bg-[color:var(--surface-muted)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.14em] text-slate-200">
                   {t('dashboard.focusCourse')}
                 </span>
-                <h2 className="mt-5 text-3xl font-semibold text-white">{data.focusCourse.title}</h2>
-                <p className="mt-4 max-w-lg text-sm leading-7 text-slate-200/90">
+                <h2 className="mt-5 text-3xl font-semibold tracking-tight text-white">{data.focusCourse.title}</h2>
+                <p className="mt-4 max-w-lg text-sm leading-7 text-slate-300">
                   {data.focusCourse.description}
                 </p>
               </div>
-              <div className="rounded-[20px] border border-white/8 bg-white/4 px-5 py-4 lg:min-w-[240px]">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t('common.currentStatus')}</p>
+              <div className="rounded-lg border border-white/8 bg-[color:var(--surface-muted)] px-5 py-4 lg:min-w-[240px]">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{t('common.currentStatus')}</p>
                 <p className="mt-3 text-2xl font-semibold text-white">
                   {t('dashboard.progressComplete', { progress: data.focusCourse.progress })}
                 </p>
@@ -86,7 +122,7 @@ const DashboardPage = () => {
             <div>
               <div className="flex flex-wrap gap-2">
                 {data.focusCourse.tags.map((tag) => (
-                  <span key={tag} className="rounded-full border border-white/8 bg-white/5 px-3 py-1 text-xs text-slate-300">
+                  <span key={tag} className="rounded-md border border-white/8 bg-[color:var(--surface-muted)] px-3 py-1 text-xs text-slate-300">
                     {tag}
                   </span>
                 ))}
@@ -95,10 +131,10 @@ const DashboardPage = () => {
                 {data.focusCourse.modules.map((module, index) => (
                   <div
                     key={module.id}
-                    className="flex items-center justify-between gap-4 rounded-2xl border border-white/8 bg-white/4 px-4 py-4"
+                    className="flex items-center justify-between gap-4 rounded-md border border-white/8 bg-[color:var(--surface-muted)] px-4 py-4"
                   >
                     <div className="flex items-center gap-4">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-md bg-[color:var(--primary)] text-sm font-semibold text-white">
                         {String(index + 1).padStart(2, '0')}
                       </div>
                       <div>
@@ -115,12 +151,12 @@ const DashboardPage = () => {
             </div>
 
             <div className="space-y-4">
-              <Card className="border-sky-400/16 bg-sky-500/8">
-                <p className="text-xs uppercase tracking-[0.24em] text-cyan-100">{t('dashboard.progress')}</p>
+              <Card className="border-white/10">
+                <p className="text-xs uppercase tracking-[0.16em] text-slate-400">{t('dashboard.progress')}</p>
                 <p className="mt-3 text-4xl font-semibold text-white">{data.focusCourse.progress}%</p>
-                <div className="mt-4 h-2 rounded-full bg-slate-900/70">
+                <div className="mt-4 h-2 rounded-sm bg-slate-200/40 dark:bg-slate-800">
                   <div
-                    className="h-2 rounded-full bg-gradient-to-r from-cyan-300 to-blue-400"
+                    className="h-2 rounded-sm bg-[color:var(--primary)]"
                     style={{ width: `${data.focusCourse.progress}%` }}
                   />
                 </div>
@@ -130,10 +166,10 @@ const DashboardPage = () => {
                 <p className="text-sm font-semibold text-white">{t('dashboard.upcomingMilestones')}</p>
                 <div className="mt-4 space-y-4">
                   {data.upcomingMilestones.map((milestone) => (
-                    <div key={milestone.id} className="rounded-2xl border border-white/8 bg-white/4 p-4">
+                    <div key={milestone.id} className="rounded-md border border-white/8 bg-[color:var(--surface-muted)] p-4">
                       <div className="flex items-center justify-between gap-4">
                         <p className="text-sm font-medium text-slate-100">{milestone.label}</p>
-                        <span className="rounded-full bg-white/6 px-3 py-1 text-xs text-slate-300">
+                        <span className="rounded-md border border-white/8 bg-[color:var(--surface-strong)] px-3 py-1 text-xs text-slate-300">
                           {milestone.status}
                         </span>
                       </div>
@@ -149,7 +185,7 @@ const DashboardPage = () => {
         <div className="space-y-6">
           <Card>
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-400/12 text-emerald-200">
+              <div className="flex h-12 w-12 items-center justify-center rounded-md border border-white/10 bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
                 <Rocket className="h-5 w-5" />
               </div>
               <div>
@@ -159,10 +195,10 @@ const DashboardPage = () => {
             </div>
             <div className="mt-6 space-y-4">
               {data.recentActivity.map((activity) => (
-                <div key={activity.id} className="rounded-2xl border border-white/8 bg-white/4 p-4">
+                <div key={activity.id} className="rounded-md border border-white/8 bg-[color:var(--surface-muted)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-medium text-slate-100">{activity.title}</p>
-                    <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">
+                    <span className="rounded-md border border-white/8 bg-[color:var(--surface-strong)] px-3 py-1 text-xs text-slate-200">
                       {activity.tag}
                     </span>
                   </div>
@@ -173,9 +209,9 @@ const DashboardPage = () => {
             </div>
           </Card>
 
-          <Card className="border-slate-400/12 bg-white/4">
+          <Card className="border-white/10">
             <div className="flex items-center gap-3">
-              <Sparkles className="h-5 w-5 text-sky-300" />
+              <Sparkles className="h-5 w-5 text-[color:var(--primary)]" />
               <p className="text-sm font-semibold text-white">{t('dashboard.operationalInsight')}</p>
             </div>
             <p className="mt-4 text-sm leading-7 text-slate-300">
@@ -197,7 +233,7 @@ const DashboardPage = () => {
             t('dashboard.quarterlyGoalTwo'),
             t('dashboard.quarterlyGoalThree'),
           ].map((goal) => (
-            <div key={goal} className="rounded-2xl border border-white/8 bg-white/4 px-4 py-4 text-sm text-slate-200">
+            <div key={goal} className="rounded-md border border-white/8 bg-[color:var(--surface-muted)] px-4 py-4 text-sm text-slate-200">
               {goal}
             </div>
           ))}

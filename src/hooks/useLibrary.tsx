@@ -2,13 +2,18 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { LIBRARY_STORAGE_KEY } from '../utils/constants'
-import { getCourses } from '../utils/mockData'
 import { useLanguage } from './useLanguage'
-import type { Course } from '../utils/types'
+import { useAuth } from './useAuth'
+import { getAccessToken } from '../services/authSession'
+import { courseService } from '../services/courseService'
+import { authFlowLog } from '../shared/authFlowDebug'
+import type { AuthClaims, Course } from '../utils/types'
 
 interface LibraryContextValue {
   purchasedCourseIds: string[]
@@ -19,34 +24,134 @@ interface LibraryContextValue {
 
 const LibraryContext = createContext<LibraryContextValue | undefined>(undefined)
 
+const resolveLibraryAudience = (claims: AuthClaims | null) => {
+  const candidates = [claims?.roles, claims?.authorities, claims?.scope]
+
+  for (const candidate of candidates) {
+    const values = Array.isArray(candidate)
+      ? candidate
+      : typeof candidate === 'string'
+        ? candidate.split(/\s+/)
+        : []
+
+    for (const value of values) {
+      if (typeof value !== 'string') {
+        continue
+      }
+
+      const normalized = value.trim().toUpperCase().replace(/^ROLE_/, '')
+
+      if (normalized === 'ADMIN' || normalized === 'INSTRUCTOR') {
+        return 'instructor' as const
+      }
+    }
+  }
+
+  return 'student' as const
+}
+
 export const LibraryProvider = ({ children }: { children: ReactNode }) => {
   const { language } = useLanguage()
-  const [purchasedCourseIds, setPurchasedCourseIds] = useState<string[]>(() => {
-    const storedLibrary = localStorage.getItem(LIBRARY_STORAGE_KEY)
+  const { isAuthenticated, isBootstrapping, user, claims } = useAuth()
+  const canLoadPrivateLibrary = isAuthenticated && Boolean(user?.profileCompleted)
+  const audience = resolveLibraryAudience(claims)
+  const storageScope = user?.id ? encodeURIComponent(user.id) : 'guest'
+  const storageKey = `${LIBRARY_STORAGE_KEY}.${storageScope}`
+  const [localPurchasedCourseIds, setLocalPurchasedCourseIds] = useState<string[]>([])
+  const [optimisticCourseIds, setOptimisticCourseIds] = useState<string[]>([])
+  const [hydratedStorageKey, setHydratedStorageKey] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (isBootstrapping || isAuthenticated) {
+      return
+    }
+
+    const storedLibrary = localStorage.getItem(storageKey)
 
     if (!storedLibrary) {
-      return []
+      setLocalPurchasedCourseIds([])
+      setHydratedStorageKey(storageKey)
+      return
     }
 
     try {
       const parsed = JSON.parse(storedLibrary) as string[]
-      return Array.isArray(parsed) ? parsed : []
+      setLocalPurchasedCourseIds(Array.isArray(parsed) ? parsed : [])
     } catch {
-      return []
+      setLocalPurchasedCourseIds([])
     }
-  })
+
+    setHydratedStorageKey(storageKey)
+  }, [isAuthenticated, isBootstrapping, storageKey])
 
   useEffect(() => {
-    localStorage.setItem(LIBRARY_STORAGE_KEY, JSON.stringify(purchasedCourseIds))
-  }, [purchasedCourseIds])
+    if (isBootstrapping || isAuthenticated || hydratedStorageKey !== storageKey) {
+      return
+    }
 
-  const localizedCourses = getCourses(language)
-  const purchasedCourses = purchasedCourseIds
-    .map((courseId) => localizedCourses.find((entry) => entry.id === courseId) ?? null)
-    .filter((course): course is Course => course !== null)
+    localStorage.setItem(storageKey, JSON.stringify(localPurchasedCourseIds))
+  }, [hydratedStorageKey, isAuthenticated, isBootstrapping, localPurchasedCourseIds, storageKey])
+
+  useEffect(() => {
+    setOptimisticCourseIds([])
+  }, [user?.id])
+
+  useEffect(() => {
+    authFlowLog('course request enabled:', {
+      enabled: !isBootstrapping && canLoadPrivateLibrary,
+      userId: user?.id ?? null,
+      role: audience,
+      tokenExists: Boolean(getAccessToken()),
+    })
+  }, [audience, canLoadPrivateLibrary, isBootstrapping, user?.id])
+
+  const { data: userCourses = [] } = useQuery({
+    queryKey: ['my-courses', user?.id, language, audience],
+    queryFn: async () => {
+      try {
+        const courses = await courseService.getMyCourses(language, { audience })
+        authFlowLog('course response/error:', { count: courses.length })
+        return courses
+      } catch (error) {
+        authFlowLog('course response/error:', error)
+        throw error
+      }
+    },
+    enabled: !isBootstrapping && canLoadPrivateLibrary,
+  })
+
+  const { data: localizedCourses = [] } = useQuery({
+    queryKey: ['public-courses', language],
+    queryFn: () => courseService.getCourses(language),
+  })
+
+  const purchasedCourses = useMemo(() => {
+    if (isAuthenticated) {
+      const optimisticCourses = optimisticCourseIds
+        .filter((courseId) => !userCourses.some((course) => course.id === courseId))
+        .map((courseId) => localizedCourses.find((entry) => entry.id === courseId) ?? null)
+        .filter((course): course is Course => course !== null)
+
+      return [...userCourses, ...optimisticCourses]
+    }
+
+    return localPurchasedCourseIds
+      .map((courseId) => localizedCourses.find((entry) => entry.id === courseId) ?? null)
+      .filter((course): course is Course => course !== null)
+  }, [isAuthenticated, localPurchasedCourseIds, localizedCourses, optimisticCourseIds, userCourses])
+
+  const purchasedCourseIds = useMemo(
+    () => purchasedCourses.map((course) => course.id),
+    [purchasedCourses],
+  )
 
   const purchaseCourses = (courseIds: string[]) => {
-    setPurchasedCourseIds((currentIds) => [...new Set([...currentIds, ...courseIds])])
+    if (isAuthenticated) {
+      setOptimisticCourseIds((currentIds) => [...new Set([...currentIds, ...courseIds])])
+      return
+    }
+
+    setLocalPurchasedCourseIds((currentIds) => [...new Set([...currentIds, ...courseIds])])
   }
 
   const isPurchased = (courseId: string) => purchasedCourseIds.includes(courseId)

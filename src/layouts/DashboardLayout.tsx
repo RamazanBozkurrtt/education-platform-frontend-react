@@ -4,6 +4,7 @@ import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from '../components/navigation/Sidebar'
 import TopNavbar from '../components/navigation/TopNavbar'
 import { useAuth } from '../hooks/useAuth'
+import { ROUTES } from '../utils/constants'
 
 const DashboardLayout = () => {
   const { t } = useTranslation()
@@ -24,9 +25,12 @@ const DashboardLayout = () => {
     ? t('routes.watchCourse')
     : pathname.startsWith('/courses/')
       ? t('routes.courseDetails')
+      : pathname === ROUTES.profile
+        ? t('routes.profile')
     : (
         {
-          '/': t('routes.dashboard'),
+          [ROUTES.dashboard]: t('routes.dashboard'),
+          [ROUTES.myCourses]: t('routes.myCourses'),
           '/courses': t('routes.courses'),
           '/cart': t('routes.cart'),
           '/payment': t('routes.payment'),
@@ -36,7 +40,7 @@ const DashboardLayout = () => {
 
   return (
     <div className="theme-app min-h-screen">
-      <div className="mx-auto flex max-w-[1600px]">
+      <div className="page-shell mx-auto flex max-w-[1600px] gap-4 px-4 py-4">
         <Sidebar
           collapsed={collapsed}
           mobileOpen={mobileOpen}
@@ -44,9 +48,9 @@ const DashboardLayout = () => {
           onToggleCollapsed={() => setCollapsed((current) => !current)}
         />
 
-        <div className="page-shell flex min-h-screen flex-1 flex-col px-4 pb-8 pt-4 lg:pr-6">
+        <div className="flex min-h-[calc(100vh-2rem)] flex-1 flex-col pb-8">
           <TopNavbar onOpenMobileMenu={() => setMobileOpen(true)} title={pageTitle} user={user} />
-          <main className="mt-6 flex-1">
+          <main className="mt-6 flex-1 pb-2">
             <Outlet />
           </main>
         </div>
