@@ -1,6 +1,17 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, BookOpenText, ChartColumnIncreasing, ShieldCheck, Star, Users2 } from 'lucide-react'
+import {
+  ArrowRight,
+  BookOpenText,
+  ChartColumnIncreasing,
+  GraduationCap,
+  LayoutDashboard,
+  PlayCircle,
+  ShieldCheck,
+  Star,
+  UserRound,
+  Users2,
+} from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import CatalogCourseCard from '../components/CatalogCourseCard'
@@ -32,17 +43,23 @@ const LandingPage = () => {
         { id: 'platform', label: 'Nasil calisir' },
         { id: 'results', label: 'Neden Edubase' },
       ],
-      eyebrow: 'Kursları keşfet',
-      title: 'Kursları keşfet ve sana uygun eğitimi seç.',
-      description: 'Kurslari kategori, seviye ve egitmene gore inceleyebilirsin.',
-      primaryCta: 'Kursları keşfet',
-      secondaryCta: 'Kayit ol',
-      proof: 'Kurslarda sure, seviye, puan ve egitmen bilgisi acikca yer alir.',
-      heroStats: [
-        { value: '12+', label: 'Kurs alani' },
-        { value: '4.8', label: 'Ortalama puan' },
-        { value: '24/7', label: 'Katalog erisimi' },
-      ],
+      eyebrow: 'EduBase Platformu',
+      title: 'Ogrenme ve icerik yonetimi tek platformda.',
+      description: 'EduBase ile kurslarini olusturabilir, ders videolarini yonetebilir ve ogrencilerinle tek bir panelden bulusabilirsin.',
+      primaryCta: 'Ucretsiz Basla',
+      secondaryCta: 'Egitmen Ol',
+      proof: 'Kurs yonetimi, video icerikleri ve ogrenci takibi tek akista sunulur.',
+      heroVisualTitle: 'EduBase Ogrenme Paneli',
+      heroVisualSubtitle: 'Canli ders akisi ve kurs yonetimi',
+      heroCourseTitle: 'React ile Uygulama Gelistirme',
+      heroCourseMeta: '42 ders - Orta seviye',
+      heroInstructorName: 'Selin A.',
+      heroInstructorRole: 'Kidemli Egitmen',
+      heroStudentNote: 'Ogrenci ilerlemesi guncel',
+      heroMetricLearners: 'Toplam ogrenci',
+      heroMetricRating: 'Ortalama puan',
+      heroImagePlaceholder: 'Final hero gorseli alani',
+      heroFloatingLabels: ['Video Dersler', 'Egitmen Paneli', 'Kurs Yonetimi', 'Ogrenci Takibi', 'Sertifikalar'],
       platformTitle: 'Kurs secimini kolaylastiran sade akis',
       platformDescription: 'Filtreleri kullan, kurslari karsilastir ve detay sayfasinda ders yapisini gor.',
       platformItems: [
@@ -73,17 +90,23 @@ const LandingPage = () => {
         { id: 'platform', label: 'How it works' },
         { id: 'results', label: 'Why Edubase' },
       ],
-      eyebrow: 'Explore courses',
-      title: 'Explore courses and choose what fits your goal.',
-      description: 'Browse courses by category, level, and instructor.',
-      primaryCta: 'Explore courses',
-      secondaryCta: 'Create account',
-      proof: 'Course cards show duration, level, rating, and instructor clearly.',
-      heroStats: [
-        { value: '12+', label: 'Learning areas' },
-        { value: '4.8', label: 'Average rating' },
-        { value: '24/7', label: 'Catalog access' },
-      ],
+      eyebrow: 'EduBase Platform',
+      title: 'Learning and content management on one platform.',
+      description: 'With EduBase, create courses, manage lesson videos, and connect with students through a single dashboard.',
+      primaryCta: 'Start Free',
+      secondaryCta: 'Become an Instructor',
+      proof: 'Course management, video content, and student tracking are delivered in one clear flow.',
+      heroVisualTitle: 'EduBase Learning Dashboard',
+      heroVisualSubtitle: 'Live lesson flow and course operations',
+      heroCourseTitle: 'React Application Development',
+      heroCourseMeta: '42 lessons - Intermediate',
+      heroInstructorName: 'Selin A.',
+      heroInstructorRole: 'Senior Instructor',
+      heroStudentNote: 'Student progress is up to date',
+      heroMetricLearners: 'Total learners',
+      heroMetricRating: 'Average rating',
+      heroImagePlaceholder: 'Final hero visual slot',
+      heroFloatingLabels: ['Video Lessons', 'Instructor Panel', 'Course Management', 'Student Tracking', 'Certificates'],
       platformTitle: 'A clear flow for course discovery',
       platformDescription: 'Use filters, compare courses, and review lesson structure on the detail page.',
       platformItems: [
@@ -174,7 +197,7 @@ const LandingPage = () => {
 
       <main className="relative">
         <section className="mx-auto max-w-[1480px] px-4 pb-10 pt-8 lg:px-8 lg:pb-14 lg:pt-12">
-          <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+          <div className="grid gap-6 lg:gap-8 xl:grid-cols-[1.05fr_0.95fr]">
             <div className="public-section-card rounded-[var(--radius-cards)] p-8 md:p-10">
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--primary)]">{copy.eyebrow}</p>
               <h1 className="theme-heading mt-4 text-4xl font-semibold leading-tight tracking-[-0.03em] md:text-5xl">
@@ -190,7 +213,7 @@ const LandingPage = () => {
                   </span>
                 </Link>
 
-                <Link to={ROUTES.register}>
+                <Link to={ROUTES.becomeInstructor}>
                   <span className="public-outline-button h-12 px-5 text-sm font-semibold">
                     {copy.secondaryCta}
                   </span>
@@ -203,28 +226,97 @@ const LandingPage = () => {
               </div>
             </div>
 
-            <div className="public-section-card rounded-[var(--radius-cards)] p-8">
-              <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-1">
-                <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-5 py-5">
-                  <p className="theme-heading text-3xl font-semibold">{copy.heroStats[0].value}</p>
-                  <p className="theme-subtle mt-2 text-xs font-semibold uppercase tracking-[0.2em]">{copy.heroStats[0].label}</p>
+            <div className="public-section-card relative overflow-hidden rounded-[var(--radius-cards)] p-5 sm:p-6 md:p-8">
+              <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[color:var(--surface-muted)] opacity-70" />
+              <div className="pointer-events-none absolute -bottom-12 -left-8 h-32 w-32 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] opacity-80" />
+
+              <div className="relative space-y-4">
+                <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-white)] p-4 shadow-[var(--panel-shadow)] sm:p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="theme-heading text-sm font-semibold">{copy.heroVisualTitle}</p>
+                      <p className="theme-muted mt-1 text-xs">{copy.heroVisualSubtitle}</p>
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1 text-[11px] font-semibold theme-muted">
+                      <LayoutDashboard className="h-3.5 w-3.5 text-[color:var(--primary)]" />
+                      Live
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-[1.25fr_0.95fr]">
+                    <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-[color:var(--primary)]">
+                        <PlayCircle className="h-3.5 w-3.5" />
+                        Video Ders
+                      </span>
+                      <p className="theme-heading mt-2 text-sm font-semibold">{copy.heroCourseTitle}</p>
+                      <p className="theme-muted mt-1 text-xs">{copy.heroCourseMeta}</p>
+                      <div className="mt-4 h-16 rounded-[var(--radius-navigation)] border border-dashed border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-2 text-[11px] theme-subtle">
+                        {copy.heroImagePlaceholder}
+                      </div>
+                    </div>
+
+                    <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-white)]">
+                          <UserRound className="h-4 w-4 text-[color:var(--primary)]" />
+                        </span>
+                        <div>
+                          <p className="theme-heading text-sm font-semibold">{copy.heroInstructorName}</p>
+                          <p className="theme-muted text-xs">{copy.heroInstructorRole}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-2">
+                        <p className="theme-muted text-xs">{copy.heroStudentNote}</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-5 py-5">
-                  <p className="theme-heading text-3xl font-semibold">{copy.heroStats[1].value}</p>
-                  <p className="theme-subtle mt-2 text-xs font-semibold uppercase tracking-[0.2em]">{copy.heroStats[1].label}</p>
-                </div>
-                <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-5 py-5">
-                  <p className="theme-heading text-3xl font-semibold">{copy.heroStats[2].value}</p>
-                  <p className="theme-subtle mt-2 text-xs font-semibold uppercase tracking-[0.2em]">{copy.heroStats[2].label}</p>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4">
+                    <p className="theme-subtle text-[11px] font-semibold uppercase tracking-[0.15em]">{copy.heroMetricLearners}</p>
+                    <p className="theme-heading mt-2 text-2xl font-semibold">
+                      {content.totalLearners.toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')}
+                    </p>
+                  </div>
+                  <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4">
+                    <p className="theme-subtle text-[11px] font-semibold uppercase tracking-[0.15em]">{copy.heroMetricRating}</p>
+                    <p className="theme-heading mt-2 flex items-center gap-1 text-2xl font-semibold">
+                      <Star className="h-4 w-4 text-[color:var(--primary)]" />
+                      {content.averageRating.toFixed(1)}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-5 border-t border-[color:var(--border)] pt-5">
-                <p className="theme-subtle text-xs uppercase tracking-[0.16em]">Toplam ogrenci</p>
-                <p className="theme-heading mt-2 text-2xl font-semibold">
-                  {content.totalLearners.toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')}
-                </p>
-                <p className="theme-muted mt-2 text-sm">Ortalama puan: {content.averageRating.toFixed(1)}</p>
+              <div className="relative mt-4 flex flex-wrap gap-2 sm:hidden">
+                {copy.heroFloatingLabels.map((label) => (
+                  <span className="inline-flex rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1 text-[11px] font-semibold theme-muted" key={label}>
+                    {label}
+                  </span>
+                ))}
+              </div>
+
+              <div className="pointer-events-none absolute -right-3 top-8 hidden rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1 text-[11px] font-semibold theme-muted sm:inline-flex">
+                <PlayCircle className="mr-1 h-3.5 w-3.5 text-[color:var(--primary)]" />
+                {copy.heroFloatingLabels[0]}
+              </div>
+              <div className="pointer-events-none absolute -left-5 top-[34%] hidden rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1 text-[11px] font-semibold theme-muted sm:inline-flex">
+                <LayoutDashboard className="mr-1 h-3.5 w-3.5 text-[color:var(--primary)]" />
+                {copy.heroFloatingLabels[1]}
+              </div>
+              <div className="pointer-events-none absolute right-10 top-[52%] hidden rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1 text-[11px] font-semibold theme-muted sm:inline-flex">
+                <BookOpenText className="mr-1 h-3.5 w-3.5 text-[color:var(--primary)]" />
+                {copy.heroFloatingLabels[2]}
+              </div>
+              <div className="pointer-events-none absolute -left-3 bottom-20 hidden rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1 text-[11px] font-semibold theme-muted sm:inline-flex">
+                <Users2 className="mr-1 h-3.5 w-3.5 text-[color:var(--primary)]" />
+                {copy.heroFloatingLabels[3]}
+              </div>
+              <div className="pointer-events-none absolute bottom-6 right-4 hidden rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1 text-[11px] font-semibold theme-muted sm:inline-flex">
+                <GraduationCap className="mr-1 h-3.5 w-3.5 text-[color:var(--primary)]" />
+                {copy.heroFloatingLabels[4]}
               </div>
             </div>
           </div>
@@ -368,3 +460,4 @@ const LandingPage = () => {
 }
 
 export default LandingPage
+

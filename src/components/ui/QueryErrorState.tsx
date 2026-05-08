@@ -10,6 +10,7 @@ const QueryErrorState = ({ error, fullScreen = false }: QueryErrorStateProps) =>
 
   return (
     <div
+      role="alert"
       className={
         fullScreen
           ? 'flex min-h-screen items-center justify-center px-4'

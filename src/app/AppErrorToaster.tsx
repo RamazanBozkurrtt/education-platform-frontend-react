@@ -48,11 +48,11 @@ const AppErrorToaster = () => {
   }
 
   return (
-    <div className="pointer-events-none fixed right-4 top-4 z-[120] flex w-full max-w-sm flex-col gap-3">
+    <div aria-live="polite" className="pointer-events-none fixed right-4 top-4 z-[120] flex w-full max-w-sm flex-col gap-3">
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className="rounded-2xl border border-rose-400/35 bg-slate-950/95 px-4 py-3 text-sm text-rose-100 shadow-[0_20px_40px_rgba(2,6,23,0.45)]"
+          className="rounded-[var(--radius-buttons)] border border-[color:var(--danger)] bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)] shadow-[var(--shadow-sm)]"
           role="status"
         >
           {toast.message}

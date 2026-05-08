@@ -20,7 +20,7 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 const getPreferredTheme = (): ThemeMode => {
   const storedTheme = localStorage.getItem(THEME_STORAGE_KEY)
 
-  if (storedTheme === 'light' || storedTheme === 'dark') {
+  if (storedTheme === 'light') {
     return storedTheme
   }
 

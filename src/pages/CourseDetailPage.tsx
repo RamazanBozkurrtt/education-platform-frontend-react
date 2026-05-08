@@ -108,26 +108,26 @@ const CourseDetailPage = () => {
 
   const copy = language === 'tr'
     ? {
-      detailsTitle: 'Kurs detayları',
-      detailsDescription: 'Kurs ozeti, dersler ve degerlendirmeler.',
+      detailsTitle: 'Kurs detaylar\u0131',
+      detailsDescription: 'Kurs \u00f6zeti, dersler ve de\u011ferlendirmeler.',
       lessonsTitle: 'Dersler',
-      lessonsDescription: 'Bu kurs icin ders listesi.',
+      lessonsDescription: 'Bu kurs i\u00e7in ders listesi.',
       tags: 'Etiketler',
       ratingLabel: 'Puan',
       statusTitle: 'Kurs durumu',
-      statusDescription: 'Erisim ve satin alma islemleri.',
-      purchased: 'Kursa erisimin var',
-      notPurchased: 'Henuz satin alinmadi',
-      reviewTitle: 'Değerlendirmeler',
+      statusDescription: 'Eri\u015fim ve sat\u0131n alma i\u015flemleri.',
+      purchased: 'Kursa eri\u015fimin var',
+      notPurchased: 'Hen\u00fcz sat\u0131n al\u0131nmad\u0131',
+      reviewTitle: 'De\u011ferlendirmeler',
       reviewCount: 'degerlendirme',
-      yourReview: 'Bu kurs icin degerlendirmen',
-      deleteReview: 'Degerlendirmeyi sil',
-      reviewLoginRequired: 'Degerlendirme yapmak icin giris yapmalisin.',
+      yourReview: 'Bu kurs i\u00e7in de\u011ferlendirmen',
+      deleteReview: 'De\u011ferlendirmeyi sil',
+      reviewLoginRequired: 'Devam etmek i\u00e7in giri\u015f yapmal\u0131s\u0131n.',
       noTag: 'Etiket yok.',
-      noOutcome: 'Bu kurs icin ogrenim kazanimi eklenmemis.',
-      noLessons: 'Bu kurs için henüz ders eklenmemiş.',
-      instructorTitle: 'Egitmen',
-      progressTitle: 'Ilerleme',
+      noOutcome: 'Bu kurs i\u00e7in \u00f6\u011frenim kazan\u0131m\u0131 eklenmemi\u015f.',
+      noLessons: 'Bu kurs i\u00e7in hen\u00fcz ders eklenmedi.',
+      instructorTitle: 'E\u011fitmen',
+      progressTitle: '\u0130lerleme',
     }
     : {
       detailsTitle: 'Course details',
@@ -601,3 +601,4 @@ const CourseDetailPage = () => {
 }
 
 export default CourseDetailPage
+

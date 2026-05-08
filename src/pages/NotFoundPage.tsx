@@ -13,9 +13,9 @@ const NotFoundPage = () => {
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <Card className="max-w-xl text-center">
-        <p className="text-sm uppercase tracking-[0.24em] text-cyan-200">{t('notFound.code')}</p>
-        <h1 className="mt-4 text-4xl font-semibold text-white">{t('notFound.title')}</h1>
-        <p className="mt-4 text-sm leading-7 text-slate-400">{t('notFound.description')}</p>
+        <p className="text-sm uppercase tracking-[0.24em] text-[color:var(--primary)]">{t('notFound.code')}</p>
+        <h1 className="theme-heading mt-4 text-4xl font-semibold">{t('notFound.title')}</h1>
+        <p className="theme-muted mt-4 text-sm leading-7">{t('notFound.description')}</p>
         <Link className="mt-8 inline-flex" to={returnRoute}>
           <Button asChild>{t(isAuthenticated ? 'notFound.backToDashboard' : 'notFound.backToHome')}</Button>
         </Link>

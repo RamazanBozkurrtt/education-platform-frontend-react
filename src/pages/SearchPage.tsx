@@ -66,6 +66,7 @@ const SearchPage = () => {
             <p className="theme-heading text-sm font-semibold">{t('searchPage.categories')}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
+                aria-pressed={!category}
                 className={`rounded-[var(--radius-badges)] border px-3 py-1.5 text-sm transition ${
                   category
                     ? 'border-[color:var(--border)] bg-[color:var(--surface-strong)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
@@ -78,6 +79,7 @@ const SearchPage = () => {
               </button>
               {data.filters.categories.map((item) => (
                 <button
+                  aria-pressed={category === item}
                   key={item}
                   className={`rounded-[var(--radius-badges)] border px-3 py-1.5 text-sm transition ${
                     category === item
@@ -97,6 +99,7 @@ const SearchPage = () => {
             <p className="theme-heading text-sm font-semibold">{t('searchPage.levels')}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
+                aria-pressed={!level}
                 className={`rounded-[var(--radius-badges)] border px-3 py-1.5 text-sm transition ${
                   level
                     ? 'border-[color:var(--border)] bg-[color:var(--surface-strong)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
@@ -109,6 +112,7 @@ const SearchPage = () => {
               </button>
               {data.filters.levels.map((item) => (
                 <button
+                  aria-pressed={level === item}
                   key={item}
                   className={`rounded-[var(--radius-badges)] border px-3 py-1.5 text-sm transition ${
                     level === item
@@ -151,11 +155,15 @@ const SearchPage = () => {
             </div>
           ) : (
             <Card>
-              <h3 className="theme-heading text-xl font-semibold">{hasFilters ? 'Sonuc bulunamadi' : 'Arama yap'}</h3>
+              <h3 className="theme-heading text-xl font-semibold">
+                {hasFilters
+                  ? language === 'tr' ? 'Sonu\u00e7 bulunamad\u0131' : 'No results found'
+                  : language === 'tr' ? 'Arama yap' : 'Start searching'}
+              </h3>
               <p className="theme-muted mt-2 text-sm">
                 {hasFilters
-                  ? 'Arama filtresini degistirip yeniden dene.'
-                  : 'Kurslari bulmak icin arama ifadesi veya filtre kullan.'}
+                  ? language === 'tr' ? 'Filtrelerini g\u00fcncelleyip yeniden dene.' : 'Adjust your filters and try again.'
+                  : language === 'tr' ? 'Kurs bulmak i\u00e7in arama veya filtre kullan.' : 'Use search or filters to find courses.'}
               </p>
             </Card>
           )}

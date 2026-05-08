@@ -1,4 +1,4 @@
-﻿import { ArrowRight, BookOpenCheck, CirclePlay, GraduationCap, LayoutGrid, TrendingUp } from 'lucide-react'
+import { ArrowRight, BookOpenCheck, CirclePlay, GraduationCap, LayoutGrid, TrendingUp } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
@@ -42,32 +42,32 @@ const MyCoursesPage = () => {
           <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[color:var(--primary)] text-white">
             <BookOpenCheck className="h-5 w-5" />
           </div>
-          <p className="mt-3 text-sm text-slate-400">{t('myCourses.stats.purchased')}</p>
-          <p className="mt-1 text-2xl font-semibold text-white">{purchasedCourses.length}</p>
+          <p className="theme-muted mt-3 text-sm">{t('myCourses.stats.purchased')}</p>
+          <p className="theme-heading mt-1 text-2xl font-semibold">{purchasedCourses.length}</p>
         </Card>
 
         <Card>
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-cyan-400/10 text-cyan-200">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[color:var(--surface-sky-haze)] text-[color:var(--primary)]">
             <GraduationCap className="h-5 w-5" />
           </div>
-          <p className="mt-3 text-sm text-slate-400">{t('myCourses.stats.lessons')}</p>
-          <p className="mt-1 text-2xl font-semibold text-white">{totalLessons}</p>
+          <p className="theme-muted mt-3 text-sm">{t('myCourses.stats.lessons')}</p>
+          <p className="theme-heading mt-1 text-2xl font-semibold">{totalLessons}</p>
         </Card>
 
         <Card>
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-emerald-400/10 text-emerald-200">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[color:var(--surface-muted-mandarin)] text-[color:var(--text-heading)]">
             <TrendingUp className="h-5 w-5" />
           </div>
-          <p className="mt-3 text-sm text-slate-400">{t('myCourses.stats.progress')}</p>
-          <p className="mt-1 text-2xl font-semibold text-white">%{averageProgress}</p>
+          <p className="theme-muted mt-3 text-sm">{t('myCourses.stats.progress')}</p>
+          <p className="theme-heading mt-1 text-2xl font-semibold">%{averageProgress}</p>
         </Card>
 
         <Card>
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-amber-400/10 text-amber-200">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-[color:var(--surface-soft-peach)] text-[color:var(--text-heading)]">
             <LayoutGrid className="h-5 w-5" />
           </div>
-          <p className="mt-3 text-sm text-slate-400">{t('myCourses.stats.categories')}</p>
-          <p className="mt-1 text-2xl font-semibold text-white">{categoryCount}</p>
+          <p className="theme-muted mt-3 text-sm">{t('myCourses.stats.categories')}</p>
+          <p className="theme-heading mt-1 text-2xl font-semibold">{categoryCount}</p>
         </Card>
       </section>
 
@@ -76,16 +76,16 @@ const MyCoursesPage = () => {
           {purchasedCourses.map((course) => (
             <Card key={course.id}>
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full border border-white/10 bg-[color:var(--surface-muted)] px-3 py-1 text-xs font-medium text-slate-300">
+                <span className="theme-muted rounded-full border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs font-medium">
                   {course.category}
                 </span>
-                <span className="rounded-full border border-white/10 bg-[color:var(--surface-muted)] px-3 py-1 text-xs text-slate-300">
+                <span className="theme-muted rounded-full border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs">
                   {course.level}
                 </span>
               </div>
 
-              <h2 className="mt-4 text-xl font-semibold text-white">{course.title}</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-400">{course.summary}</p>
+              <h2 className="theme-heading mt-4 text-xl font-semibold">{course.title}</h2>
+              <p className="theme-muted mt-2 text-sm leading-6">{course.summary}</p>
 
               <MetaRow
                 className="mt-4"
@@ -98,10 +98,10 @@ const MyCoursesPage = () => {
 
               <div className="mt-4">
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="text-slate-400">{t('myCourses.courseCard.resumeLabel')}</span>
-                  <span className="font-medium text-slate-200">{t('dashboard.progressComplete', { progress: course.progress })}</span>
+                  <span className="theme-muted">{t('myCourses.courseCard.resumeLabel')}</span>
+                  <span className="theme-heading font-medium">{t('dashboard.progressComplete', { progress: course.progress })}</span>
                 </div>
-                <div className="mt-2 h-2 rounded-full bg-slate-200/15">
+                <div className="mt-2 h-2 rounded-full bg-[color:var(--surface-muted)]">
                   <div
                     className="h-2 rounded-full bg-[color:var(--primary)]"
                     style={{ width: `${course.progress}%` }}
@@ -109,7 +109,7 @@ const MyCoursesPage = () => {
                 </div>
               </div>
 
-              <div className="mt-4 border-t border-white/8 pt-4">
+              <div className="mt-4 border-t border-[color:var(--border)] pt-4">
                 <TagList hideWhenEmpty label="Etiketler" tags={course.tags.slice(0, 3)} />
               </div>
 
@@ -132,11 +132,11 @@ const MyCoursesPage = () => {
         </section>
       ) : (
         <Card className="px-6 py-10 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-cyan-400/10 text-cyan-200">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-[color:var(--surface-sky-haze)] text-[color:var(--primary)]">
             <BookOpenCheck className="h-6 w-6" />
           </div>
-          <h2 className="mt-4 text-xl font-semibold text-white">{t('myCourses.emptyTitle')}</h2>
-          <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+          <h2 className="theme-heading mt-4 text-xl font-semibold">{t('myCourses.emptyTitle')}</h2>
+          <p className="theme-muted mx-auto mt-2 max-w-2xl text-sm leading-6">
             {t('myCourses.emptyDescription')}
           </p>
           <Link className="mt-5 inline-flex" to={ROUTES.courses}>

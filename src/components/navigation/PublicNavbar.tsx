@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, ChevronDown, House, Languages, Layers3, Menu, X } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import LanguageSwitcher from '../ui/LanguageSwitcher'
-import ThemeToggle from '../ui/ThemeToggle'
 import { useLanguage } from '../../hooks/useLanguage'
 import { APP_NAME, ROUTES } from '../../utils/constants'
 import { buildCatalogPath } from '../../utils/catalogFilters'
@@ -37,18 +36,18 @@ const PublicNavbar = ({
       home: 'Ana sayfa',
       courses: 'Kurslar',
       categories: 'Kategoriler',
-      allCourses: 'Tüm kurslar',
-      allCoursesDescription: 'Arama ve filtrelerle kataloğu incele',
-      featuredCourses: 'Öne çıkan kurslar',
-      featuredCoursesDescription: 'En çok incelenen eğitimler',
-      categoryDescription: 'Bu kategoriye ait kursları gör',
-      menu: 'Menü',
+      allCourses: 'T\u00fcm kurslar',
+      allCoursesDescription: 'Arama ve filtrelerle katalo\u011fu incele',
+      featuredCourses: '\u00d6ne \u00e7\u0131kan kurslar',
+      featuredCoursesDescription: 'En \u00e7ok incelenen e\u011fitimler',
+      categoryDescription: 'Bu kategoriye ait kurslar\u0131 g\u00f6r',
+      menu: 'Men\u00fc',
       close: 'Kapat',
-      platformLabel: 'Online eğitim',
-      mobileCoursesLabel: 'Kurs menüsü',
-      mobileCategoriesLabel: 'Kategori menüsü',
-      signIn: 'Giriş yap',
-      register: 'Hesap oluştur',
+      platformLabel: 'Online e\u011fitim',
+      mobileCoursesLabel: 'Kurs men\u00fcs\u00fc',
+      mobileCategoriesLabel: 'Kategori men\u00fcs\u00fc',
+      signIn: 'Giri\u015f yap',
+      register: 'Hesap olu\u015ftur',
     }
     : {
       home: 'Home',
@@ -196,7 +195,6 @@ const PublicNavbar = ({
             <Languages className="h-4 w-4 text-[color:var(--primary)]" />
             <LanguageSwitcher compact />
           </div>
-          <ThemeToggle compact />
           <Link to={ROUTES.login}>
             <span className="public-outline-button h-10 px-4 text-sm font-semibold">{copy.signIn}</span>
           </Link>
@@ -282,7 +280,6 @@ const PublicNavbar = ({
             <div className="flex flex-col gap-3 border-t border-[color:var(--border)] pt-3">
               <LanguageSwitcher compact />
               <div className="flex items-center gap-2">
-                <ThemeToggle compact />
                 <Link className="flex-1" to={ROUTES.login}>
                   <span className="public-outline-button h-10 w-full px-4 text-sm font-semibold">{copy.signIn}</span>
                 </Link>
@@ -299,3 +296,4 @@ const PublicNavbar = ({
 }
 
 export default PublicNavbar
+
