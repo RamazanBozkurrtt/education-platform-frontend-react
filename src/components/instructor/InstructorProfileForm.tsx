@@ -258,11 +258,11 @@ const InstructorProfileForm = ({
       />
 
       <label className="flex w-full flex-col gap-2" htmlFor="instructor-biography">
-        <span className="theme-text text-sm font-medium">{copy.biography}</span>
-        <span className="flex rounded-2xl border border-white/10 bg-[color:var(--surface-muted)] px-4 py-3 transition focus-within:border-cyan-300/40 focus-within:ring-2 focus-within:ring-cyan-300/20">
+        <span className="theme-heading text-sm font-semibold">{copy.biography}</span>
+        <span className="flex rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
           <textarea
             aria-invalid={Boolean(errors.biography)}
-            className="theme-text theme-placeholder min-h-[120px] w-full resize-none bg-transparent text-sm leading-6 outline-none placeholder:text-slate-500"
+            className="theme-text theme-placeholder min-h-[120px] w-full resize-none bg-transparent text-sm leading-6 outline-none"
             id="instructor-biography"
             onChange={(event) => setForm((current) => ({ ...current, biography: event.target.value }))}
             placeholder={copy.biographyPlaceholder}
@@ -344,13 +344,13 @@ const InstructorProfileForm = ({
       </Button>
 
       {formError ? (
-        <div className="rounded-md border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+        <div className="rounded-[var(--radius-buttons)] border border-[color:var(--danger)] bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
           {formError}
         </div>
       ) : null}
 
       {successMessage ? (
-        <div className="rounded-md border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
+        <div className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] px-4 py-3 text-sm theme-text">
           {successMessage}
         </div>
       ) : null}

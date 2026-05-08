@@ -38,10 +38,10 @@ const CartPage = () => {
 
       <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
         <Card>
-          <div className="flex items-center justify-between gap-4 border-b border-white/8 pb-4">
+          <div className="flex items-center justify-between gap-4 border-b border-[color:var(--border)] pb-4">
             <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-500">{t('cart.selectedCourses')}</p>
-              <h2 className="mt-2 text-2xl font-semibold text-white">
+              <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{t('cart.selectedCourses')}</p>
+              <h2 className="theme-heading mt-2 text-2xl font-semibold">
                 {t('cart.courseCount', { count: itemCount })}
               </h2>
             </div>
@@ -49,11 +49,11 @@ const CartPage = () => {
 
           {items.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-300">
+              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[color:var(--surface-sky-haze)] text-[color:var(--primary)]">
                 <ShoppingCart className="h-7 w-7" />
               </div>
-              <h3 className="text-xl font-semibold text-white">{t('cart.emptyTitle')}</h3>
-              <p className="mt-3 max-w-md text-sm leading-7 text-slate-400">{t('cart.emptyDescription')}</p>
+              <h3 className="theme-heading text-xl font-semibold">{t('cart.emptyTitle')}</h3>
+              <p className="theme-muted mt-3 max-w-md text-sm leading-7">{t('cart.emptyDescription')}</p>
               <Link className="mt-6 inline-flex" to={ROUTES.courses}>
                 <Button asChild>{t('cart.browseCourses')}</Button>
               </Link>
@@ -61,23 +61,22 @@ const CartPage = () => {
           ) : (
             <div className="mt-6 space-y-4">
               {items.map((item) => (
-                <div key={item.courseId} className="rounded-2xl border border-white/8 bg-white/4 p-4">
+                <div key={item.courseId} className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
-                      <div className={`mb-4 h-1.5 w-20 rounded-full bg-gradient-to-r ${item.course.accent}`} />
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-300">
+                        <span className="theme-muted rounded-full border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs font-semibold">
                           {item.course.category}
                         </span>
-                        <span className="text-xs text-slate-500">{item.course.level}</span>
+                        <span className="theme-subtle text-xs">{item.course.level}</span>
                       </div>
-                      <h3 className="mt-4 text-xl font-semibold text-white">{item.course.title}</h3>
-                      <p className="mt-2 text-sm leading-7 text-slate-400">{item.course.summary}</p>
+                      <h3 className="theme-heading mt-4 text-xl font-semibold">{item.course.title}</h3>
+                      <p className="theme-muted mt-2 text-sm leading-7">{item.course.summary}</p>
                     </div>
                     <div className="flex shrink-0 flex-col items-start gap-3 sm:items-end">
-                      <p className="text-2xl font-semibold text-white">{formatCurrency(item.course.price)}</p>
+                      <p className="theme-heading text-2xl font-semibold">{formatCurrency(item.course.price)}</p>
                       <button
-                        className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/6 hover:text-white"
+                        className="theme-muted inline-flex items-center gap-2 rounded-xl border border-[color:var(--border)] px-3 py-2 text-sm font-medium transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]"
                         onClick={() => removeCourse(item.courseId)}
                         type="button"
                       >
@@ -93,8 +92,8 @@ const CartPage = () => {
         </Card>
 
         <Card className="h-fit">
-          <p className="text-xs uppercase tracking-[0.22em] text-cyan-100">{t('cart.orderSummary')}</p>
-          <div className="mt-6 space-y-4 text-sm text-slate-300">
+          <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{t('cart.orderSummary')}</p>
+          <div className="theme-muted mt-6 space-y-4 text-sm">
             <div className="flex items-center justify-between">
               <span>{t('cart.itemsLabel')}</span>
               <span>{itemCount}</span>
@@ -107,13 +106,13 @@ const CartPage = () => {
               <span>{t('payment.estimatedTax')}</span>
               <span>{formatCurrency(tax)}</span>
             </div>
-            <div className="flex items-center justify-between border-t border-white/10 pt-4 text-base font-semibold text-white">
+            <div className="theme-heading flex items-center justify-between border-t border-[color:var(--border)] pt-4 text-base font-semibold">
               <span>{t('payment.total')}</span>
               <span>{formatCurrency(total)}</span>
             </div>
           </div>
 
-          <div className="mt-8 rounded-[22px] border border-white/8 bg-white/4 p-4 text-sm leading-7 text-slate-400">
+          <div className="theme-muted mt-8 rounded-[22px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 text-sm leading-7">
             {t('cart.summaryNote')}
           </div>
 

@@ -5,10 +5,8 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import { useAuth } from '../hooks/useAuth'
-import { useTheme } from '../hooks/useTheme'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { getFirstFieldErrorMap } from '../shared/errors/types'
-import { cn } from '../utils/helpers'
 import { userService } from '../services/userService'
 import { ROUTES } from '../utils/constants'
 
@@ -60,22 +58,13 @@ const TextAreaField = ({
   error?: string
   helperText?: string
 }) => {
-  const { theme } = useTheme()
-  const isLight = theme === 'light'
-
   return (
     <label className="flex w-full flex-col gap-2" htmlFor={id}>
-      <span className="theme-text text-sm font-medium">{label}</span>
-      <span
-        className={cn(
-          'flex rounded-2xl border px-4 py-3 transition focus-within:border-cyan-300/40 focus-within:ring-2 focus-within:ring-cyan-300/20',
-          isLight ? 'border-slate-200/90 bg-slate-100/75' : 'theme-surface-strong border-white/10',
-          error && 'border-rose-400/45 focus-within:border-rose-400/55 focus-within:ring-rose-400/20',
-        )}
-      >
+      <span className="theme-heading text-sm font-semibold">{label}</span>
+      <span className="flex rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
         <textarea
           aria-invalid={Boolean(error)}
-          className="theme-text theme-placeholder min-h-[104px] w-full resize-none bg-transparent text-sm leading-6 outline-none placeholder:text-slate-500"
+          className="theme-text theme-placeholder min-h-[104px] w-full resize-none bg-transparent text-sm leading-6 outline-none"
           id={id}
           onChange={(event) => onChange(event.target.value)}
           placeholder={placeholder}
@@ -83,7 +72,7 @@ const TextAreaField = ({
         />
       </span>
       {error ? (
-        <span className="text-xs text-rose-300">{error}</span>
+        <span className="text-xs text-[color:var(--danger)]">{error}</span>
       ) : helperText ? (
         <span className="theme-subtle text-xs">{helperText}</span>
       ) : null}
@@ -113,7 +102,6 @@ const CompleteProfilePage = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, completeProfile, logout } = useAuth()
-  const { theme } = useTheme()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
   const [lastName, setLastName] = useState(user?.lastName ?? '')
@@ -129,7 +117,6 @@ const CompleteProfilePage = () => {
   const [submitting, setSubmitting] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [cancelling, setCancelling] = useState(false)
-  const isLight = theme === 'light'
   const showRegistrationSuccess = Boolean((location.state as CompleteProfileLocationState | null)?.fromRegistration)
 
   useEffect(() => {
@@ -296,18 +283,13 @@ const CompleteProfilePage = () => {
   return (
     <div className="mx-auto flex w-full max-w-[640px] flex-col">
       {showRegistrationSuccess ? (
-        <div
-          className={cn(
-            'mb-4 rounded-2xl border px-4 py-3 text-sm font-semibold',
-            isLight ? 'border-emerald-500/45 bg-emerald-500/20 text-emerald-900' : 'border-emerald-300/45 bg-emerald-500/20 text-emerald-100',
-          )}
-        >
-          {'Kay\u0131t Olu\u015fturuldu!'}
+        <div className="mb-4 rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] px-4 py-3 text-sm font-semibold theme-text">
+          Kayit olusturuldu!
           <br />
-          Profilinizi Tamamlayabilirsiniz
+          Profilini tamamlayabilirsin.
         </div>
       ) : null}
-      <div className="flex flex-col gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-4 border-b border-[color:var(--border)] pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">{t('profileSetup.eyebrow')}</p>
           <h2 className="theme-heading mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{t('profileSetup.title')}</h2>
@@ -361,14 +343,8 @@ const CompleteProfilePage = () => {
         />
 
         <label className="flex flex-col gap-2">
-          <span className="theme-text text-sm font-medium">{t('profileSetup.avatar')}</span>
-          <div
-            className={cn(
-              'flex min-h-[104px] flex-col justify-between rounded-2xl border p-3',
-              isLight ? 'border-slate-200/90 bg-slate-100/75' : 'theme-surface-strong border-white/10',
-              errors.avatar && 'border-rose-400/45',
-            )}
-          >
+          <span className="theme-heading text-sm font-semibold">{t('profileSetup.avatar')}</span>
+          <div className="flex min-h-[104px] flex-col justify-between rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3">
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-[color:var(--primary)] text-sm font-semibold text-white">
                 {avatarUrl ? (
@@ -411,7 +387,7 @@ const CompleteProfilePage = () => {
               ) : null}
             </div>
           </div>
-          {errors.avatar ? <span className="text-xs text-rose-300">{errors.avatar}</span> : null}
+          {errors.avatar ? <span className="text-xs text-[color:var(--danger)]">{errors.avatar}</span> : null}
         </label>
 
         <TextAreaField
@@ -424,7 +400,7 @@ const CompleteProfilePage = () => {
           value={biography}
         />
 
-        <div className={cn('space-y-4 rounded-[24px] border p-4', isLight ? 'border-slate-200/90 bg-white/65' : 'border-white/10 bg-white/[0.03]')}>
+        <div className="space-y-4 rounded-[24px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
           <div>
             <p className="theme-heading text-sm font-semibold">{t('profileSetup.socialLinks')}</p>
             <p className="theme-muted mt-1 text-xs leading-5">{t('profileSetup.socialLinksDescription')}</p>
@@ -468,7 +444,7 @@ const CompleteProfilePage = () => {
           {submitting ? t('profileSetup.saving') : t('profileSetup.save')}
         </Button>
         {formError ? (
-          <div className="rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+          <div className="rounded-2xl border border-[color:var(--danger)] bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
             {formError}
           </div>
         ) : null}

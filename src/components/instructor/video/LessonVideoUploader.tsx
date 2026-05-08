@@ -22,10 +22,10 @@ const LessonVideoUploader = ({
   return (
     <div className="space-y-3">
       <label className="flex w-full flex-col gap-2" htmlFor={inputId}>
-        <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">Video dosyasi</span>
+        <span className="theme-heading text-xs font-semibold uppercase tracking-[0.14em]">Video dosyasi (MP4)</span>
         <input
           accept="video/mp4,.mp4"
-          className="h-11 rounded-lg border border-white/10 bg-[color:var(--surface-muted)] px-3 text-sm text-slate-200"
+          className="theme-text h-11 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
           disabled={isUploading}
           id={inputId}
           onChange={(event) => onFileSelect(event.target.files?.[0] ?? null)}
@@ -33,9 +33,11 @@ const LessonVideoUploader = ({
         />
       </label>
 
+      <p className="theme-subtle text-xs">Yalnizca MP4 dosyalari yuklenebilir.</p>
+
       {selectedFile ? (
-        <p className="text-xs text-slate-300">
-          Secilen dosya: <span className="font-medium text-slate-100">{selectedFile.name}</span>
+        <p className="theme-muted text-xs">
+          Secilen dosya: <span className="theme-heading font-medium">{selectedFile.name}</span>
         </p>
       ) : null}
 
@@ -45,7 +47,7 @@ const LessonVideoUploader = ({
         size="sm"
         variant="secondary"
       >
-        {hasVideo ? 'Videoyu degistir' : 'Video yukle'}
+        {hasVideo ? 'Videoyu guncelle' : 'Video yukle'}
       </Button>
     </div>
   )

@@ -13,12 +13,12 @@ const InstructorCtaCard = ({ isInstructor }: InstructorCtaCardProps) => {
   const { language } = useLanguage()
   const copy = language === 'tr'
     ? {
-      studentTitle: 'Eğitmen olmak ister misin?',
-      studentDescription: 'Profilini tamamladıktan sonra kurs oluşturabilir ve ders videolarını yükleyebilirsin.',
-      studentButton: 'Eğitmen başvurusu',
+      studentTitle: 'Egitmen olmak ister misin?',
+      studentDescription: 'Profilini tamamlayip egitmen basvurunu gonderebilirsin.',
+      studentButton: 'Egitmen ol',
       instructorTitle: 'Eğitmen paneli',
-      instructorDescription: 'Kurslarını yönetmek ve yeni ders eklemek için panele geç.',
-      instructorButton: 'Panele git',
+      instructorDescription: 'Kurslarini, derslerini ve videolarini bu panelden yonetebilirsin.',
+      instructorButton: 'Egitmen paneline git',
     }
     : {
       studentTitle: 'Want to teach on EduBase?',
@@ -38,12 +38,12 @@ const InstructorCtaCard = ({ isInstructor }: InstructorCtaCardProps) => {
     <Card>
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md border border-white/10 bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft-peach)] text-[color:var(--primary)]">
             {isInstructor ? <PlusCircle className="h-5 w-5" /> : <GraduationCap className="h-5 w-5" />}
           </div>
           <div>
-            <h3 className="text-lg font-semibold text-white">{title}</h3>
-            <p className="mt-1 text-sm leading-6 text-slate-400">{description}</p>
+            <h3 className="theme-heading text-lg font-semibold">{title}</h3>
+            <p className="theme-muted mt-1 text-sm leading-6">{description}</p>
           </div>
         </div>
 

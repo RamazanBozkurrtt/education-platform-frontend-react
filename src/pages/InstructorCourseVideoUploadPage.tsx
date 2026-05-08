@@ -409,7 +409,7 @@ const InstructorCourseVideoUploadPage = () => {
   if (!courseId) {
     return (
       <Card>
-        <p className="text-sm text-rose-300">Geçerli bir kurs kimliği bulunamadı.</p>
+        <p className="text-sm text-[color:var(--danger)]">Gecerli bir kurs kimligi bulunamadi.</p>
       </Card>
     )
   }
@@ -417,8 +417,8 @@ const InstructorCourseVideoUploadPage = () => {
   if (courseId.includes('{') || courseId.includes('}')) {
     return (
       <Card>
-        <p className="text-sm text-rose-300">
-          URL hatalı görünüyor. `{`'{id}'`}` yerine gerçek courseId kullanılmalı.
+        <p className="text-sm text-[color:var(--danger)]">
+          URL hatali gorunuyor. `{`'{id}'`}` yerine gercek courseId kullanilmali.
         </p>
       </Card>
     )
@@ -435,18 +435,18 @@ const InstructorCourseVideoUploadPage = () => {
   return (
     <div className="space-y-6">
       <PageHeader
-        description="Ders videolarını buradan yükleyebilir, değiştirebilir ve silebilirsiniz."
-        eyebrow="Eğitmen video yönetimi"
-        title={`${courseDetail.title} · Video yönetimi`}
+        description="Dersleri ekle, videolari yukle veya gerekirse sil."
+        eyebrow="Ders ve video yonetimi"
+        title={`${courseDetail.title} · Ders yonetimi`}
       />
 
       <Card>
         <SectionHeader
-          description="Kurs durumunu ve yayınlama adımını buradan yönetebilirsin."
+          description="Yayin adimini tamamlamadan once derslerini ve videolarini kontrol et."
           title="Kurs durumu"
         />
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-slate-300">Toplam ders: {courseDetail.lessons.length}</p>
+          <p className="theme-muted text-sm">Toplam ders: {courseDetail.lessons.length}</p>
           <Button
             disabled={publishingCourse}
             onClick={() => void handlePublishCourse()}
@@ -458,22 +458,22 @@ const InstructorCourseVideoUploadPage = () => {
       </Card>
 
       <Card>
-        <SectionHeader title="Ders ekle" />
+        <SectionHeader description="Baslik, sira ve aciklama bilgileriyle yeni ders olustur." title="Ders ekle" />
         <div className="mt-4 space-y-3">
           <div className="grid gap-3 md:grid-cols-3">
             <label className="flex flex-col gap-1 md:col-span-2">
-              <span className="text-xs text-slate-400">Ders başlığı</span>
+              <span className="theme-subtle text-xs">Ders basligi</span>
               <input
-                className="h-10 rounded-md border border-white/10 bg-[color:var(--surface-muted)] px-3 text-sm text-slate-100"
+                className="theme-text h-10 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
                 onChange={(event) => setNewLessonTitle(event.target.value)}
-                placeholder="Örnek: React giriş dersi"
+                placeholder="Ornek: React giris dersi"
                 value={newLessonTitle}
               />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs text-slate-400">Sıra</span>
+              <span className="theme-subtle text-xs">Sira</span>
               <input
-                className="h-10 rounded-md border border-white/10 bg-[color:var(--surface-muted)] px-3 text-sm text-slate-100"
+                className="theme-text h-10 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
                 min={1}
                 onChange={(event) => setNewLessonOrderIndex(event.target.value)}
                 type="number"
@@ -482,11 +482,11 @@ const InstructorCourseVideoUploadPage = () => {
             </label>
           </div>
           <label className="flex flex-col gap-1">
-            <span className="text-xs text-slate-400">Ders açıklaması (opsiyonel)</span>
+            <span className="theme-subtle text-xs">Ders aciklamasi (opsiyonel)</span>
             <textarea
-              className="min-h-[84px] rounded-md border border-white/10 bg-[color:var(--surface-muted)] px-3 py-2 text-sm text-slate-100"
+              className="theme-text theme-placeholder min-h-[84px] rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-2 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
               onChange={(event) => setNewLessonDescription(event.target.value)}
-              placeholder="Dersin içeriğini kısa şekilde yazabilirsin."
+              placeholder="Dersin icerigini kisa sekilde yazabilirsin."
               value={newLessonDescription}
             />
           </label>
@@ -505,14 +505,14 @@ const InstructorCourseVideoUploadPage = () => {
 
       {message ? (
         <div className={message.type === 'success'
-          ? 'rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-4 py-3'
-          : 'rounded-lg border border-rose-400/30 bg-rose-500/10 px-4 py-3'}
+          ? 'rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] px-4 py-3'
+          : 'rounded-lg border border-[color:var(--danger)] bg-[color:var(--surface-soft-peach)] px-4 py-3'}
         >
-          <p className={message.type === 'success' ? 'text-sm text-emerald-200' : 'text-sm text-rose-200'}>
+          <p className={message.type === 'success' ? 'theme-text text-sm' : 'text-sm text-[color:var(--danger)]'}>
             {message.text}
           </p>
           {message.details && message.details.length > 0 ? (
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-rose-200">
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-[color:var(--danger)]">
               {message.details.map((detail) => (
                 <li key={detail}>{detail}</li>
               ))}
@@ -524,7 +524,7 @@ const InstructorCourseVideoUploadPage = () => {
       <div className="space-y-4">
         {courseDetail.lessons.length === 0 ? (
           <Card>
-            <p className="text-sm text-slate-300">Bu kurs için henüz ders bulunmuyor.</p>
+            <p className="theme-muted text-sm">Bu kurs icin henuz ders eklenmemis.</p>
           </Card>
         ) : courseDetail.lessons.map((lesson) => {
           const hasVideo = Boolean(lesson.videoUrl)
@@ -541,12 +541,12 @@ const InstructorCourseVideoUploadPage = () => {
               <div className="space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase tracking-[0.16em] text-slate-500">
+                    <p className="theme-subtle text-xs uppercase tracking-[0.16em]">
                       Ders #{lesson.orderIndex}
                     </p>
-                    <h3 className="mt-1 text-lg font-semibold text-white">{lesson.title}</h3>
+                    <h3 className="theme-heading mt-1 text-lg font-semibold">{lesson.title}</h3>
                     {lesson.description ? (
-                      <p className="mt-2 text-sm text-slate-300">{lesson.description}</p>
+                      <p className="theme-muted mt-2 text-sm">{lesson.description}</p>
                     ) : null}
                   </div>
                   <InfoBadge tone={hasVideo ? 'success' : 'warning'}>

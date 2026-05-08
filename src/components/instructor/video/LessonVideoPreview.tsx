@@ -18,7 +18,7 @@ const LessonVideoPreview = ({
   onToggle,
 }: LessonVideoPreviewProps) => {
   if (!hasVideo) {
-    return <p className="text-sm text-slate-400">Bu ders icin henuz video yuklenmemis.</p>
+    return <p className="theme-muted text-sm">Bu ders icin henuz video yuklenmemis.</p>
   }
 
   return (
@@ -28,12 +28,12 @@ const LessonVideoPreview = ({
       </Button>
 
       {isOpen ? (
-        <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/70 p-3">
+        <div className="overflow-hidden rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--color-forest-canopy)] p-3">
           {isLoading ? (
-            <p className="text-sm text-cyan-200">Onizleme yukleniyor...</p>
+            <p className="text-sm text-white">Onizleme yukleniyor...</p>
           ) : null}
           {errorMessage ? (
-            <p className="text-sm text-rose-300">{errorMessage}</p>
+            <p className="text-sm text-[color:var(--surface-muted-mandarin)]">{errorMessage}</p>
           ) : null}
           {videoSrc && !isLoading ? (
             <video className="aspect-video w-full rounded-md bg-black" controls preload="metadata" src={videoSrc} />

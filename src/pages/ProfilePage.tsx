@@ -369,8 +369,8 @@ const ProfilePage = () => {
 
   const renderPasswordCard = () => (
     <Card>
-      <p className="text-sm font-semibold text-white">{t('profile.password.title')}</p>
-      <p className="mt-1 text-xs text-slate-400">{t('profile.password.description')}</p>
+      <p className="theme-heading text-sm font-semibold">{t('profile.password.title')}</p>
+      <p className="theme-muted mt-1 text-xs">{t('profile.password.description')}</p>
 
       {!isPasswordFormVisible ? (
         <Button
@@ -429,7 +429,7 @@ const ProfilePage = () => {
           />
 
           {passwordFeedback ? (
-            <p className={`text-sm ${passwordFeedback.tone === 'success' ? 'text-emerald-300' : 'text-rose-300'}`}>
+            <p className={`text-sm ${passwordFeedback.tone === 'success' ? 'theme-text' : 'text-[color:var(--danger)]'}`}>
               {passwordFeedback.message}
             </p>
           ) : null}
@@ -468,7 +468,7 @@ const ProfilePage = () => {
 
       <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card>
-          <div className="flex flex-col gap-6 border-b border-white/8 pb-6 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-6 border-b border-[color:var(--border)] pb-6 sm:flex-row sm:items-center">
             <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-[color:var(--primary)] text-2xl font-semibold text-white">
               {displayAvatarUrl ? (
                 <img alt={fullName} className="h-full w-full rounded-[28px] object-cover" src={displayAvatarUrl} />
@@ -477,16 +477,16 @@ const ProfilePage = () => {
               )}
             </div>
             <div>
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-500">{t('profile.account')}</p>
-              <h2 className="mt-2 text-3xl font-semibold text-white">{fullName}</h2>
-              {user.headline ? <p className="mt-2 text-base text-slate-400">{user.headline}</p> : null}
+              <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{t('profile.account')}</p>
+              <h2 className="theme-heading mt-2 text-3xl font-semibold">{fullName}</h2>
+              {user.headline ? <p className="theme-muted mt-2 text-base">{user.headline}</p> : null}
             </div>
           </div>
 
           <div className="mt-6">
-            <div className="rounded-[18px] border border-white/8 bg-[color:var(--surface-muted)] p-4">
-              <p className="text-xs uppercase tracking-[0.22em] text-slate-500">{t('profile.email')}</p>
-              <div className="mt-3 flex items-center gap-2 text-slate-200">
+            <div className="rounded-[18px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+              <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{t('profile.email')}</p>
+              <div className="theme-text mt-3 flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 <span>{user.email}</span>
               </div>
@@ -513,8 +513,8 @@ const ProfilePage = () => {
         {isEditing ? (
           <div className="space-y-6">
             <Card>
-              <p className="text-sm font-semibold text-white">{t('profile.editDetails')}</p>
-              <p className="mt-1 text-xs text-slate-400">{t('profile.editDescription')}</p>
+              <p className="theme-heading text-sm font-semibold">{t('profile.editDetails')}</p>
+              <p className="theme-muted mt-1 text-xs">{t('profile.editDescription')}</p>
 
               <form className="mt-4 space-y-4" onSubmit={handleSaveProfile}>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -549,8 +549,8 @@ const ProfilePage = () => {
                 />
 
                 <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-slate-200">{t('profileSetup.avatar')}</span>
-                  <div className="flex min-h-[104px] flex-col justify-between rounded-2xl border border-white/10 bg-[color:var(--surface-muted)] p-3">
+                  <span className="theme-heading text-sm font-semibold">{t('profileSetup.avatar')}</span>
+                  <div className="flex min-h-[104px] flex-col justify-between rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3">
                     <div className="flex items-center gap-3">
                       <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-[color:var(--primary)] text-sm font-semibold text-white">
                         {avatarUrl ? (
@@ -560,10 +560,10 @@ const ProfilePage = () => {
                         )}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-slate-200">
+                        <p className="theme-heading truncate text-sm font-medium">
                           {avatarFileName || (avatarUrl ? t('profileSetup.avatarReady') : t('profileSetup.avatarOptional'))}
                         </p>
-                        <p className="mt-1 text-xs text-slate-400">{t('profileSetup.avatarHelper')}</p>
+                        <p className="theme-muted mt-1 text-xs">{t('profileSetup.avatarHelper')}</p>
                       </div>
                     </div>
 
@@ -594,16 +594,16 @@ const ProfilePage = () => {
                     </div>
                   </div>
                   {errors.avatar ? (
-                    <span className="text-xs text-rose-300">{errors.avatar}</span>
+                    <span className="text-xs text-[color:var(--danger)]">{errors.avatar}</span>
                   ) : null}
                 </label>
 
                 <label className="flex w-full flex-col gap-2" htmlFor="profile-biography">
-                  <span className="text-sm font-medium text-slate-200">{t('profileSetup.biography')}</span>
-                  <span className="flex rounded-2xl border border-white/10 bg-[color:var(--surface-muted)] px-4 py-3 transition focus-within:border-cyan-300/40 focus-within:ring-2 focus-within:ring-cyan-300/20">
+                  <span className="theme-heading text-sm font-semibold">{t('profileSetup.biography')}</span>
+                  <span className="flex rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
                     <textarea
                       aria-invalid={Boolean(errors.biography)}
-                      className="w-full resize-none bg-transparent text-sm leading-6 text-slate-200 outline-none placeholder:text-slate-500"
+                      className="theme-text theme-placeholder w-full resize-none bg-transparent text-sm leading-6 outline-none"
                       id="profile-biography"
                       onChange={(event) => setBiography(event.target.value)}
                       placeholder={t('profileSetup.biographyPlaceholder')}
@@ -612,18 +612,18 @@ const ProfilePage = () => {
                     />
                   </span>
                   {errors.biography ? (
-                    <span className="text-xs text-rose-300">{errors.biography}</span>
+                    <span className="text-xs text-[color:var(--danger)]">{errors.biography}</span>
                   ) : (
-                    <span className="text-xs text-slate-500">
+                    <span className="theme-subtle text-xs">
                       {t('profileSetup.biographyHelper', { count: biography.trim().length, max: 250 })}
                     </span>
                   )}
                 </label>
 
-                <div className="space-y-4 rounded-[24px] border border-white/10 bg-white/[0.03] p-4">
+                <div className="space-y-4 rounded-[24px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
                   <div>
-                    <p className="text-sm font-semibold text-white">{t('profileSetup.socialLinks')}</p>
-                    <p className="mt-1 text-xs text-slate-400">{t('profileSetup.socialLinksDescription')}</p>
+                    <p className="theme-heading text-sm font-semibold">{t('profileSetup.socialLinks')}</p>
+                    <p className="theme-muted mt-1 text-xs">{t('profileSetup.socialLinksDescription')}</p>
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <Input
@@ -660,7 +660,7 @@ const ProfilePage = () => {
                 </div>
 
                 {feedback ? (
-                  <p className={`text-sm ${feedback.tone === 'success' ? 'text-emerald-300' : 'text-rose-300'}`}>{feedback.message}</p>
+                  <p className={`text-sm ${feedback.tone === 'success' ? 'theme-text' : 'text-[color:var(--danger)]'}`}>{feedback.message}</p>
                 ) : null}
 
                 <Button className="w-full" disabled={isSaving || isLoggingOut || isChangingPassword || uploadingAvatar} type="submit">
@@ -674,18 +674,18 @@ const ProfilePage = () => {
         ) : (
           <div className="space-y-6">
             <Card>
-              <p className="text-sm font-semibold text-white">{t('profile.about')}</p>
-              <p className="mt-4 text-sm leading-7 text-slate-400">{user.biography || '-'}</p>
+              <p className="theme-heading text-sm font-semibold">{t('profile.about')}</p>
+              <p className="theme-muted mt-4 text-sm leading-7">{user.biography || '-'}</p>
             </Card>
 
             <Card>
-              <p className="text-sm font-semibold text-white">{t('profile.socialLinks')}</p>
+              <p className="theme-heading text-sm font-semibold">{t('profile.socialLinks')}</p>
               <div className="mt-4 space-y-3">
                 {socialEntries.length > 0 ? (
                   socialEntries.map(([label, url]) => (
                     <a
                       key={label}
-                      className="flex items-center gap-3 rounded-[18px] border border-white/8 bg-[color:var(--surface-muted)] px-4 py-3 text-sm text-slate-300 transition hover:border-white/14"
+                      className="theme-muted flex items-center gap-3 rounded-[18px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm transition hover:border-[color:var(--border-strong)]"
                       href={url}
                       rel="noreferrer"
                       target="_blank"
@@ -694,11 +694,11 @@ const ProfilePage = () => {
                         {getSocialIcon(label)}
                         {label}
                       </span>
-                      <span className="min-w-0 flex-1 truncate text-right text-slate-500">{url}</span>
+                      <span className="theme-subtle min-w-0 flex-1 truncate text-right">{url}</span>
                     </a>
                   ))
                 ) : (
-                  <div className="rounded-[18px] border border-white/8 bg-[color:var(--surface-muted)] px-4 py-3 text-sm text-slate-400">
+                  <div className="theme-muted rounded-[18px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm">
                     -
                   </div>
                 )}
@@ -707,7 +707,7 @@ const ProfilePage = () => {
 
             {feedback ? (
               <Card>
-                <p className={`text-sm ${feedback.tone === 'success' ? 'text-emerald-300' : 'text-rose-300'}`}>{feedback.message}</p>
+                <p className={`text-sm ${feedback.tone === 'success' ? 'theme-text' : 'text-[color:var(--danger)]'}`}>{feedback.message}</p>
               </Card>
             ) : null}
 

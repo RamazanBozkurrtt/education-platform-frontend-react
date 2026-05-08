@@ -198,8 +198,8 @@ const PaymentPage = () => {
                     key={option.id}
                     className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-medium transition ${
                       method === option.id
-                        ? 'border-cyan-300/28 bg-cyan-400/12 text-cyan-100'
-                        : 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-white'
+                        ? 'border-[color:var(--border-strong)] bg-[color:var(--surface-sky-haze)] theme-heading'
+                        : 'border-[color:var(--border)] bg-[color:var(--surface-strong)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
                     }`}
                     onClick={() => handleMethodChange(option.id as PaymentMethod)}
                     type="button"
@@ -275,12 +275,12 @@ const PaymentPage = () => {
                     />
                   </div>
 
-                  <div className="mt-8 rounded-[28px] border border-emerald-300/16 bg-emerald-400/8 p-5">
+                  <div className="mt-8 rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] p-5">
                     <div className="flex items-center gap-3">
-                      <ShieldCheck className="h-5 w-5 text-emerald-200" />
-                      <p className="text-sm font-semibold text-white">{t('payment.securityTitle')}</p>
+                      <ShieldCheck className="h-5 w-5 text-[color:var(--primary)]" />
+                      <p className="theme-heading text-sm font-semibold">{t('payment.securityTitle')}</p>
                     </div>
-                    <p className="mt-3 text-sm leading-7 text-slate-300">
+                    <p className="theme-muted mt-3 text-sm leading-7">
                       {t('payment.securityDescription')}
                     </p>
                   </div>
@@ -340,12 +340,12 @@ const PaymentPage = () => {
                     </div>
                   </div>
 
-                  <div className="mt-8 rounded-[28px] border border-amber-300/16 bg-amber-400/8 p-5">
+                  <div className="mt-8 rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface-muted-mandarin)] p-5">
                     <div className="flex items-center gap-3">
-                      <Landmark className="h-5 w-5 text-amber-200" />
-                      <p className="text-sm font-semibold text-white">{t('payment.invoiceNoticeTitle')}</p>
+                      <Landmark className="h-5 w-5 text-[color:var(--primary)]" />
+                      <p className="theme-heading text-sm font-semibold">{t('payment.invoiceNoticeTitle')}</p>
                     </div>
-                    <p className="mt-3 text-sm leading-7 text-slate-300">
+                    <p className="theme-muted mt-3 text-sm leading-7">
                       {t('payment.invoiceNoticeDescription')}
                     </p>
                   </div>
@@ -353,7 +353,7 @@ const PaymentPage = () => {
               )}
 
               {paymentError ? (
-                <p className="mt-6 rounded-2xl border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+                <p className="mt-6 rounded-2xl border border-[color:var(--danger)] bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
                   {paymentError}
                 </p>
               ) : null}
@@ -364,11 +364,11 @@ const PaymentPage = () => {
             </>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-500/10 text-sky-300">
+              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[color:var(--surface-sky-haze)] text-[color:var(--primary)]">
                 <ShoppingCart className="h-7 w-7" />
               </div>
-              <h2 className="text-2xl font-semibold text-white">{t('payment.emptyTitle')}</h2>
-              <p className="mt-3 max-w-md text-sm leading-7 text-slate-400">{t('payment.emptyDescription')}</p>
+              <h2 className="theme-heading text-2xl font-semibold">{t('payment.emptyTitle')}</h2>
+              <p className="theme-muted mt-3 max-w-md text-sm leading-7">{t('payment.emptyDescription')}</p>
               <Link className="mt-6 inline-flex" to={ROUTES.courses}>
                 <Button asChild>{t('payment.browseCourses')}</Button>
               </Link>
@@ -377,10 +377,10 @@ const PaymentPage = () => {
         </Card>
 
         <div className="space-y-6">
-          <Card className="border-cyan-300/16 bg-cyan-400/8">
-            <p className="text-xs uppercase tracking-[0.22em] text-cyan-100">{t('payment.orderSummary')}</p>
-            <h2 className="mt-3 text-2xl font-semibold text-white">{t('cart.courseCount', { count: itemCount })}</h2>
-            <div className="mt-6 space-y-4 text-sm text-slate-300">
+          <Card className="border-[color:var(--border)] bg-[color:var(--surface-soft)]">
+            <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{t('payment.orderSummary')}</p>
+            <h2 className="theme-heading mt-3 text-2xl font-semibold">{t('cart.courseCount', { count: itemCount })}</h2>
+            <div className="theme-muted mt-6 space-y-4 text-sm">
               <div className="flex items-center justify-between">
                 <span>{t('cart.itemsLabel')}</span>
                 <span>{itemCount}</span>
@@ -393,22 +393,22 @@ const PaymentPage = () => {
                 <span>{t('payment.estimatedTax')}</span>
                 <span>{formatCurrency(tax)}</span>
               </div>
-              <div className="flex items-center justify-between border-t border-white/10 pt-4 text-base font-semibold text-white">
+              <div className="theme-heading flex items-center justify-between border-t border-[color:var(--border)] pt-4 text-base font-semibold">
                 <span>{t('payment.total')}</span>
                 <span>{formatCurrency(total)}</span>
               </div>
             </div>
 
-            <div className="mt-6 rounded-[22px] border border-white/8 bg-white/4 p-4 text-sm leading-7 text-slate-300">
+            <div className="theme-muted mt-6 rounded-[22px] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4 text-sm leading-7">
               {t('payment.orderNote')}
             </div>
           </Card>
 
           <Card>
             <div className="flex items-center justify-between gap-4">
-              <p className="text-sm font-semibold text-white">{t('payment.selectedCourses')}</p>
+              <p className="theme-heading text-sm font-semibold">{t('payment.selectedCourses')}</p>
               {hasItems ? (
-                <Link className="text-sm font-medium text-cyan-200 transition hover:text-cyan-100" to={ROUTES.cart}>
+                <Link className="theme-muted text-sm font-medium transition hover:text-[color:var(--text-heading)]" to={ROUTES.cart}>
                   {t('payment.backToCart')}
                 </Link>
               ) : null}
@@ -417,26 +417,25 @@ const PaymentPage = () => {
             {hasItems ? (
               <div className="mt-4 space-y-3">
                 {items.map((item) => (
-                  <div key={item.courseId} className="rounded-2xl border border-white/8 bg-white/4 p-4">
-                    <div className={`mb-4 h-1.5 w-20 rounded-full bg-gradient-to-r ${item.course.accent}`} />
+                  <div key={item.courseId} className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-300">
+                          <span className="theme-muted rounded-full border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs font-semibold">
                             {item.course.category}
                           </span>
-                          <span className="text-xs text-slate-500">{item.course.level}</span>
+                          <span className="theme-subtle text-xs">{item.course.level}</span>
                         </div>
-                        <h3 className="mt-4 text-base font-semibold text-white">{item.course.title}</h3>
-                        <p className="mt-2 text-sm leading-6 text-slate-400">{item.course.summary}</p>
+                        <h3 className="theme-heading mt-4 text-base font-semibold">{item.course.title}</h3>
+                        <p className="theme-muted mt-2 text-sm leading-6">{item.course.summary}</p>
                       </div>
-                      <p className="shrink-0 text-lg font-semibold text-white">{formatCurrency(item.course.price)}</p>
+                      <p className="theme-heading shrink-0 text-lg font-semibold">{formatCurrency(item.course.price)}</p>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="mt-4 rounded-2xl border border-dashed border-white/10 bg-white/3 px-4 py-6 text-sm text-slate-400">
+              <div className="theme-muted mt-4 rounded-2xl border border-dashed border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-6 text-sm">
                 {t('payment.emptyDescription')}
               </div>
             )}
@@ -453,15 +452,15 @@ const PaymentPage = () => {
         title={method === 'card' ? t('payment.successTitle') : t('payment.invoiceSuccessTitle')}
       >
         <div className="space-y-4">
-          <div className="rounded-[28px] border border-white/8 bg-white/4 p-5 text-sm leading-7 text-slate-300">
+          <div className="theme-muted rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-5 text-sm leading-7">
             {method === 'card' ? t('payment.successBody') : t('payment.invoiceSuccessBody')}
           </div>
           {recentlyPurchasedItems.length > 0 ? (
-            <div className="rounded-[24px] border border-emerald-300/16 bg-emerald-400/8 p-4">
-              <p className="text-xs uppercase tracking-[0.22em] text-emerald-100">
+            <div className="rounded-[24px] border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] p-4">
+              <p className="theme-subtle text-xs uppercase tracking-[0.22em]">
                 {t('payment.unlockedCourses', { count: recentlyPurchasedItems.length })}
               </p>
-              <p className="mt-3 text-sm leading-7 text-slate-200">
+              <p className="theme-text mt-3 text-sm leading-7">
                 {recentlyPurchasedItems.map((item) => item.course.title).join(', ')}
               </p>
             </div>

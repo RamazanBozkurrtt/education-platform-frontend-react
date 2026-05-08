@@ -32,13 +32,13 @@ const InstructorCourseCreatePage = () => {
   const [submitting, setSubmitting] = useState(false)
   const copy = language === 'tr'
     ? {
-      eyebrow: 'Kurs olusturma',
+      eyebrow: 'Egitmen kurs yonetimi',
       title: 'Yeni kurs olustur',
-      description: 'Kurs bilgilerini kaydettikten sonra ders ve video ekleme adimina gecebilirsin.',
+      description: 'Temel kurs bilgilerini kaydet, sonra ders ve video adimina gec.',
       titleLabel: 'Kurs basligi',
       descriptionLabel: 'Kurs aciklamasi',
       priceLabel: 'Fiyat',
-      categoryLabel: 'Kategori ID (opsiyonel)',
+      categoryLabel: 'Kategori (opsiyonel)',
       outcomesLabel: 'Ogrenim ciktisi',
       outcomesHelper: 'Tam olarak 4 ogrenim ciktisi girmen gerekiyor.',
       outcomePlaceholder: (index: number) => `Ogrenim ciktisi ${index + 1}`,
@@ -203,16 +203,16 @@ const InstructorCourseCreatePage = () => {
 
           <label className="flex w-full flex-col gap-2" htmlFor="course-description">
             <span className="theme-text text-sm font-medium">{copy.descriptionLabel}</span>
-            <span className="flex rounded-2xl border border-white/10 bg-[color:var(--surface-muted)] px-4 py-3 transition focus-within:border-cyan-300/40 focus-within:ring-2 focus-within:ring-cyan-300/20">
+            <span className="flex rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
               <textarea
                 aria-invalid={Boolean(errors.description)}
-                className="theme-text theme-placeholder min-h-[120px] w-full resize-none bg-transparent text-sm leading-6 outline-none placeholder:text-slate-500"
+                className="theme-text theme-placeholder min-h-[120px] w-full resize-none bg-transparent text-sm leading-6 outline-none"
                 id="course-description"
                 onChange={(event) => setDescription(event.target.value)}
                 value={description}
               />
             </span>
-            {errors.description ? <span className="text-xs text-rose-300">{errors.description}</span> : null}
+            {errors.description ? <span className="text-xs text-[color:var(--danger)]">{errors.description}</span> : null}
           </label>
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -248,7 +248,7 @@ const InstructorCourseCreatePage = () => {
               ))}
             </div>
             <span className="theme-subtle text-xs">{copy.outcomesHelper}</span>
-            {errors.learningOutcomes ? <span className="text-xs text-rose-300">{errors.learningOutcomes}</span> : null}
+            {errors.learningOutcomes ? <span className="text-xs text-[color:var(--danger)]">{errors.learningOutcomes}</span> : null}
           </div>
 
           <div className="space-y-3">
@@ -284,7 +284,7 @@ const InstructorCourseCreatePage = () => {
                 {copy.addTag}
               </Button>
             </div>
-            {errors.tags ? <span className="text-xs text-rose-300">{errors.tags}</span> : null}
+            {errors.tags ? <span className="text-xs text-[color:var(--danger)]">{errors.tags}</span> : null}
           </div>
 
           <Button className="w-full" disabled={submitting} type="submit">
@@ -292,7 +292,7 @@ const InstructorCourseCreatePage = () => {
           </Button>
 
           {formError ? (
-            <div className="rounded-md border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+            <div className="rounded-[var(--radius-buttons)] border border-[color:var(--danger)] bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
               {formError}
             </div>
           ) : null}

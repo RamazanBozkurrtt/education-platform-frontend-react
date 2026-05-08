@@ -18,17 +18,18 @@ const InstructorDashboardPage = () => {
   const copy = language === 'tr'
     ? {
       eyebrow: 'Eğitmen paneli',
-      title: 'Kurslarını yönet',
-      description: 'Kurs ekleme, ders video yükleme ve profil güncelleme işlemlerini bu sayfadan yönetebilirsin.',
-      myCourses: 'Kursların',
+      title: 'Kurslarini yonet',
+      description: 'Kurs olusturma, ders/video yonetimi ve profil guncelleme adimlarini buradan yonetebilirsin.',
+      myCourses: 'Kurslarim',
       newCourse: 'Yeni kurs',
       profile: 'Profil',
       totalCourses: 'Toplam kurs',
       publishedCourses: 'Yayındaki kurs',
       totalLessons: 'Toplam ders',
       totalStudents: 'Öğrenci',
-      noCourse: 'Henüz kurs oluşturmadın.',
-      goToCourseCreate: 'İlk kursu oluştur',
+      noCourse: 'Henuz kurs olusturmadin.',
+      noCourseHint: 'Ilk kursunu olusturarak egitmen panelini kullanmaya baslayabilirsin.',
+      goToCourseCreate: 'Ilk kursunu olustur',
       addVideo: 'Video yükle',
     }
     : {
@@ -111,8 +112,8 @@ const InstructorDashboardPage = () => {
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.label}>
-            <p className="text-sm text-slate-400">{stat.label}</p>
-            <p className="mt-1 text-2xl font-semibold text-white">{stat.value}</p>
+            <p className="theme-muted text-sm">{stat.label}</p>
+            <p className="theme-heading mt-1 text-2xl font-semibold">{stat.value}</p>
           </Card>
         ))}
       </section>
@@ -121,8 +122,9 @@ const InstructorDashboardPage = () => {
         <SectionHeader title={copy.myCourses} />
 
         {courses.length === 0 ? (
-          <div className="mt-4 rounded-lg border border-white/10 bg-[color:var(--surface-muted)] p-4">
-            <p className="text-sm text-slate-300">{copy.noCourse}</p>
+          <div className="mt-4 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+            <p className="theme-heading text-sm font-semibold">{copy.noCourse}</p>
+            <p className="theme-muted mt-2 text-sm">{copy.noCourseHint}</p>
             <Link className="mt-3 inline-flex" to={ROUTES.instructorNewCourse}>
               <Button asChild>{copy.goToCourseCreate}</Button>
             </Link>
@@ -130,10 +132,10 @@ const InstructorDashboardPage = () => {
         ) : (
           <div className="mt-4 space-y-3">
             {courses.slice(0, 6).map((course) => (
-              <div key={course.id} className="rounded-lg border border-white/8 bg-[color:var(--surface-muted)] px-4 py-4">
+              <div key={course.id} className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="font-medium text-white">{course.title}</p>
+                    <p className="theme-heading font-medium">{course.title}</p>
                     <div className="mt-1 flex items-center gap-2">
                       <InfoBadge>{course.category}</InfoBadge>
                       <InfoBadge>{course.level}</InfoBadge>
@@ -155,9 +157,9 @@ const InstructorDashboardPage = () => {
       <Card>
         <div className="flex items-center gap-3">
           <BookOpen className="h-5 w-5 text-[color:var(--primary)]" />
-          <p className="text-sm text-slate-300">
+          <p className="theme-muted text-sm">
             {language === 'tr'
-              ? 'Video yüklemek için kurs seçip ilgili kursun yönetim ekranına geç.'
+              ? 'Ders/video yonetimi icin kurs secip ilgili kurs ekranina gec.'
               : 'Choose a course and open its management page to upload videos.'}
           </p>
         </div>

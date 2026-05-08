@@ -1,6 +1,6 @@
-﻿import { useEffect, useState } from 'react'
+﻿import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, CirclePlay, Rocket, Sparkles, Target } from 'lucide-react'
+import { ArrowRight, CirclePlay, GraduationCap, LayoutDashboard, UserRoundCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import InstructorCtaCard from '../components/instructor/InstructorCtaCard'
@@ -11,7 +11,6 @@ import Card from '../components/ui/Card'
 import InfoBadge from '../components/ui/InfoBadge'
 import Loader from '../components/ui/Loader'
 import MetaRow from '../components/ui/MetaRow'
-import Modal from '../components/ui/Modal'
 import QueryErrorState from '../components/ui/QueryErrorState'
 import SectionHeader from '../components/ui/SectionHeader'
 import TagList from '../components/ui/TagList'
@@ -25,7 +24,6 @@ const DashboardPage = () => {
   const { t } = useTranslation()
   const { language } = useLanguage()
   const { isAuthenticated, isBootstrapping, user, claims } = useAuth()
-  const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false)
   const isCurrentUserInstructor = isInstructor(user, claims)
   const audience = (isCurrentUserInstructor || isAdmin(user, claims)) ? 'instructor' : 'student'
 
@@ -50,23 +48,46 @@ const DashboardPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-[var(--section-gap)]">
       <PageHeader
         actions={
           <>
-            <Button onClick={() => setIsGoalsModalOpen(true)} variant="secondary">
-              <Target className="h-4 w-4" />
-              {t('dashboard.quarterlyGoals')}
-            </Button>
             <Link to={ROUTES.courses}>
               <Button asChild>
-                {t('common.exploreCatalog')}
+                {language === 'tr' ? 'Kurslari goruntule' : 'View courses'}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
+
+            {user && !user.profileCompleted ? (
+              <Link to={ROUTES.completeProfile}>
+                <Button asChild variant="secondary">
+                  <UserRoundCheck className="h-4 w-4" />
+                  {language === 'tr' ? 'Profilini tamamla' : 'Complete profile'}
+                </Button>
+              </Link>
+            ) : null}
+
+            {isCurrentUserInstructor ? (
+              <Link to={ROUTES.instructorDashboard}>
+                <Button asChild variant="secondary">
+                  <LayoutDashboard className="h-4 w-4" />
+                  {language === 'tr' ? 'Egitmen paneline git' : 'Go to instructor panel'}
+                </Button>
+              </Link>
+            ) : (
+              <Link to={ROUTES.becomeInstructor}>
+                <Button asChild variant="secondary">
+                  <GraduationCap className="h-4 w-4" />
+                  {language === 'tr' ? 'Egitmen ol' : 'Become instructor'}
+                </Button>
+              </Link>
+            )}
           </>
         }
-        description={t('dashboard.description')}
+        description={language === 'tr'
+          ? 'Kurslarini, ilerlemeni ve sonraki adimlarini tek ekranda yonet.'
+          : 'Manage your courses, progress, and next actions from one screen.'}
         eyebrow={t('dashboard.eyebrow')}
         title={t('dashboard.title')}
       />
@@ -92,32 +113,32 @@ const DashboardPage = () => {
               { key: 'progress', label: t('dashboard.progress'), value: `${data.focusCourse.progress}%` },
               { key: 'lessons', label: t('courseDetail.lessons'), value: String(data.focusCourse.lessons) },
               { key: 'duration', label: t('courseDetail.duration'), value: data.focusCourse.duration },
-              { key: 'category', label: 'Kategori', value: data.focusCourse.category },
+              { key: 'category', label: language === 'tr' ? 'Kategori' : 'Category', value: data.focusCourse.category },
             ]}
           />
 
-          <div className="mt-4 border-t border-white/8 pt-4">
-            <TagList hideWhenEmpty label="Etiketler" tags={data.focusCourse.tags} />
+          <div className="mt-4 border-t border-[color:var(--border)] pt-4">
+            <TagList hideWhenEmpty label={language === 'tr' ? 'Etiketler' : 'Tags'} tags={data.focusCourse.tags} />
           </div>
 
           <div className="mt-5 space-y-3">
             {data.focusCourse.modules.map((module, index) => (
               <div
                 key={module.id}
-                className="flex items-center justify-between gap-4 rounded-lg border border-white/8 bg-[color:var(--surface-muted)] px-4 py-4"
+                className="flex items-center justify-between gap-4 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4"
               >
                 <div className="flex items-center gap-4">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[color:var(--surface-strong)] text-xs font-semibold text-slate-100">
+                  <div className="theme-heading flex h-9 w-9 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-xs font-semibold">
                     {String(index + 1).padStart(2, '0')}
                   </div>
                   <div>
-                    <p className="font-medium text-white">{module.title}</p>
-                    <p className="mt-1 text-xs text-slate-400">
+                    <p className="theme-heading font-medium">{module.title}</p>
+                    <p className="theme-muted mt-1 text-xs">
                       {module.type} · {module.duration}
                     </p>
                   </div>
                 </div>
-                <CirclePlay className="h-5 w-5 text-slate-500" />
+                <CirclePlay className="theme-subtle h-5 w-5" />
               </div>
             ))}
           </div>
@@ -128,71 +149,40 @@ const DashboardPage = () => {
             <SectionHeader title={t('dashboard.upcomingMilestones')} />
             <div className="mt-4 space-y-3">
               {data.upcomingMilestones.map((milestone) => (
-                <div key={milestone.id} className="rounded-lg border border-white/8 bg-[color:var(--surface-muted)] p-4">
+                <div key={milestone.id} className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-slate-100">{milestone.label}</p>
+                    <p className="theme-heading text-sm font-medium">{milestone.label}</p>
                     <InfoBadge>{milestone.status}</InfoBadge>
                   </div>
-                  <p className="mt-2 text-xs text-slate-400">{milestone.due}</p>
+                  <p className="theme-muted mt-2 text-xs">{milestone.due}</p>
                 </div>
               ))}
             </div>
           </Card>
 
           <Card>
-            <div className="flex items-center gap-3">
-              <Rocket className="h-5 w-5 text-[color:var(--primary)]" />
-              <div>
-                <h3 className="text-base font-semibold text-white">{t('dashboard.recentActivity')}</h3>
-                <p className="text-sm text-slate-400">{t('dashboard.recentActivityDescription')}</p>
-              </div>
-            </div>
+            <SectionHeader
+              description={t('dashboard.recentActivityDescription')}
+              title={t('dashboard.recentActivity')}
+            />
             <div className="mt-4 space-y-3">
               {data.recentActivity.map((activity) => (
-                <div key={activity.id} className="rounded-lg border border-white/8 bg-[color:var(--surface-muted)] p-4">
+                <div key={activity.id} className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-medium text-slate-100">{activity.title}</p>
+                    <p className="theme-heading text-sm font-medium">{activity.title}</p>
                     <InfoBadge>{activity.tag}</InfoBadge>
                   </div>
-                  <p className="mt-2 text-sm text-slate-400">{activity.description}</p>
-                  <p className="mt-2 text-xs text-slate-500">{activity.time}</p>
+                  <p className="theme-muted mt-2 text-sm">{activity.description}</p>
+                  <p className="theme-subtle mt-2 text-xs">{activity.time}</p>
                 </div>
               ))}
             </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center gap-3">
-              <Sparkles className="h-4 w-4 text-[color:var(--primary)]" />
-              <p className="text-sm font-semibold text-white">{t('dashboard.operationalInsight')}</p>
-            </div>
-            <p className="mt-3 text-sm leading-6 text-slate-300">
-              {t('dashboard.operationalInsightText')}
-            </p>
           </Card>
         </div>
       </section>
-
-      <Modal
-        description={t('dashboard.quarterlyGoalsDescription')}
-        onClose={() => setIsGoalsModalOpen(false)}
-        open={isGoalsModalOpen}
-        title={t('dashboard.quarterlyGoalsTitle')}
-      >
-        <div className="space-y-3">
-          {[
-            t('dashboard.quarterlyGoalOne'),
-            t('dashboard.quarterlyGoalTwo'),
-            t('dashboard.quarterlyGoalThree'),
-          ].map((goal) => (
-            <div key={goal} className="rounded-lg border border-white/8 bg-[color:var(--surface-muted)] px-4 py-3 text-sm text-slate-200">
-              {goal}
-            </div>
-          ))}
-        </div>
-      </Modal>
     </div>
   )
 }
 
 export default DashboardPage
+
