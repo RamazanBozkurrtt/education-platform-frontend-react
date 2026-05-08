@@ -26,4 +26,10 @@ export const ROUTES = {
   payment: '/payment',
   search: '/search',
   profile: '/profile',
+  becomeInstructor: '/dashboard/become-instructor',
+  instructorDashboard: '/instructor',
+  instructorProfile: '/instructor/profile',
+  instructorNewCourse: '/instructor/courses/new',
+  instructorNewCourseVideo: (courseId = ':courseId') => `/instructor/courses/${courseId}/videos/new`,
+  unauthorized: '/unauthorized',
 } as const

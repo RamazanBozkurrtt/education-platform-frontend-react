@@ -27,14 +27,29 @@ export const API_ENDPOINTS = {
       update: (courseId: string, lessonId: string) => `/api/v1/courses/${courseId}/lessons/${lessonId}`,
       remove: (courseId: string, lessonId: string) => `/api/v1/courses/${courseId}/lessons/${lessonId}`,
       video: (courseId: string, lessonId: string) => `/api/v1/courses/${courseId}/lessons/${lessonId}/video`,
+      playbackUrl: (courseId: string, lessonId: string) => `/api/v1/courses/${courseId}/lessons/${lessonId}/video/playback-url`,
     },
   },
   enrollments: {
     create: '/api/v1/enrollments',
     me: '/api/v1/enrollments/me',
+    byId: (enrollmentId: number | string) => `/api/v1/enrollments/${enrollmentId}`,
+    byCourse: (courseId: string) => `/api/v1/enrollments/by-course/${courseId}`,
   },
   users: {
     me: '/api/v1/users/me',
     avatar: '/api/v1/users/me/avatar',
+  },
+  instructor: {
+    me: '/api/v1/instructors/me',
+    apply: '/api/v1/instructors/me/apply',
+    updateMe: '/api/v1/instructors/me',
+  },
+  reviews: {
+    base: '/api/v1/reviews',
+    byCourse: (courseId: string) => `/api/v1/reviews/courses/${courseId}`,
+    byCourseSummary: (courseId: string) => `/api/v1/reviews/courses/${courseId}/summary`,
+    myReviews: '/api/v1/reviews/me',
+    byId: (reviewId: string) => `/api/v1/reviews/${reviewId}`,
   },
 } as const

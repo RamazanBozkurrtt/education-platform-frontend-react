@@ -45,11 +45,12 @@ const apiClient = axios.create(defaultConfig)
 let refreshPromise: Promise<string> | null = null
 let refreshPromiseToken: string | null = null
 
-const persistRefreshedSession = (accessToken: string, refreshToken: string) => {
+const persistRefreshedSession = (accessToken: string, refreshToken: string, fallbackUserId?: unknown) => {
   const nextSession = buildSessionSnapshot({
     accessToken,
     refreshToken,
     existingUser: getStoredUser(),
+    fallbackUserId,
   })
 
   setSession(nextSession)
@@ -105,6 +106,9 @@ const shouldAttachAuthorizationHeader = (config: InternalAxiosRequestConfig) => 
   return true
 }
 
+const isFormDataPayload = (value: unknown): value is FormData =>
+  typeof FormData !== 'undefined' && value instanceof FormData
+
 const requestHasAuthorizationHeader = (config: RetryableRequestConfig) => {
   const headers = AxiosHeaders.from(config.headers)
   const authorization = headers.get('Authorization')
@@ -159,7 +163,11 @@ const refreshSession = async () => {
           throw createSessionExpiredError(response.data.message || 'Refresh token response is missing tokens.')
         }
 
-        const persistedAccessToken = persistRefreshedSession(nextAccessToken, nextRefreshToken)
+        const persistedAccessToken = persistRefreshedSession(
+          nextAccessToken,
+          nextRefreshToken,
+          data?.user_id ?? data?.userId,
+        )
         authFlowLog('refresh session success:', {
           accessTokenLength: persistedAccessToken.length,
           refreshTokenLength: nextRefreshToken.length,
@@ -204,6 +212,13 @@ apiClient.interceptors.request.use((config) => {
   } else if (!shouldAttachAuthorizationHeader(config)) {
     const headers = AxiosHeaders.from(config.headers)
     headers.delete('Authorization')
+    config.headers = headers
+  }
+
+  // Let the browser set multipart boundary automatically for FormData payloads.
+  if (isFormDataPayload(config.data)) {
+    const headers = AxiosHeaders.from(config.headers)
+    headers.delete('Content-Type')
     config.headers = headers
   }
 

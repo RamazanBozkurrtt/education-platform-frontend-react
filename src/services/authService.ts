@@ -88,6 +88,7 @@ const normalizeAuthResponse = ({
       accessToken,
       refreshToken,
       existingUser: getStoredUser(),
+      fallbackUserId: data.user_id ?? data.userId,
       fallbackEmail: payload.email,
       fallbackName: payload.name,
       profileCompleted,

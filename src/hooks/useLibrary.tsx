@@ -13,7 +13,7 @@ import { useAuth } from './useAuth'
 import { getAccessToken } from '../services/authSession'
 import { courseService } from '../services/courseService'
 import { authFlowLog } from '../shared/authFlowDebug'
-import type { AuthClaims, Course } from '../utils/types'
+import type { Course } from '../utils/types'
 
 interface LibraryContextValue {
   purchasedCourseIds: string[]
@@ -24,37 +24,10 @@ interface LibraryContextValue {
 
 const LibraryContext = createContext<LibraryContextValue | undefined>(undefined)
 
-const resolveLibraryAudience = (claims: AuthClaims | null) => {
-  const candidates = [claims?.roles, claims?.authorities, claims?.scope]
-
-  for (const candidate of candidates) {
-    const values = Array.isArray(candidate)
-      ? candidate
-      : typeof candidate === 'string'
-        ? candidate.split(/\s+/)
-        : []
-
-    for (const value of values) {
-      if (typeof value !== 'string') {
-        continue
-      }
-
-      const normalized = value.trim().toUpperCase().replace(/^ROLE_/, '')
-
-      if (normalized === 'ADMIN' || normalized === 'INSTRUCTOR') {
-        return 'instructor' as const
-      }
-    }
-  }
-
-  return 'student' as const
-}
-
 export const LibraryProvider = ({ children }: { children: ReactNode }) => {
   const { language } = useLanguage()
-  const { isAuthenticated, isBootstrapping, user, claims } = useAuth()
+  const { isAuthenticated, isBootstrapping, user } = useAuth()
   const canLoadPrivateLibrary = isAuthenticated && Boolean(user?.profileCompleted)
-  const audience = resolveLibraryAudience(claims)
   const storageScope = user?.id ? encodeURIComponent(user.id) : 'guest'
   const storageKey = `${LIBRARY_STORAGE_KEY}.${storageScope}`
   const [localPurchasedCourseIds, setLocalPurchasedCourseIds] = useState<string[]>([])
@@ -100,16 +73,17 @@ export const LibraryProvider = ({ children }: { children: ReactNode }) => {
     authFlowLog('course request enabled:', {
       enabled: !isBootstrapping && canLoadPrivateLibrary,
       userId: user?.id ?? null,
-      role: audience,
+      role: 'student',
       tokenExists: Boolean(getAccessToken()),
     })
-  }, [audience, canLoadPrivateLibrary, isBootstrapping, user?.id])
+  }, [canLoadPrivateLibrary, isBootstrapping, user?.id])
 
   const { data: userCourses = [] } = useQuery({
-    queryKey: ['my-courses', user?.id, language, audience],
+    queryKey: ['my-courses', user?.id, language, 'student'],
     queryFn: async () => {
       try {
-        const courses = await courseService.getMyCourses(language, { audience })
+        // Purchased library must always come from student enrollments.
+        const courses = await courseService.getMyCourses(language, { audience: 'student' })
         authFlowLog('course response/error:', { count: courses.length })
         return courses
       } catch (error) {

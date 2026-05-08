@@ -9,6 +9,7 @@ import {
 import { getInitials } from '../utils/helpers'
 import { authFlowTrace } from '../shared/authFlowDebug'
 import type { AuthClaims, AuthSessionSnapshot, User } from '../utils/types'
+import { normalizeRole } from '../utils/roles'
 
 const DEFAULT_ROLE_LABEL_KEY = 'user.roles.learningLead'
 const DEFAULT_AVATAR_COLOR = 'from-cyan-400 to-blue-500'
@@ -16,6 +17,18 @@ const BEARER_PREFIX_REGEX = /^Bearer\s+/i
 
 const pickFirstText = (...values: Array<string | null | undefined>) =>
   values.find((value) => typeof value === 'string' && Boolean(value.trim()))?.trim()
+
+const normalizeIdentifier = (value: unknown) => {
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim()
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(Math.trunc(value))
+  }
+
+  return undefined
+}
 
 const normalizeToken = (value?: string | null) => {
   const trimmed = value?.trim()
@@ -161,12 +174,14 @@ export const parseTokenClaims = (token?: string | null): AuthClaims | null => {
 export const buildUserFromSession = ({
   accessToken,
   existingUser,
+  fallbackUserId,
   fallbackEmail,
   fallbackName,
   profileCompleted,
 }: {
   accessToken?: string | null
   existingUser?: User | null
+  fallbackUserId?: unknown
   fallbackEmail?: string
   fallbackName?: string
   profileCompleted?: boolean
@@ -197,16 +212,21 @@ export const buildUserFromSession = ({
     preferredDisplayName,
     storedUser?.name,
   ) ?? 'User'
-  const roles = getClaimArray(claims, ['roles', 'authorities', 'scope'])
+  const tokenRoles = getClaimArray(claims, ['roles', 'authorities', 'scope']).map(normalizeRole)
+  const roles = tokenRoles.length > 0
+    ? tokenRoles
+    : (storedUser?.roles ?? []).map(normalizeRole)
   const derivedLastName = pickFirstText(lastName, storedUser?.lastName, splitNameByFirstSpace(fullName).lastName)
 
   return {
     id:
+      normalizeIdentifier(fallbackUserId) ??
       getClaimString(claims, ['user_id', 'userId', 'uid', 'sub']) ??
       storedUser?.id ??
       email,
     name: fullName,
     email,
+    roles,
     roleLabelKey: storedUser?.roleLabelKey ?? (roles.length > 0 ? DEFAULT_ROLE_LABEL_KEY : DEFAULT_ROLE_LABEL_KEY),
     avatarColor: storedUser?.avatarColor ?? DEFAULT_AVATAR_COLOR,
     initials: getInitials(fullName || email || 'User'),
@@ -224,6 +244,7 @@ export const buildSessionSnapshot = ({
   accessToken,
   refreshToken,
   existingUser,
+  fallbackUserId,
   fallbackEmail,
   fallbackName,
   profileCompleted,
@@ -231,6 +252,7 @@ export const buildSessionSnapshot = ({
   accessToken: string
   refreshToken: string
   existingUser?: User | null
+  fallbackUserId?: unknown
   fallbackEmail?: string
   fallbackName?: string
   profileCompleted?: boolean
@@ -246,6 +268,7 @@ export const buildSessionSnapshot = ({
     user: buildUserFromSession({
       accessToken: normalizedAccessToken,
       existingUser,
+      fallbackUserId,
       fallbackEmail,
       fallbackName,
       profileCompleted,

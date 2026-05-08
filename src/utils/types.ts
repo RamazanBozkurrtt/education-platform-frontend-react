@@ -6,6 +6,7 @@ export interface User {
   id: string
   name: string
   email: string
+  roles?: string[]
   roleLabelKey: string
   avatarColor: string
   initials: string
@@ -67,6 +68,8 @@ export interface AuthClaims {
 export type AuthTokens = {
   access_token: string
   refresh_token: string
+  user_id?: string | number | null
+  userId?: string | number | null
   reactivation_link?: string | null
 }
 
@@ -198,4 +201,64 @@ export interface SearchResponse {
     levels: string[]
   }
   results: Course[]
+}
+
+export interface InstructorProfilePayload {
+  displayName: string
+  biography: string
+  expertise: string[]
+  websiteUrl?: string
+  linkedinUrl?: string
+  githubUrl?: string
+  profileImageUrl?: string
+}
+
+export interface InstructorProfileResponse extends InstructorProfilePayload {
+  id?: string
+  status?: string
+  userId?: string
+  roles?: string[]
+  access_token?: string | null
+  refresh_token?: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface PagedResponse<T> {
+  content: T[]
+  number: number
+  size: number
+  totalElements: number
+  totalPages: number
+  last: boolean
+}
+
+export interface Review {
+  id: string
+  courseId: string
+  userId: string
+  userDisplayName?: string
+  userProfileImageUrl?: string
+  rating: number
+  comment: string
+  createdAt: string
+  updatedAt: string
+  ownedByCurrentUser?: boolean
+}
+
+export interface ReviewSummary {
+  courseId: string
+  averageRating: number
+  totalReviews: number
+  ratingDistribution: Record<string, number>
+}
+
+export interface CreateReviewRequest {
+  rating: number
+  comment: string
+}
+
+export interface UpdateReviewRequest {
+  rating: number
+  comment: string
 }

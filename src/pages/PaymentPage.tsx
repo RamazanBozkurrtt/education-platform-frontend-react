@@ -98,7 +98,7 @@ const PaymentPage = () => {
   const { t } = useTranslation()
   const { clearCart, courseIds, itemCount, items, subtotal, tax, total } = useCart()
   const { purchaseCourses } = useLibrary()
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated } = useAuth()
   const [method, setMethod] = useState<PaymentMethod>('card')
   const [cardForm, setCardForm] = useState<CardForm>(initialCardForm)
   const [invoiceForm, setInvoiceForm] = useState<InvoiceForm>(initialInvoiceForm)
@@ -154,7 +154,8 @@ const PaymentPage = () => {
       setIsSubmitting(true)
 
       if (isAuthenticated) {
-        await enrollmentService.createEnrollments(courseIds, user?.id)
+        // Backend en guvenilir user bilgisini token claim'inden aliyor.
+        await enrollmentService.createEnrollments(courseIds)
       }
 
       setRecentlyPurchasedItems(items)
