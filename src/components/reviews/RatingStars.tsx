@@ -31,7 +31,7 @@ const RatingStars = ({ value, onChange, readOnly = true, className, size = 'md' 
 
           return (
             <Star
-              className={cn(sizeClassName[size], isActive ? 'fill-amber-300 text-amber-300' : 'text-slate-600')}
+              className={cn(sizeClassName[size], isActive ? 'fill-[#f4b63d] text-[#f4b63d]' : 'text-[color:var(--text-subtle)]')}
               key={starValue}
             />
           )
@@ -54,12 +54,11 @@ const RatingStars = ({ value, onChange, readOnly = true, className, size = 'md' 
 
         return (
           <button
-            aria-label={`${starValue} yıldız`}
+            aria-label={`${starValue} yildiz`}
             aria-checked={starValue === resolvedValue}
-            className="rounded-md p-1 transition hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-cyan-300/30"
+            className="rounded-[var(--radius-navigation)] p-1 transition hover:bg-[color:var(--surface-muted)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
             key={starValue}
             onClick={() => onChange?.(starValue)}
-            onMouseEnter={() => setHoveredValue(starValue)}
             onKeyDown={(event) => {
               if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
                 event.preventDefault()
@@ -71,10 +70,11 @@ const RatingStars = ({ value, onChange, readOnly = true, className, size = 'md' 
                 onChange?.(Math.max(1, resolvedValue - 1))
               }
             }}
+            onMouseEnter={() => setHoveredValue(starValue)}
             role="radio"
             type="button"
           >
-            <Star className={cn(sizeClassName[size], isActive ? 'fill-amber-300 text-amber-300' : 'text-slate-500')} />
+            <Star className={cn(sizeClassName[size], isActive ? 'fill-[#f4b63d] text-[#f4b63d]' : 'text-[color:var(--text-subtle)]')} />
           </button>
         )
       })}

@@ -1,15 +1,24 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { GraduationCap, SlidersHorizontal, Star, UsersRound } from 'lucide-react'
+import { Filter, GraduationCap, Star, UsersRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import CourseCard from '../components/CourseCard'
-import PageHeader from '../components/PageHeader'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Loader from '../components/ui/Loader'
 import QueryErrorState from '../components/ui/QueryErrorState'
 import { useLanguage } from '../hooks/useLanguage'
 import { courseService } from '../services/courseService'
+
+const parseStudentCount = (value: string) => {
+  const normalized = value.trim().toLowerCase()
+
+  if (normalized.endsWith('k')) {
+    return Math.round(Number.parseFloat(normalized) * 1000)
+  }
+
+  return Number.parseInt(normalized.replace(/,/g, ''), 10)
+}
 
 const CourseListPage = () => {
   const { t } = useTranslation()
@@ -18,19 +27,19 @@ const CourseListPage = () => {
 
   const copy = language === 'tr'
     ? {
-      catalogLabel: 'Kurs kataloğu',
-      title: 'Kursları karşılaştır',
-      description: 'Kategorilere göre filtrele, içerikleri karşılaştır ve sana uygun kursu seç.',
+      eyebrow: 'Kursları keşfet',
+      title: 'Kurslar',
+      description: 'Kategoriye gore filtrele ve kurslari karsilastir.',
       programs: 'Kurs',
-      enrolledLearners: 'Katılımcı',
+      enrolledLearners: 'Ogrenci',
       averageRating: 'Ortalama puan',
       filterTitle: 'Kategori',
-      filterDescription: 'Listede görmek istediğin kategoriyi seç.',
+      filterDescription: 'Listede gormek istedigin kategoriyi sec.',
     }
     : {
-      catalogLabel: 'Course catalog',
-      title: 'Compare courses',
-      description: 'Filter by category, compare course details, and pick what fits your goal.',
+      eyebrow: 'Explore courses',
+      title: 'Courses',
+      description: 'Filter by category and compare courses.',
       programs: 'Courses',
       enrolledLearners: 'Learners',
       averageRating: 'Average rating',
@@ -47,6 +56,11 @@ const CourseListPage = () => {
     setActiveCategory('')
   }, [language])
 
+  const categories = useMemo(
+    () => [...new Set((data ?? []).map((course) => course.category))],
+    [data],
+  )
+
   if (error) {
     return <QueryErrorState error={error} />
   }
@@ -55,66 +69,61 @@ const CourseListPage = () => {
     return <Loader label={t('loader.courseCatalog')} />
   }
 
-  const categories = [...new Set(data.map((course) => course.category))]
   const filteredCourses = activeCategory === ''
     ? data
     : data.filter((course) => course.category === activeCategory)
-  const totalStudents = data.reduce((sum, course) => sum + Number.parseFloat(course.students), 0).toFixed(1)
+  const totalStudents = data.reduce((sum, course) => sum + parseStudentCount(course.students), 0)
   const averageRating = (data.reduce((sum, course) => sum + course.rating, 0) / data.length).toFixed(1)
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        actions={
+      <Card>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-2xl">
+            <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{copy.eyebrow}</p>
+            <h1 className="theme-heading mt-2 text-3xl font-semibold tracking-tight">{copy.title}</h1>
+            <p className="theme-muted mt-3 text-sm leading-7">{copy.description}</p>
+          </div>
           <Button variant="secondary">
-            <SlidersHorizontal className="h-4 w-4" />
+            <Filter className="h-4 w-4" />
             {t('common.advancedFilters')}
           </Button>
-        }
-        description={t('courseList.description')}
-        eyebrow={t('courseList.eyebrow')}
-        title={t('courseList.title')}
-      />
+        </div>
 
-      <Card>
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500">{copy.catalogLabel}</p>
-        <h2 className="mt-2 text-2xl font-semibold text-white">{copy.title}</h2>
-        <p className="mt-2 text-sm leading-6 text-slate-400">{copy.description}</p>
-
-        <div className="mt-5 grid gap-3 md:grid-cols-3">
-          <div className="rounded-lg border border-white/8 bg-[color:var(--surface-muted)] p-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-[color:var(--primary)] text-white">
+        <div className="mt-6 grid gap-3 md:grid-cols-3">
+          <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
               <GraduationCap className="h-4 w-4" />
             </div>
-            <p className="mt-3 text-sm text-slate-400">{copy.programs}</p>
-            <p className="mt-1 text-2xl font-semibold text-white">{data.length}</p>
+            <p className="theme-muted mt-3 text-sm">{copy.programs}</p>
+            <p className="theme-heading mt-1 text-2xl font-semibold">{data.length}</p>
           </div>
-          <div className="rounded-lg border border-white/8 bg-[color:var(--surface-muted)] p-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-slate-900 text-white">
+          <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
               <UsersRound className="h-4 w-4" />
             </div>
-            <p className="mt-3 text-sm text-slate-400">{copy.enrolledLearners}</p>
-            <p className="mt-1 text-2xl font-semibold text-white">{totalStudents}k</p>
+            <p className="theme-muted mt-3 text-sm">{copy.enrolledLearners}</p>
+            <p className="theme-heading mt-1 text-2xl font-semibold">{totalStudents.toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')}</p>
           </div>
-          <div className="rounded-lg border border-white/8 bg-[color:var(--surface-muted)] p-4">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-amber-400 text-slate-900">
+          <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+            <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
               <Star className="h-4 w-4" />
             </div>
-            <p className="mt-3 text-sm text-slate-400">{copy.averageRating}</p>
-            <p className="mt-1 text-2xl font-semibold text-white">{averageRating}</p>
+            <p className="theme-muted mt-3 text-sm">{copy.averageRating}</p>
+            <p className="theme-heading mt-1 text-2xl font-semibold">{averageRating}</p>
           </div>
         </div>
       </Card>
 
       <Card>
-        <p className="text-sm font-semibold text-white">{copy.filterTitle}</p>
-        <p className="mt-1 text-sm text-slate-400">{copy.filterDescription}</p>
+        <p className="theme-heading text-sm font-semibold">{copy.filterTitle}</p>
+        <p className="theme-muted mt-1 text-sm">{copy.filterDescription}</p>
         <div className="mt-4 flex flex-wrap gap-2">
           <button
-            className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+            className={`rounded-[var(--radius-badges)] border px-4 py-2 text-sm font-medium transition ${
               activeCategory === ''
-                ? 'border-white/14 bg-[color:var(--surface-strong)] text-slate-100'
-                : 'border-white/10 bg-[color:var(--surface-muted)] text-slate-400 hover:border-white/16 hover:text-white'
+                ? 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]'
+                : 'border-[color:var(--border)] bg-[color:var(--surface-strong)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
             }`}
             onClick={() => setActiveCategory('')}
             type="button"
@@ -123,12 +132,12 @@ const CourseListPage = () => {
           </button>
           {categories.map((category) => (
             <button
-              key={category}
-              className={`rounded-full border px-4 py-2 text-sm font-medium transition ${
+              className={`rounded-[var(--radius-badges)] border px-4 py-2 text-sm font-medium transition ${
                 activeCategory === category
-                  ? 'border-white/14 bg-[color:var(--surface-strong)] text-slate-100'
-                  : 'border-white/10 bg-[color:var(--surface-muted)] text-slate-400 hover:border-white/16 hover:text-white'
+                  ? 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]'
+                  : 'border-[color:var(--border)] bg-[color:var(--surface-strong)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
               }`}
+              key={category}
               onClick={() => setActiveCategory(category)}
               type="button"
             >

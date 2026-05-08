@@ -26,7 +26,7 @@ const CatalogCourseCard = ({ course, compact = false }: CatalogCourseCardProps) 
               loading="lazy"
               src={course.imageUrl}
             />
-            <div className="pointer-events-none absolute inset-0 bg-slate-900/15" />
+            <div className="theme-overlay pointer-events-none absolute inset-0 opacity-50" />
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">

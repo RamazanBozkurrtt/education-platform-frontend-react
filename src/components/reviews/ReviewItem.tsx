@@ -1,4 +1,4 @@
-﻿import Button from '../ui/Button'
+import Button from '../ui/Button'
 import RatingStars from './RatingStars'
 import { getInitials } from '../../utils/helpers'
 import { useLanguage } from '../../hooks/useLanguage'
@@ -29,7 +29,7 @@ const formatDate = (value: string, locale: string) => {
 
 const ReviewItem = ({ review, canEdit, canDelete, onEdit, onDelete, isDeleting = false }: ReviewItemProps) => {
   const { language } = useLanguage()
-  const displayName = review.userDisplayName?.trim() || 'Kullanıcı'
+  const displayName = review.userDisplayName?.trim() || 'Kullanici'
   const initials = getInitials(displayName)
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const createdAt = formatDate(review.createdAt, locale)
@@ -37,41 +37,41 @@ const ReviewItem = ({ review, canEdit, canDelete, onEdit, onDelete, isDeleting =
   const wasUpdated = Boolean(review.updatedAt) && review.updatedAt !== review.createdAt
 
   return (
-    <article className="rounded-lg border border-white/10 bg-[color:var(--surface-muted)] p-4">
+    <article className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           {review.userProfileImageUrl ? (
             <img
               alt={displayName}
-              className="h-10 w-10 rounded-full border border-white/10 object-cover"
+              className="h-10 w-10 rounded-full border border-[color:var(--border)] object-cover"
               src={review.userProfileImageUrl}
             />
           ) : (
-            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/12 bg-slate-900/60 text-xs font-semibold text-slate-200">
+            <span className="flex h-10 w-10 items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-white)] text-xs font-semibold theme-heading">
               {initials}
             </span>
           )}
           <div>
-            <p className="text-sm font-semibold text-white">{displayName}</p>
-            <p className="text-xs text-slate-400">{createdAt}</p>
+            <p className="theme-heading text-sm font-semibold">{displayName}</p>
+            <p className="theme-muted text-xs">{createdAt}</p>
           </div>
         </div>
 
         <RatingStars readOnly size="sm" value={review.rating} />
       </div>
 
-      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-200">{review.comment}</p>
+      <p className="theme-text mt-3 whitespace-pre-wrap text-sm leading-6">{review.comment}</p>
 
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {wasUpdated ? (
-          <span className="rounded-full border border-white/10 px-2.5 py-1 text-xs text-slate-300">
-            Güncellendi {updatedAt}
+          <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] px-2.5 py-1 text-xs theme-muted">
+            Guncellendi {updatedAt}
           </span>
         ) : null}
 
         {canEdit ? (
           <Button onClick={() => onEdit(review)} size="sm" type="button" variant="ghost">
-            Düzenle
+            Duzenle
           </Button>
         ) : null}
 

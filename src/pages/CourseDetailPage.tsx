@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, BadgeCheck, BookOpen, CheckCircle2, Clock3, PlayCircle, ShoppingCart, Star, Users2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -7,7 +7,6 @@ import { useLanguage } from '../hooks/useLanguage'
 import { useCart } from '../hooks/useCart'
 import { useLibrary } from '../hooks/useLibrary'
 import { useAuth } from '../hooks/useAuth'
-import PageHeader from '../components/PageHeader'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import InfoBadge from '../components/ui/InfoBadge'
@@ -68,27 +67,27 @@ const resolveErrorMessageFromPayload = (error: unknown) => {
   }
 
   if (appError.httpStatus === 400) {
-    return 'Lütfen girdiğiniz bilgileri kontrol edin.'
+    return 'Lutfen girdigin bilgileri kontrol et.'
   }
 
   if (appError.httpStatus === 401) {
-    return 'Değerlendirme yapmak için giriş yapmalısın.'
+    return 'Degerlendirme yapmak icin giris yapmalisin.'
   }
 
   if (appError.httpStatus === 403) {
-    return 'Bu işlem için yetkin yok.'
+    return 'Bu islem icin yetkin yok.'
   }
 
   if (appError.httpStatus === 404) {
-    return 'Kurs veya değerlendirme bulunamadı.'
+    return 'Kurs veya degerlendirme bulunamadi.'
   }
 
   if (appError.httpStatus === 409) {
-    return 'Bu kurs için daha önce değerlendirme yapmışsın.'
+    return 'Bu kurs icin daha once degerlendirme yapmissin.'
   }
 
   if (appError.httpStatus && appError.httpStatus >= 500) {
-    return 'Değerlendirme işlemi sırasında beklenmeyen bir sorun oluştu.'
+    return 'Degerlendirme sirasinda beklenmeyen bir sorun olustu.'
   }
 
   return appError.message
@@ -109,33 +108,36 @@ const CourseDetailPage = () => {
 
   const copy = language === 'tr'
     ? {
-      courseInfoTitle: 'Kurs bilgileri',
-      courseInfoDescription: 'Öne çıkan detayları buradan inceleyebilirsin.',
-      detailsTitle: 'Kurs içeriği',
-      detailsDescription: 'Bu kursta işleyeceğin dersler aşağıda listelenir.',
+      detailsTitle: 'Kurs detayları',
+      detailsDescription: 'Kurs ozeti, dersler ve degerlendirmeler.',
+      lessonsTitle: 'Dersler',
+      lessonsDescription: 'Bu kurs icin ders listesi.',
       tags: 'Etiketler',
       ratingLabel: 'Puan',
       statusTitle: 'Kurs durumu',
-      statusDescription: 'Satın alma ve erişim işlemlerini bu alandan yönetebilirsin.',
-      purchased: 'Kursa erişimin var',
-      notPurchased: 'Henüz satın alınmadı',
+      statusDescription: 'Erisim ve satin alma islemleri.',
+      purchased: 'Kursa erisimin var',
+      notPurchased: 'Henuz satin alinmadi',
       reviewTitle: 'Değerlendirmeler',
-      reviewCount: 'yorum',
-      yourReview: 'Bu kurs için değerlendirme notun',
-      deleteReview: 'Değerlendirmeyi sil',
-      reviewLoginRequired: 'Yorum yapmak için giriş yapmalısın.',
-      noTag: 'Etiket eklenmemiş.',
-      noOutcome: 'Bu kurs için öğrenim kazanımı eklenmemiş.',
+      reviewCount: 'degerlendirme',
+      yourReview: 'Bu kurs icin degerlendirmen',
+      deleteReview: 'Degerlendirmeyi sil',
+      reviewLoginRequired: 'Degerlendirme yapmak icin giris yapmalisin.',
+      noTag: 'Etiket yok.',
+      noOutcome: 'Bu kurs icin ogrenim kazanimi eklenmemis.',
+      noLessons: 'Bu kurs için henüz ders eklenmemiş.',
+      instructorTitle: 'Egitmen',
+      progressTitle: 'Ilerleme',
     }
     : {
-      courseInfoTitle: 'Course details',
-      courseInfoDescription: 'Review key information before you start.',
-      detailsTitle: 'Course content',
-      detailsDescription: 'Lessons included in this course.',
+      detailsTitle: 'Course details',
+      detailsDescription: 'Course summary, lessons, and reviews.',
+      lessonsTitle: 'Lessons',
+      lessonsDescription: 'Lesson list for this course.',
       tags: 'Tags',
       ratingLabel: 'Rating',
       statusTitle: 'Course status',
-      statusDescription: 'Manage purchase and access actions here.',
+      statusDescription: 'Manage access and purchase actions.',
       purchased: 'You have access',
       notPurchased: 'Not purchased yet',
       reviewTitle: 'Reviews',
@@ -145,6 +147,9 @@ const CourseDetailPage = () => {
       reviewLoginRequired: 'Sign in to leave a review.',
       noTag: 'No tags added.',
       noOutcome: 'No learning outcomes added for this course.',
+      noLessons: 'No lessons have been added to this course yet.',
+      instructorTitle: 'Instructor',
+      progressTitle: 'Progress',
     }
 
   const { data, error, isLoading } = useQuery({
@@ -269,10 +274,10 @@ const CourseDetailPage = () => {
       if (reviewFormMode === 'update' && visibleEditReview) {
         await updateReviewMutation.mutateAsync({ reviewId: visibleEditReview.id, payload })
         setEditingReview(null)
-        setSuccessMessage(language === 'tr' ? 'Değerlendirme güncellendi.' : 'Review updated.')
+        setSuccessMessage(language === 'tr' ? 'Degerlendirme guncellendi.' : 'Review updated.')
       } else {
         await createReviewMutation.mutateAsync(payload)
-        setSuccessMessage(language === 'tr' ? 'Değerlendirme kaydedildi.' : 'Review submitted.')
+        setSuccessMessage(language === 'tr' ? 'Degerlendirme kaydedildi.' : 'Review submitted.')
       }
 
       await refreshReviewData()
@@ -284,7 +289,7 @@ const CourseDetailPage = () => {
       if (appError.httpStatus === 409) {
         setSubmitError(
           language === 'tr'
-            ? 'Bu kurs için zaten yorum yapmışsın. Mevcut yorumunu güncelleyebilirsin.'
+            ? 'Bu kurs icin zaten yorum yapmissin. Mevcut yorumunu guncelleyebilirsin.'
             : 'You already reviewed this course. You can update your existing review.',
         )
         await refreshReviewData()
@@ -307,7 +312,7 @@ const CourseDetailPage = () => {
         setEditingReview(null)
       }
 
-      setSuccessMessage(language === 'tr' ? 'Değerlendirme silindi.' : 'Review deleted.')
+      setSuccessMessage(language === 'tr' ? 'Degerlendirme silindi.' : 'Review deleted.')
       await refreshReviewData()
     } catch (error_) {
       const axiosLikeError = error_ as { response?: { status?: number; data?: unknown } }
@@ -333,57 +338,58 @@ const CourseDetailPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        actions={
-          purchased ? (
-            <Link to={ROUTES.coursePlayer(data.slug)}>
-              <Button asChild>
-                <PlayCircle className="h-4 w-4" />
-                {t('common.watchCourse')}
-              </Button>
-            </Link>
-          ) : isInCart(data.id) ? (
-            <Link to={ROUTES.cart}>
-              <Button asChild variant="secondary">
-                <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-                {t('common.goToCart')}
-              </Button>
-            </Link>
-          ) : (
-            <Button onClick={() => addCourse(data.id)}>
-              <ShoppingCart className="h-4 w-4" />
-              {t('common.addToCart')}
-            </Button>
-          )
-        }
-        description={data.description}
-        eyebrow={data.category}
-        title={data.title}
-      />
+      <Card>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-3xl">
+            <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{data.category}</p>
+            <h1 className="theme-heading mt-2 break-words text-3xl font-semibold leading-tight md:text-4xl">{data.title}</h1>
+            <p className="theme-muted mt-3 text-sm leading-7">{data.description}</p>
 
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
-        <Card>
-          <SectionHeader
-            description={copy.courseInfoDescription}
-            title={copy.courseInfoTitle}
-          />
+            <MetaRow
+              className="mt-4"
+              items={[
+                { key: 'rating', icon: Star, label: copy.ratingLabel, value: data.rating.toFixed(1) },
+                { key: 'instructor', label: copy.instructorTitle, value: data.instructor.name },
+                { key: 'duration', icon: Clock3, label: t('courseDetail.duration'), value: data.duration },
+                { key: 'lessons', icon: BookOpen, label: t('courseDetail.lessons'), value: t('courseDetail.lessonsValue', { count: data.lessons }) },
+                { key: 'students', icon: Users2, label: t('courseDetail.enrolled'), value: t('courseDetail.enrolledValue', { students: data.students }) },
+                { key: 'level', label: 'Seviye', value: data.level },
+              ]}
+            />
 
-          <MetaRow
-            className="mt-5"
-            items={[
-              { key: 'duration', icon: Clock3, label: t('courseDetail.duration'), value: data.duration },
-              { key: 'lessons', icon: BookOpen, label: t('courseDetail.lessons'), value: t('courseDetail.lessonsValue', { count: data.lessons }) },
-              { key: 'students', icon: Users2, label: t('courseDetail.enrolled'), value: t('courseDetail.enrolledValue', { students: data.students }) },
-              { key: 'rating', icon: Star, label: copy.ratingLabel, value: data.rating.toFixed(1) },
-              { key: 'level', label: 'Seviye', value: data.level },
-            ]}
-          />
-
-          <div className="mt-5 border-t border-white/8 pt-5">
-            <TagList emptyText={copy.noTag} label={copy.tags} tags={data.tags} />
+            <div className="mt-4">
+              <TagList emptyText={copy.noTag} hideWhenEmpty label={copy.tags} tags={data.tags} />
+            </div>
           </div>
 
-          <div className="mt-7 border-t border-white/8 pt-6">
+          <div className="flex flex-wrap gap-3">
+            {purchased ? (
+              <Link to={ROUTES.coursePlayer(data.slug)}>
+                <Button asChild>
+                  <PlayCircle className="h-4 w-4" />
+                  {t('common.watchCourse')}
+                </Button>
+              </Link>
+            ) : isInCart(data.id) ? (
+              <Link to={ROUTES.cart}>
+                <Button asChild variant="secondary">
+                  <CheckCircle2 className="h-4 w-4" />
+                  {t('common.goToCart')}
+                </Button>
+              </Link>
+            ) : (
+              <Button onClick={() => addCourse(data.id)}>
+                <ShoppingCart className="h-4 w-4" />
+                {t('common.addToCart')}
+              </Button>
+            )}
+          </div>
+        </div>
+      </Card>
+
+      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
+        <div className="space-y-6">
+          <Card>
             <SectionHeader
               description={copy.detailsDescription}
               title={copy.detailsTitle}
@@ -392,42 +398,128 @@ const CourseDetailPage = () => {
             {data.outcomes.length > 0 ? (
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {data.outcomes.map((outcome) => (
-                  <div key={outcome} className="flex gap-3 rounded-lg border border-white/8 bg-[color:var(--surface-muted)] p-4">
-                    <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-emerald-200" />
-                    <p className="text-sm leading-6 text-slate-300">{outcome}</p>
+                  <div className="flex gap-3 rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4" key={outcome}>
+                    <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--primary)]" />
+                    <p className="theme-text text-sm leading-6">{outcome}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="mt-4 text-sm text-slate-400">{copy.noOutcome}</p>
+              <p className="theme-muted mt-4 text-sm">{copy.noOutcome}</p>
             )}
+          </Card>
 
-            <div className="mt-6 space-y-3">
-              {data.modules.map((module, index) => (
-                <div key={module.id} className="rounded-lg border border-white/8 bg-[color:var(--surface-muted)] px-4 py-4">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-md bg-[color:var(--surface-strong)] text-xs font-semibold text-slate-200">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-                      <div>
-                        <p className="font-medium text-white">{module.title}</p>
-                        <p className="mt-1 text-xs text-slate-400">
-                          {module.type} · {module.duration}
-                        </p>
+          <Card>
+            <SectionHeader
+              description={copy.lessonsDescription}
+              title={copy.lessonsTitle}
+            />
+
+            {data.modules.length > 0 ? (
+              <div className="mt-4 space-y-3">
+                {data.modules.map((module, index) => (
+                  <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4" key={module.id}>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-xs font-semibold theme-heading">
+                          {String(index + 1).padStart(2, '0')}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="theme-heading truncate font-medium">{module.title}</p>
+                          <p className="theme-muted mt-1 text-xs">
+                            {module.type} - {module.duration}
+                          </p>
+                        </div>
                       </div>
+                      <InfoBadge tone={module.completed ? 'success' : 'warning'}>
+                        {module.completed ? t('common.completed') : t('common.upcoming')}
+                      </InfoBadge>
                     </div>
-                    <InfoBadge tone={module.completed ? 'success' : 'warning'}>
-                      {module.completed ? t('common.completed') : t('common.upcoming')}
-                    </InfoBadge>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Card>
+                ))}
+              </div>
+            ) : (
+              <p className="theme-muted mt-4 text-sm">{copy.noLessons}</p>
+            )}
+          </Card>
 
-        <div className="space-y-4">
+          <section className="grid gap-6 xl:grid-cols-[0.95fr_1.35fr]">
+            <CourseReviewSummary isLoading={isReviewSummaryLoading} summary={reviewSummary} />
+
+            <Card>
+              <SectionHeader
+                action={
+                  reviewSummary?.totalReviews ? (
+                    <InfoBadge>
+                      {reviewSummary.totalReviews} {copy.reviewCount}
+                    </InfoBadge>
+                  ) : null
+                }
+                title={copy.reviewTitle}
+              />
+
+              {successMessage ? (
+                <div className="mt-4 rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] px-4 py-3 text-sm theme-heading">
+                  {successMessage}
+                </div>
+              ) : null}
+
+              {isAuthenticated ? (
+                <div className="mt-5">
+                  {visibleEditReview ? (
+                    <p className="theme-heading mb-3 text-sm font-semibold">{copy.yourReview}</p>
+                  ) : null}
+                  <ReviewForm
+                    initialValue={visibleEditReview ? { rating: visibleEditReview.rating, comment: visibleEditReview.comment } : undefined}
+                    isSubmitting={createReviewMutation.isPending || updateReviewMutation.isPending}
+                    mode={reviewFormMode}
+                    onSubmit={handleReviewSubmit}
+                    submitError={submitError}
+                  />
+                  {visibleEditReview ? (
+                    <div className="mt-3">
+                      <Button
+                        disabled={deleteReviewMutation.isPending}
+                        onClick={() => handleDeleteReview(visibleEditReview)}
+                        type="button"
+                        variant="ghost"
+                      >
+                        {copy.deleteReview}
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="theme-muted mt-4 text-sm">{copy.reviewLoginRequired}</p>
+              )}
+
+              {reviewSummaryError || reviewListError ? (
+                <div className="mt-6 rounded-[var(--radius-cards)] border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
+                  {resolveErrorMessageFromPayload(reviewSummaryError ?? reviewListError)}
+                </div>
+              ) : (
+                <div className="mt-6">
+                  <CourseReviewList
+                    canDeleteReview={canDeleteReview}
+                    canEditReview={canEditReview}
+                    deletingReviewId={deletingReviewId}
+                    hasNextPage={Boolean(hasNextPage)}
+                    isFetchingNextPage={isFetchingNextPage}
+                    isLoading={isReviewListLoading}
+                    onDeleteReview={handleDeleteReview}
+                    onEditReview={setEditingReview}
+                    onLoadMore={() => {
+                      void fetchNextPage()
+                    }}
+                    reviews={reviews}
+                  />
+                </div>
+              )}
+            </Card>
+          </section>
+        </div>
+
+        <aside className="space-y-4">
           <Card>
             <SectionHeader
               description={copy.statusDescription}
@@ -436,13 +528,13 @@ const CourseDetailPage = () => {
 
             <div className="mt-5 flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm text-slate-400">{t('common.price')}</p>
-                <p className="mt-1 text-3xl font-semibold text-white">{formatCurrency(data.price)}</p>
+                <p className="theme-muted text-sm">{t('common.price')}</p>
+                <p className="theme-heading mt-1 text-3xl font-semibold">{formatCurrency(data.price)}</p>
               </div>
               <InfoBadge>{data.level}</InfoBadge>
             </div>
 
-            <div className="mt-4 flex items-center gap-2">
+            <div className="mt-4">
               <InfoBadge tone={purchased ? 'success' : 'warning'}>
                 {purchased ? copy.purchased : copy.notPurchased}
               </InfoBadge>
@@ -459,7 +551,7 @@ const CourseDetailPage = () => {
               ) : isInCart(data.id) ? (
                 <Link to={ROUTES.cart}>
                   <Button asChild variant="secondary">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                    <CheckCircle2 className="h-4 w-4" />
                     {t('common.goToCart')}
                   </Button>
                 </Link>
@@ -481,20 +573,20 @@ const CourseDetailPage = () => {
           </Card>
 
           <Card>
-            <p className="text-xs font-medium text-slate-400">{t('courseDetail.instructor')}</p>
-            <h3 className="mt-2 text-xl font-semibold text-white">{data.instructor.name}</h3>
-            <p className="mt-1 text-sm text-slate-400">{data.instructor.role}</p>
-            <p className="mt-4 text-sm leading-7 text-slate-300">{data.instructor.bio}</p>
+            <SectionHeader title={copy.instructorTitle} />
+            <h3 className="theme-heading mt-3 text-xl font-semibold">{data.instructor.name}</h3>
+            <p className="theme-muted mt-1 text-sm">{data.instructor.role}</p>
+            <p className="theme-text mt-4 text-sm leading-7">{data.instructor.bio}</p>
           </Card>
 
           {purchased ? (
             <Card>
-              <p className="text-xs font-medium text-slate-400">{t('courseDetail.progressSnapshot')}</p>
+              <SectionHeader title={copy.progressTitle} />
               <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="text-2xl font-semibold text-white">%{data.progress}</p>
-                <p className="text-sm text-slate-400">{t('dashboard.progressComplete', { progress: data.progress })}</p>
+                <p className="theme-heading text-2xl font-semibold">%{data.progress}</p>
+                <p className="theme-muted text-sm">{t('dashboard.progressComplete', { progress: data.progress })}</p>
               </div>
-              <div className="mt-3 h-2 rounded-full bg-slate-200/15">
+              <div className="mt-3 h-2 rounded-full bg-[color:var(--surface-muted)]">
                 <div
                   className="h-2 rounded-full bg-[color:var(--primary)]"
                   style={{ width: `${data.progress}%` }}
@@ -502,82 +594,7 @@ const CourseDetailPage = () => {
               </div>
             </Card>
           ) : null}
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.35fr]">
-        <CourseReviewSummary isLoading={isReviewSummaryLoading} summary={reviewSummary} />
-
-        <Card>
-          <SectionHeader
-            action={
-              reviewSummary?.totalReviews ? (
-                <InfoBadge>
-                  {reviewSummary.totalReviews} {copy.reviewCount}
-                </InfoBadge>
-              ) : null
-            }
-            title={copy.reviewTitle}
-          />
-
-          {successMessage ? (
-            <div className="mt-4 rounded-lg border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-              {successMessage}
-            </div>
-          ) : null}
-
-          {isAuthenticated ? (
-            <div className="mt-5">
-              {visibleEditReview ? (
-                <p className="mb-3 text-sm font-medium text-slate-200">{copy.yourReview}</p>
-              ) : null}
-              <ReviewForm
-                initialValue={visibleEditReview ? { rating: visibleEditReview.rating, comment: visibleEditReview.comment } : undefined}
-                isSubmitting={createReviewMutation.isPending || updateReviewMutation.isPending}
-                mode={reviewFormMode}
-                onSubmit={handleReviewSubmit}
-                submitError={submitError}
-              />
-              {visibleEditReview ? (
-                <div className="mt-3">
-                  <Button
-                    disabled={deleteReviewMutation.isPending}
-                    onClick={() => handleDeleteReview(visibleEditReview)}
-                    type="button"
-                    variant="ghost"
-                  >
-                    {copy.deleteReview}
-                  </Button>
-                </div>
-              ) : null}
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-slate-300">{copy.reviewLoginRequired}</p>
-          )}
-
-          {reviewSummaryError || reviewListError ? (
-            <div className="mt-6 rounded-lg border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-              {resolveErrorMessageFromPayload(reviewSummaryError ?? reviewListError)}
-            </div>
-          ) : (
-            <div className="mt-6">
-              <CourseReviewList
-                canDeleteReview={canDeleteReview}
-                canEditReview={canEditReview}
-                deletingReviewId={deletingReviewId}
-                hasNextPage={Boolean(hasNextPage)}
-                isFetchingNextPage={isFetchingNextPage}
-                isLoading={isReviewListLoading}
-                onDeleteReview={handleDeleteReview}
-                onEditReview={setEditingReview}
-                onLoadMore={() => {
-                  void fetchNextPage()
-                }}
-                reviews={reviews}
-              />
-            </div>
-          )}
-        </Card>
+        </aside>
       </section>
     </div>
   )

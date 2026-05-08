@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import Button from '../ui/Button'
 import RatingStars from './RatingStars'
 import type { CreateReviewRequest, UpdateReviewRequest } from '../../utils/types'
@@ -40,25 +40,25 @@ const ReviewForm = ({
 
   const submitLabel = useMemo(() => {
     if (isSubmitting) {
-      return mode === 'create' ? 'Gönderiliyor...' : 'Güncelleniyor...'
+      return mode === 'create' ? 'Gonderiliyor...' : 'Guncelleniyor...'
     }
 
-    return mode === 'create' ? 'Değerlendirme gönder' : 'Değerlendirmeyi güncelle'
+    return mode === 'create' ? 'Degerlendirme gonder' : 'Degerlendirmeyi guncelle'
   }, [isSubmitting, mode])
 
   const validate = () => {
     const nextErrors: FormErrors = {}
 
     if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-      nextErrors.rating = 'Puan 1 ile 5 arasında olmalı.'
+      nextErrors.rating = 'Puan 1 ile 5 arasinda olmali.'
     }
 
     const trimmedComment = comment.trim()
 
     if (!trimmedComment) {
-      nextErrors.comment = 'Yorum boş olamaz.'
+      nextErrors.comment = 'Yorum bos olamaz.'
     } else if (trimmedComment.length < 5) {
-      nextErrors.comment = 'Yorum en az 5 karakter olmalı.'
+      nextErrors.comment = 'Yorum en az 5 karakter olmali.'
     } else if (trimmedComment.length > MAX_COMMENT_LENGTH) {
       nextErrors.comment = `Yorum en fazla ${MAX_COMMENT_LENGTH} karakter olabilir.`
     }
@@ -82,35 +82,41 @@ const ReviewForm = ({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div>
-        <p className="text-sm font-medium text-slate-200">Puanın</p>
-        <RatingStars readOnly={false} size="lg" value={rating} onChange={(nextRating) => {
-          setRating(nextRating)
-          setErrors((current) => ({ ...current, rating: undefined }))
-        }} />
-        {errors.rating ? <p className="mt-2 text-xs text-rose-300">{errors.rating}</p> : null}
+        <p className="theme-heading text-sm font-semibold">Puanin</p>
+        <RatingStars
+          className="mt-1"
+          onChange={(nextRating) => {
+            setRating(nextRating)
+            setErrors((current) => ({ ...current, rating: undefined }))
+          }}
+          readOnly={false}
+          size="lg"
+          value={rating}
+        />
+        {errors.rating ? <p className="mt-2 text-xs text-[color:var(--danger)]">{errors.rating}</p> : null}
       </div>
 
       <label className="flex flex-col gap-2" htmlFor="review-comment">
-        <span className="text-sm font-medium text-slate-200">Yorum</span>
+        <span className="theme-heading text-sm font-semibold">Yorum</span>
         <textarea
-          className="min-h-28 w-full rounded-lg border border-white/10 bg-[color:var(--surface-muted)] px-4 py-3 text-sm text-slate-100 outline-none transition focus:border-cyan-300/40 focus:ring-2 focus:ring-cyan-300/20"
+          className="theme-text theme-placeholder min-h-28 w-full rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 text-sm outline-none transition focus:border-[color:var(--primary)] focus:ring-2 focus:ring-[color:var(--focus-ring)]"
           id="review-comment"
           maxLength={MAX_COMMENT_LENGTH}
           onChange={(event) => {
             setComment(event.target.value)
             setErrors((current) => ({ ...current, comment: undefined }))
           }}
-          placeholder="Deneyimini kısa ve net şekilde yaz"
+          placeholder="Deneyimini kisa ve net sekilde yaz"
           value={comment}
         />
         <div className="flex items-center justify-between gap-4">
-          {errors.comment ? <p className="text-xs text-rose-300">{errors.comment}</p> : <span />}
-          <p className="text-xs text-slate-500">{comment.length}/{MAX_COMMENT_LENGTH}</p>
+          {errors.comment ? <p className="text-xs text-[color:var(--danger)]">{errors.comment}</p> : <span />}
+          <p className="theme-subtle text-xs">{comment.length}/{MAX_COMMENT_LENGTH}</p>
         </div>
       </label>
 
       {submitError ? (
-        <div className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
+        <div className="rounded-[var(--radius-cards)] border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
           {submitError}
         </div>
       ) : null}

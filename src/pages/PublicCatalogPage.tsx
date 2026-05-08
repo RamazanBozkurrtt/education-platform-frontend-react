@@ -1,6 +1,6 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Search, SlidersHorizontal, Sparkles } from 'lucide-react'
+import { Filter, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import CatalogCourseCard from '../components/CatalogCourseCard'
@@ -29,23 +29,22 @@ const PublicCatalogPage = () => {
 
   const copy = language === 'tr'
     ? {
-      eyebrow: 'Kurs kataloğu',
-      title: 'Kursları konu, seviye ve eğitmene göre filtrele.',
-      description:
-        'Aradığın beceriye uygun kursları tek ekranda incele. Kategori ve seviye filtreleriyle sana en yakın eğitimleri hızlıca bulabilirsin.',
+      eyebrow: 'Kursları keşfet',
+      title: 'Kurs kataloğu',
+      description: 'Kurslari arama, kategori ve seviye filtreleriyle incele.',
       searchLabel: 'Kurs ara',
-      searchPlaceholder: 'Konu, beceri, eğitmen veya etiket ile ara',
+      searchPlaceholder: 'Kurs adi, beceri, egitmen veya etiket',
       filterLabel: 'Filtreler',
       all: 'Tümü',
       categories: 'Kategoriler',
       levels: 'Seviyeler',
-      featured: 'Öne çıkanlar',
+      featured: 'One cikanlar',
       clear: 'Filtreleri temizle',
       results: 'Sonuçlar',
       resultsTitle: 'kurs bulundu',
-      resultsDescription: 'Filtrelerine uyan kurslar aşağıda listeleniyor.',
+      resultsDescription: 'Filtrelerine uyan kurslar listeleniyor.',
       emptyTitle: 'Sonuç bulunamadı',
-      emptyDescription: 'Arama ifadesini değiştirerek veya filtreleri temizleyerek yeniden deneyebilirsin.',
+      emptyDescription: 'Aramayı değiştir veya filtreleri temizleyip yeniden dene.',
       stats: [
         { label: 'Kategori', getValue: (count: number) => String(count) },
         { label: 'Kurs', getValue: (count: number) => String(count) },
@@ -53,18 +52,17 @@ const PublicCatalogPage = () => {
       ],
       chips: [
         { label: 'Tüm kurslar', value: {} },
-        { label: 'Başlangıç seviyesi', value: { level: 'beginner' } },
-        { label: 'Tasarım ve UX', value: { category: 'design' } },
+        { label: 'Baslangic seviyesi', value: { level: 'beginner' } },
+        { label: 'Tasarim', value: { category: 'design' } },
       ],
       navSections: [{ id: 'course-results', label: 'Kurslar' }],
     }
     : {
-      eyebrow: 'Course catalog',
-      title: 'Filter courses by topic, level, and instructor.',
-      description:
-        'Review courses for the skill you want to build. Category and level filters help you narrow the catalog quickly.',
+      eyebrow: 'Explore courses',
+      title: 'Course catalog',
+      description: 'Browse courses with search, category, and level filters.',
       searchLabel: 'Search courses',
-      searchPlaceholder: 'Search by topic, skill, instructor, or tag',
+      searchPlaceholder: 'Course title, skill, instructor, or tag',
       filterLabel: 'Filters',
       all: 'All',
       categories: 'Categories',
@@ -75,7 +73,7 @@ const PublicCatalogPage = () => {
       resultsTitle: 'courses found',
       resultsDescription: 'Courses matching your filters are listed below.',
       emptyTitle: 'No results found',
-      emptyDescription: 'Try another search phrase or clear the active filters to broaden the results.',
+      emptyDescription: 'Try another search phrase or clear filters.',
       stats: [
         { label: 'Categories', getValue: (count: number) => String(count) },
         { label: 'Courses', getValue: (count: number) => String(count) },
@@ -84,7 +82,7 @@ const PublicCatalogPage = () => {
       chips: [
         { label: 'All courses', value: {} },
         { label: 'Beginner level', value: { level: 'beginner' } },
-        { label: 'Design and UX', value: { category: 'design' } },
+        { label: 'Design', value: { category: 'design' } },
       ],
       navSections: [{ id: 'course-results', label: 'Courses' }],
     }
@@ -174,18 +172,10 @@ const PublicCatalogPage = () => {
 
       <main className="relative mx-auto max-w-[1480px] px-4 pb-16 pt-8 lg:px-8 lg:pt-10">
         <section className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
-          <div className="public-section-card rounded-lg p-8 md:p-10">
-            <span className="inline-flex items-center gap-2 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] theme-heading">
-              <Sparkles className="h-3.5 w-3.5 text-[color:var(--primary)]" />
-              {copy.eyebrow}
-            </span>
-
-            <h1 className="theme-heading mt-6 max-w-4xl text-4xl font-semibold tracking-[-0.04em] md:text-5xl">
-              {copy.title}
-            </h1>
-            <p className="theme-muted mt-5 max-w-2xl text-sm leading-8 md:text-base">
-              {copy.description}
-            </p>
+          <div className="public-section-card rounded-[var(--radius-cards)] p-8 md:p-10">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--primary)]">{copy.eyebrow}</p>
+            <h1 className="theme-heading mt-4 text-4xl font-semibold tracking-[-0.03em] md:text-5xl">{copy.title}</h1>
+            <p className="theme-muted mt-5 max-w-2xl text-sm leading-8 md:text-base">{copy.description}</p>
 
             <div className="mt-8 flex flex-wrap gap-3">
               {copy.chips.map((chip) => (
@@ -196,9 +186,9 @@ const PublicCatalogPage = () => {
             </div>
           </div>
 
-          <div className="public-section-card rounded-lg p-7 md:p-8">
+          <div className="public-section-card rounded-[var(--radius-cards)] p-7 md:p-8">
             <Input
-              className="rounded-md border-[color:var(--border)] bg-[color:var(--surface-muted)] focus-within:border-[color:var(--border-strong)] focus-within:ring-1 focus-within:ring-[color:var(--primary)]/15"
+              className="rounded-[var(--radius-buttons)] border-[color:var(--border)] bg-[color:var(--surface-soft)]"
               icon={<Search className="h-4 w-4" />}
               label={copy.searchLabel}
               onChange={(event) => {
@@ -211,15 +201,15 @@ const PublicCatalogPage = () => {
             />
 
             <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-5 py-5">
+              <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-5 py-5">
                 <p className="theme-subtle text-xs uppercase tracking-[0.2em]">{copy.stats[0].label}</p>
                 <p className="theme-heading mt-2 text-3xl font-semibold tracking-[-0.04em]">{copy.stats[0].getValue(categories.length)}</p>
               </div>
-              <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-5 py-5">
+              <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-5 py-5">
                 <p className="theme-subtle text-xs uppercase tracking-[0.2em]">{copy.stats[1].label}</p>
                 <p className="theme-heading mt-2 text-3xl font-semibold tracking-[-0.04em]">{copy.stats[1].getValue(resolvedCourses.length)}</p>
               </div>
-              <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-5 py-5">
+              <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-5 py-5">
                 <p className="theme-subtle text-xs uppercase tracking-[0.2em]">{copy.stats[2].label}</p>
                 <p className="theme-heading mt-2 text-3xl font-semibold tracking-[-0.04em]">{copy.stats[2].getValue(levels.length)}</p>
               </div>
@@ -230,9 +220,9 @@ const PublicCatalogPage = () => {
         </section>
 
         <section className="mt-6 grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]" id="course-results">
-          <aside className="public-section-card h-fit rounded-lg p-5">
+          <aside className="public-section-card h-fit rounded-[var(--radius-cards)] p-5">
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className="h-4 w-4 text-[color:var(--primary)]" />
+              <Filter className="h-4 w-4 text-[color:var(--primary)]" />
               <p className="theme-heading text-sm font-semibold">{copy.filterLabel}</p>
             </div>
 
@@ -240,7 +230,7 @@ const PublicCatalogPage = () => {
               <p className="theme-heading text-sm font-semibold">{copy.categories}</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <button
-                  className={`rounded-md border px-3 py-2 text-sm transition ${categoryKey ? 'border-[color:var(--border)] bg-[color:var(--surface-muted)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]' : 'border-[color:var(--primary)] bg-[color:var(--surface-strong)] text-[color:var(--primary)]'}`}
+                  className={`rounded-[var(--radius-badges)] border px-3 py-2 text-sm transition ${categoryKey ? 'border-[color:var(--border)] bg-[color:var(--surface-soft)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]' : 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]'}`}
                   onClick={() => {
                     setCategoryKey('')
                     syncFiltersToUrl({ query, category: '', level: levelKey })
@@ -252,7 +242,7 @@ const PublicCatalogPage = () => {
 
                 {categories.map((item) => (
                   <button
-                    className={`rounded-md border px-3 py-2 text-sm transition ${categoryKey === item.key ? 'border-[color:var(--primary)] bg-[color:var(--surface-strong)] text-[color:var(--primary)]' : 'border-[color:var(--border)] bg-[color:var(--surface-muted)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'}`}
+                    className={`rounded-[var(--radius-badges)] border px-3 py-2 text-sm transition ${categoryKey === item.key ? 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]' : 'border-[color:var(--border)] bg-[color:var(--surface-soft)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'}`}
                     key={item.key}
                     onClick={() => {
                       setCategoryKey(item.key)
@@ -270,7 +260,7 @@ const PublicCatalogPage = () => {
               <p className="theme-heading text-sm font-semibold">{copy.levels}</p>
               <div className="mt-4 flex flex-wrap gap-2">
                 <button
-                  className={`rounded-md border px-3 py-2 text-sm transition ${levelKey ? 'border-[color:var(--border)] bg-[color:var(--surface-muted)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]' : 'border-[color:var(--primary)] bg-[color:var(--surface-strong)] text-[color:var(--primary)]'}`}
+                  className={`rounded-[var(--radius-badges)] border px-3 py-2 text-sm transition ${levelKey ? 'border-[color:var(--border)] bg-[color:var(--surface-soft)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]' : 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]'}`}
                   onClick={() => {
                     setLevelKey('')
                     syncFiltersToUrl({ query, category: categoryKey, level: '' })
@@ -282,7 +272,7 @@ const PublicCatalogPage = () => {
 
                 {levels.map((item) => (
                   <button
-                    className={`rounded-md border px-3 py-2 text-sm transition ${levelKey === item.key ? 'border-[color:var(--primary)] bg-[color:var(--surface-strong)] text-[color:var(--primary)]' : 'border-[color:var(--border)] bg-[color:var(--surface-muted)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'}`}
+                    className={`rounded-[var(--radius-badges)] border px-3 py-2 text-sm transition ${levelKey === item.key ? 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]' : 'border-[color:var(--border)] bg-[color:var(--surface-soft)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'}`}
                     key={item.key}
                     onClick={() => {
                       setLevelKey(item.key)
@@ -301,7 +291,7 @@ const PublicCatalogPage = () => {
               <div className="mt-4 flex flex-wrap gap-2">
                 {featuredCourses.map((course) => (
                   <button
-                    className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-2 text-sm theme-muted transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]"
+                    className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2 text-sm theme-muted transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]"
                     key={course.id}
                     onClick={() => {
                       setQuery(course.title)
@@ -326,16 +316,14 @@ const PublicCatalogPage = () => {
           </aside>
 
           <div className="space-y-5">
-            <div className="public-section-card rounded-lg p-6">
+            <div className="public-section-card rounded-[var(--radius-cards)] p-6">
               <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{copy.results}</p>
               <div className="mt-2 flex flex-wrap items-center justify-between gap-4">
                 <h2 className="theme-heading text-2xl font-semibold tracking-[-0.03em]">
                   {filteredCourses.length} {copy.resultsTitle}
                 </h2>
                 {(query || categoryKey || levelKey) ? (
-                  <p className="theme-muted text-sm">
-                    {copy.resultsDescription}
-                  </p>
+                  <p className="theme-muted text-sm">{copy.resultsDescription}</p>
                 ) : null}
               </div>
             </div>
@@ -347,7 +335,7 @@ const PublicCatalogPage = () => {
                 ))}
               </div>
             ) : (
-              <div className="public-section-card rounded-lg p-8">
+              <div className="public-section-card rounded-[var(--radius-cards)] p-8">
                 <h3 className="theme-heading text-2xl font-semibold tracking-[-0.03em]">{copy.emptyTitle}</h3>
                 <p className="theme-muted mt-4 text-sm leading-8">{copy.emptyDescription}</p>
               </div>
