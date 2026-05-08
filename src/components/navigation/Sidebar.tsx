@@ -3,6 +3,7 @@ import {
   BookOpenCheck,
   ChevronLeft,
   CreditCard,
+  FolderKanban,
   GraduationCap,
   LayoutDashboard,
   Search,
@@ -12,8 +13,11 @@ import {
 import { useTranslation } from 'react-i18next'
 import { NavLink } from 'react-router-dom'
 import { useCart } from '../../hooks/useCart'
+import { useAuth } from '../../hooks/useAuth'
+import { useLanguage } from '../../hooks/useLanguage'
 import { APP_NAME, ROUTES } from '../../utils/constants'
 import { cn } from '../../utils/helpers'
+import { isInstructor } from '../../utils/roles'
 import Button from '../ui/Button'
 
 interface SidebarProps {
@@ -31,9 +35,17 @@ const Sidebar = ({
 }: SidebarProps) => {
   const { t } = useTranslation()
   const { itemCount } = useCart()
+  const { user, claims } = useAuth()
+  const { language } = useLanguage()
+  const isCurrentUserInstructor = isInstructor(user, claims)
+  const instructorMenuLabel = language === 'tr' ? 'Egitmen Paneli' : 'Instructor Panel'
+  const becomeInstructorLabel = language === 'tr' ? 'Egitmen Ol' : 'Become Instructor'
 
   const navigationItems = [
     { label: t('nav.dashboard'), to: ROUTES.dashboard, icon: LayoutDashboard },
+    isCurrentUserInstructor
+      ? { label: instructorMenuLabel, to: ROUTES.instructorDashboard, icon: FolderKanban }
+      : { label: becomeInstructorLabel, to: ROUTES.becomeInstructor, icon: GraduationCap },
     { label: t('nav.myCourses'), to: ROUTES.myCourses, icon: BookOpenCheck },
     { label: t('nav.courses'), to: ROUTES.courses, icon: BookOpen },
     { label: t('nav.cart'), to: ROUTES.cart, icon: ShoppingCart, badge: itemCount },

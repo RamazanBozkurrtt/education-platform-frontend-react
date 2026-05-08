@@ -3,6 +3,7 @@ import DashboardLayout from '../layouts/DashboardLayout'
 import AuthLayout from '../layouts/AuthLayout'
 import CompleteProfileLayout from '../layouts/CompleteProfileLayout'
 import ProtectedRoute from './ProtectedRoute'
+import RoleBasedRoute from './RoleBasedRoute'
 import LandingPage from '../pages/LandingPage'
 import PublicCatalogPage from '../pages/PublicCatalogPage'
 import LoginPage from '../pages/LoginPage'
@@ -17,6 +18,12 @@ import CartPage from '../pages/CartPage'
 import PaymentPage from '../pages/PaymentPage'
 import SearchPage from '../pages/SearchPage'
 import ProfilePage from '../pages/ProfilePage'
+import BecomeInstructorPage from '../pages/BecomeInstructorPage'
+import InstructorDashboardPage from '../pages/InstructorDashboardPage'
+import InstructorProfilePage from '../pages/InstructorProfilePage'
+import InstructorCourseCreatePage from '../pages/InstructorCourseCreatePage'
+import InstructorCourseVideoUploadPage from '../pages/InstructorCourseVideoUploadPage'
+import UnauthorizedPage from '../pages/UnauthorizedPage'
 import NotFoundPage from '../pages/NotFoundPage'
 import { ROUTES } from '../utils/constants'
 
@@ -45,6 +52,41 @@ const AppRouter = () => (
         <Route path={ROUTES.payment} element={<PaymentPage />} />
         <Route path={ROUTES.search} element={<SearchPage />} />
         <Route path={ROUTES.profile} element={<ProfilePage />} />
+        <Route path={ROUTES.becomeInstructor} element={<BecomeInstructorPage />} />
+        <Route path="/dashboard/instructor" element={<Navigate replace to={ROUTES.instructorDashboard} />} />
+        <Route path={ROUTES.unauthorized} element={<UnauthorizedPage />} />
+        <Route
+          path={ROUTES.instructorDashboard}
+          element={(
+            <RoleBasedRoute requiredRoles={['ROLE_INSTRUCTOR']}>
+              <InstructorDashboardPage />
+            </RoleBasedRoute>
+          )}
+        />
+        <Route
+          path={ROUTES.instructorProfile}
+          element={(
+            <RoleBasedRoute requiredRoles={['ROLE_INSTRUCTOR']}>
+              <InstructorProfilePage />
+            </RoleBasedRoute>
+          )}
+        />
+        <Route
+          path={ROUTES.instructorNewCourse}
+          element={(
+            <RoleBasedRoute requiredRoles={['ROLE_INSTRUCTOR']}>
+              <InstructorCourseCreatePage />
+            </RoleBasedRoute>
+          )}
+        />
+        <Route
+          path={ROUTES.instructorNewCourseVideo()}
+          element={(
+            <RoleBasedRoute requiredRoles={['ROLE_INSTRUCTOR']}>
+              <InstructorCourseVideoUploadPage />
+            </RoleBasedRoute>
+          )}
+        />
         <Route path="/enrollment" element={<Navigate replace to={ROUTES.cart} />} />
       </Route>
     </Route>

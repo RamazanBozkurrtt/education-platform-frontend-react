@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+﻿import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, CheckCircle2, Clock3, ListVideo, LockKeyhole, PlayCircle, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -6,8 +6,12 @@ import { Link, useParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
+import InfoBadge from '../components/ui/InfoBadge'
 import Loader from '../components/ui/Loader'
+import MetaRow from '../components/ui/MetaRow'
 import QueryErrorState from '../components/ui/QueryErrorState'
+import SectionHeader from '../components/ui/SectionHeader'
+import TagList from '../components/ui/TagList'
 import { useCart } from '../hooks/useCart'
 import { useLanguage } from '../hooks/useLanguage'
 import { useLibrary } from '../hooks/useLibrary'
@@ -15,6 +19,8 @@ import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { courseMediaService } from '../services/courseMediaService'
 import { courseService } from '../services/courseService'
 import { ROUTES } from '../utils/constants'
+
+const PLAYBACK_URL_REFRESH_BUFFER_MS = 3_000
 
 const CoursePlayerPage = () => {
   const { t } = useTranslation()
@@ -24,24 +30,145 @@ const CoursePlayerPage = () => {
   const { isPurchased } = useLibrary()
   const [activeModuleIndex, setActiveModuleIndex] = useState(0)
   const [activeVideoSource, setActiveVideoSource] = useState('')
+  const [activeVideoExpiresAtMs, setActiveVideoExpiresAtMs] = useState<number | null>(null)
   const [isVideoLoading, setIsVideoLoading] = useState(false)
   const [videoErrorMessage, setVideoErrorMessage] = useState<string | null>(null)
+  const playbackRequestIdRef = useRef(0)
+  const videoElementRef = useRef<HTMLVideoElement | null>(null)
+  const pendingResumeRef = useRef<{ currentTime: number; shouldResumePlayback: boolean } | null>(null)
+  const failedRefreshSourceRef = useRef<string | null>(null)
+
   const { data, error, isLoading } = useQuery({
     queryKey: ['course-player', language, slug],
     queryFn: () => courseService.getCourseBySlug(slug, language),
   })
+
+  const purchased = data ? isPurchased(data.id) : false
+  const activeModule = data ? (data.modules[activeModuleIndex] ?? data.modules[0]) : undefined
+  const activeCourseId = data?.id ?? null
+  const activeLessonId = activeModule?.id ?? null
+
+  const loadPlaybackUrl = useCallback(async (
+    params: { courseId: string; lessonId: string; preservePlaybackState?: boolean },
+  ) => {
+    if (params.preservePlaybackState) {
+      const videoElement = videoElementRef.current
+      if (videoElement) {
+        pendingResumeRef.current = {
+          currentTime: videoElement.currentTime,
+          shouldResumePlayback: !videoElement.paused && !videoElement.ended,
+        }
+      }
+    } else {
+      pendingResumeRef.current = null
+    }
+
+    setIsVideoLoading(true)
+    setVideoErrorMessage(null)
+
+    const requestId = ++playbackRequestIdRef.current
+
+    try {
+      const { url, expiresAtMs } = await courseMediaService.getLessonPlaybackUrl(params.courseId, params.lessonId)
+
+      if (requestId !== playbackRequestIdRef.current) {
+        return
+      }
+
+      setActiveVideoSource(url)
+      setActiveVideoExpiresAtMs(expiresAtMs)
+      failedRefreshSourceRef.current = null
+    } catch (loadError) {
+      if (requestId !== playbackRequestIdRef.current) {
+        return
+      }
+
+      setActiveVideoSource('')
+      setActiveVideoExpiresAtMs(null)
+      pendingResumeRef.current = null
+      setVideoErrorMessage(normalizeApiError(loadError).message)
+    } finally {
+      if (requestId === playbackRequestIdRef.current) {
+        setIsVideoLoading(false)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     setActiveModuleIndex(0)
   }, [data?.id])
 
   useEffect(() => {
-    return () => {
-      if (activeVideoSource) {
-        URL.revokeObjectURL(activeVideoSource)
-      }
+    if (!purchased || !activeCourseId || !activeLessonId) {
+      setVideoErrorMessage(null)
+      setIsVideoLoading(false)
+      setActiveVideoSource('')
+      setActiveVideoExpiresAtMs(null)
+      pendingResumeRef.current = null
+      failedRefreshSourceRef.current = null
+      return
     }
-  }, [activeVideoSource])
+
+    void loadPlaybackUrl({ courseId: activeCourseId, lessonId: activeLessonId })
+  }, [activeCourseId, activeLessonId, loadPlaybackUrl, purchased])
+
+  const handleVideoPlay = () => {
+    if (!activeCourseId || !activeLessonId || !activeVideoExpiresAtMs) {
+      return
+    }
+
+    const isExpiredOrNearExpiry = Date.now() >= activeVideoExpiresAtMs - PLAYBACK_URL_REFRESH_BUFFER_MS
+
+    if (!isExpiredOrNearExpiry) {
+      return
+    }
+
+    void loadPlaybackUrl({
+      courseId: activeCourseId,
+      lessonId: activeLessonId,
+      preservePlaybackState: true,
+    })
+  }
+
+  const handleVideoLoadedMetadata = () => {
+    const pendingResume = pendingResumeRef.current
+    const videoElement = videoElementRef.current
+
+    if (!pendingResume || !videoElement) {
+      return
+    }
+
+    const hasDuration = Number.isFinite(videoElement.duration) && videoElement.duration > 0
+
+    if (hasDuration && pendingResume.currentTime > 0 && pendingResume.currentTime < videoElement.duration) {
+      videoElement.currentTime = pendingResume.currentTime
+    }
+
+    pendingResumeRef.current = null
+
+    if (pendingResume.shouldResumePlayback) {
+      void videoElement.play().catch(() => undefined)
+    }
+  }
+
+  const handleVideoError = () => {
+    if (!activeCourseId || !activeLessonId || !purchased || !activeVideoSource) {
+      return
+    }
+
+    const refreshKey = `${activeCourseId}:${activeLessonId}:${activeVideoSource}`
+
+    if (failedRefreshSourceRef.current === refreshKey) {
+      return
+    }
+
+    failedRefreshSourceRef.current = refreshKey
+    void loadPlaybackUrl({
+      courseId: activeCourseId,
+      lessonId: activeLessonId,
+      preservePlaybackState: true,
+    })
+  }
 
   if (error) {
     return <QueryErrorState error={error} />
@@ -51,63 +178,10 @@ const CoursePlayerPage = () => {
     return <Loader label={t('loader.courseDetails')} />
   }
 
-  const purchased = isPurchased(data.id)
-  const activeModule = data.modules[activeModuleIndex] ?? data.modules[0]
-
-  useEffect(() => {
-    let isCancelled = false
-
-    const loadVideo = async () => {
-      if (!purchased || !activeModule) {
-        setVideoErrorMessage(null)
-        setActiveVideoSource('')
-        return
-      }
-
-      setIsVideoLoading(true)
-      setVideoErrorMessage(null)
-
-      try {
-        const videoBlob = await courseMediaService.downloadLessonVideoBlob(data.id, activeModule.id)
-
-        if (isCancelled) {
-          return
-        }
-
-        const nextVideoSource = URL.createObjectURL(videoBlob)
-        setActiveVideoSource((currentSource) => {
-          if (currentSource) {
-            URL.revokeObjectURL(currentSource)
-          }
-
-          return nextVideoSource
-        })
-      } catch (loadError) {
-        if (isCancelled) {
-          return
-        }
-
-        setActiveVideoSource((currentSource) => {
-          if (currentSource) {
-            URL.revokeObjectURL(currentSource)
-          }
-
-          return ''
-        })
-        setVideoErrorMessage(normalizeApiError(loadError).message)
-      } finally {
-        if (!isCancelled) {
-          setIsVideoLoading(false)
-        }
-      }
-    }
-
-    void loadVideo()
-
-    return () => {
-      isCancelled = true
-    }
-  }, [activeModule, data.id, purchased])
+  const activeModuleId = activeModule?.id ?? null
+  const activeModuleTitle = activeModule?.title ?? t('player.chooseLesson')
+  const activeModuleType = activeModule?.type ?? '-'
+  const activeModuleDuration = activeModule?.duration ?? '-'
 
   if (!purchased) {
     return (
@@ -118,49 +192,51 @@ const CoursePlayerPage = () => {
           title={t('player.lockedTitle')}
         />
 
-        <Card className="overflow-hidden p-0">
-          <div className={`h-1.5 bg-gradient-to-r ${data.accent}`} />
-          <div className="grid gap-8 p-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-amber-400/10 text-amber-200">
-                <LockKeyhole className="h-7 w-7" />
-              </div>
-              <h2 className="mt-6 text-3xl font-semibold text-white">{data.title}</h2>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">{data.description}</p>
-              <div className="mt-6 flex flex-wrap gap-2">
-                {data.tags.map((tag) => (
-                  <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
+        <Card>
+          <SectionHeader
+            description={t('player.accessExplanation')}
+            title={data.title}
+          />
 
-            <Card className="h-fit border-amber-300/16 bg-amber-400/8">
-              <p className="text-xs uppercase tracking-[0.22em] text-amber-100">{t('player.accessRequired')}</p>
-              <p className="mt-4 text-sm leading-7 text-slate-300">{t('player.accessExplanation')}</p>
-              <div className="mt-6 space-y-3">
-                {isInCart(data.id) ? (
-                  <Link className="block" to={ROUTES.cart}>
-                    <Button asChild className="w-full justify-center" variant="secondary">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-                      {t('common.goToCart')}
-                    </Button>
-                  </Link>
-                ) : (
-                  <Button className="w-full justify-center" onClick={() => addCourse(data.id)}>
-                    <ShoppingCart className="h-4 w-4" />
-                    {t('common.addToCart')}
-                  </Button>
-                )}
-                <Link className="block" to={ROUTES.courseDetail(data.slug)}>
-                  <Button asChild className="w-full justify-center" variant="ghost">
-                    {t('common.backToCourse')}
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            </Card>
+          <div className="mt-5 flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-amber-500/10 text-amber-200">
+              <LockKeyhole className="h-5 w-5" />
+            </div>
+            <InfoBadge tone="warning">{t('player.accessRequired')}</InfoBadge>
+          </div>
+
+          <MetaRow
+            className="mt-5"
+            items={[
+              { key: 'duration', icon: Clock3, label: t('player.runtime'), value: data.duration },
+              { key: 'type', label: t('player.lessonType'), value: data.level },
+            ]}
+          />
+
+          <div className="mt-5 border-t border-white/8 pt-5">
+            <TagList hideWhenEmpty label={language === 'tr' ? 'Etiketler' : 'Tags'} tags={data.tags} />
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-3">
+            {isInCart(data.id) ? (
+              <Link className="block" to={ROUTES.cart}>
+                <Button asChild variant="secondary">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                  {t('common.goToCart')}
+                </Button>
+              </Link>
+            ) : (
+              <Button onClick={() => addCourse(data.id)}>
+                <ShoppingCart className="h-4 w-4" />
+                {t('common.addToCart')}
+              </Button>
+            )}
+            <Link className="block" to={ROUTES.courseDetail(data.slug)}>
+              <Button asChild variant="ghost">
+                {t('common.backToCourse')}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
           </div>
         </Card>
       </div>
@@ -183,82 +259,69 @@ const CoursePlayerPage = () => {
       />
 
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
-        <Card className="overflow-hidden p-0">
-          <div className={`h-1.5 bg-gradient-to-r ${data.accent}`} />
-          <div className="p-6">
-            <div className="overflow-hidden rounded-[28px] border border-white/8 bg-slate-950/70">
-              {activeModule ? (
-                <video
-                  className="aspect-video w-full bg-slate-950 object-cover"
-                  controls
-                  key={`${data.id}-${activeModule.id}`}
-                  preload="metadata"
-                >
-                  {activeVideoSource ? <source src={activeVideoSource} type="video/mp4" /> : null}
-                </video>
-              ) : (
-                <div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-slate-400">
-                  {t('player.chooseLesson')}
-                </div>
-              )}
-            </div>
-            {isVideoLoading ? (
-              <p className="mt-3 text-sm text-cyan-200">{t('loader.courseDetails')}</p>
-            ) : null}
-            {videoErrorMessage ? (
-              <p className="mt-3 text-sm text-rose-300">{videoErrorMessage}</p>
-            ) : null}
-
-            <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_260px]">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-cyan-200">{t('player.nowPlaying')}</p>
-                <h2 className="mt-3 text-2xl font-semibold text-white">{activeModule.title}</h2>
-                <p className="mt-3 text-sm leading-7 text-slate-300">{data.description}</p>
+        <Card>
+          <div className="overflow-hidden rounded-lg border border-white/8 bg-slate-950/70">
+            {activeModule ? (
+              <video
+                className="aspect-video w-full bg-slate-950 object-cover"
+                controls
+                controlsList="nodownload noremoteplayback"
+                disablePictureInPicture
+                key={`${data.id}-${activeModule.id}`}
+                onContextMenu={(event) => event.preventDefault()}
+                onError={handleVideoError}
+                onLoadedMetadata={handleVideoLoadedMetadata}
+                onPlay={handleVideoPlay}
+                preload="metadata"
+                ref={videoElementRef}
+                src={activeVideoSource || undefined}
+              />
+            ) : (
+              <div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-slate-400">
+                {t('player.chooseLesson')}
               </div>
-              <Card className="h-fit border-sky-300/16 bg-sky-400/8">
-                <p className="text-xs uppercase tracking-[0.22em] text-sky-100">{t('player.moduleMeta')}</p>
-                <div className="mt-4 space-y-3 text-sm text-slate-200">
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{t('player.lessonType')}</span>
-                    <span>{activeModule.type}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{t('player.runtime')}</span>
-                    <span>{activeModule.duration}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{t('player.accessStatus')}</span>
-                    <span>{t('player.purchasedAccess')}</span>
-                  </div>
-                </div>
-              </Card>
-            </div>
+            )}
+          </div>
+
+          {isVideoLoading ? (
+            <p className="mt-3 text-sm text-cyan-200">{t('loader.courseDetails')}</p>
+          ) : null}
+          {videoErrorMessage ? (
+            <p className="mt-3 text-sm text-rose-300">{videoErrorMessage}</p>
+          ) : null}
+
+          <div className="mt-5 border-t border-white/8 pt-5">
+            <SectionHeader title={activeModuleTitle} />
+            <MetaRow
+              className="mt-3"
+              items={[
+                { key: 'moduleType', label: t('player.lessonType'), value: activeModuleType },
+                { key: 'moduleDuration', icon: Clock3, label: t('player.runtime'), value: activeModuleDuration },
+                { key: 'access', label: t('player.accessStatus'), value: t('player.purchasedAccess') },
+              ]}
+            />
+            <p className="mt-4 text-sm leading-7 text-slate-300">{data.description}</p>
           </div>
         </Card>
 
-        <div className="space-y-6">
+        <div className="space-y-4">
           <Card>
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200">
-                <ListVideo className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white">{t('player.courseContent')}</p>
-                <p className="text-sm text-slate-400">{t('player.chooseLesson')}</p>
-              </div>
-            </div>
+            <SectionHeader
+              description={t('player.chooseLesson')}
+              title={t('player.courseContent')}
+            />
 
-            <div className="mt-6 space-y-3">
+            <div className="mt-5 space-y-3">
               {data.modules.map((module, index) => {
-                const active = module.id === activeModule.id
+                const active = module.id === activeModuleId
 
                 return (
                   <button
                     key={module.id}
-                    className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
+                    className={`w-full rounded-lg border px-4 py-4 text-left transition ${
                       active
                         ? 'border-cyan-300/28 bg-cyan-400/12'
-                        : 'border-white/8 bg-white/4 hover:border-white/14 hover:bg-white/6'
+                        : 'border-white/8 bg-[color:var(--surface-muted)] hover:border-white/14'
                     }`}
                     onClick={() => setActiveModuleIndex(index)}
                     type="button"
@@ -274,7 +337,7 @@ const CoursePlayerPage = () => {
                           <span>{module.type}</span>
                         </div>
                       </div>
-                      <PlayCircle className={`h-5 w-5 shrink-0 ${active ? 'text-cyan-200' : 'text-slate-500'}`} />
+                      {active ? <PlayCircle className="h-5 w-5 shrink-0 text-cyan-200" /> : null}
                     </div>
                   </button>
                 )
@@ -283,20 +346,27 @@ const CoursePlayerPage = () => {
           </Card>
 
           <Card>
-            <p className="text-xs uppercase tracking-[0.22em] text-cyan-200">{t('courseDetail.instructor')}</p>
-            <h3 className="mt-3 text-2xl font-semibold text-white">{data.instructor.name}</h3>
-            <p className="mt-2 text-sm text-slate-400">{data.instructor.role}</p>
-            <p className="mt-5 text-sm leading-7 text-slate-300">{data.instructor.bio}</p>
+            <SectionHeader title={t('courseDetail.instructor')} />
+            <h3 className="mt-3 text-xl font-semibold text-white">{data.instructor.name}</h3>
+            <p className="mt-1 text-sm text-slate-400">{data.instructor.role}</p>
+            <p className="mt-4 text-sm leading-7 text-slate-300">{data.instructor.bio}</p>
           </Card>
 
-          <Card className="border-emerald-300/16 bg-emerald-400/8">
-            <p className="text-xs uppercase tracking-[0.22em] text-emerald-100">{t('player.outcomes')}</p>
+          <Card>
+            <SectionHeader title={t('player.outcomes')} />
             <div className="mt-4 space-y-3">
               {data.outcomes.slice(0, 3).map((outcome) => (
-                <div key={outcome} className="rounded-2xl border border-white/8 bg-white/4 px-4 py-4 text-sm text-slate-100">
+                <div key={outcome} className="rounded-lg border border-white/8 bg-[color:var(--surface-muted)] px-4 py-3 text-sm text-slate-200">
                   {outcome}
                 </div>
               ))}
+            </div>
+          </Card>
+
+          <Card>
+            <div className="flex items-center gap-3">
+              <ListVideo className="h-4 w-4 text-slate-400" />
+              <p className="text-sm text-slate-300">{data.modules.length} ders</p>
             </div>
           </Card>
         </div>

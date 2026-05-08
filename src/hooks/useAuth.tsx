@@ -7,10 +7,13 @@ import {
 } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { authService } from '../services/authService'
+import { authApi } from '../services/authApi'
 import {
+  buildSessionSnapshot,
   clearSession,
   getAccessToken,
   getRefreshToken,
+  getStoredUser,
   parseTokenClaims,
   setSession,
 } from '../services/authSession'
@@ -39,6 +42,7 @@ interface AuthContextValue {
   completeProfile: (payload: UserProfilePayload) => Promise<void>
   updateProfile: (payload: UserProfilePayload) => Promise<void>
   changePassword: (payload: ChangePasswordPayload) => Promise<string>
+  syncAuthSession: (tokens?: { accessToken?: string | null; refreshToken?: string | null; fallbackUserId?: unknown }) => Promise<AuthSessionSnapshot | null>
   logout: () => Promise<void>
   deactivateMe: () => Promise<void>
 }
@@ -72,6 +76,32 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [accessToken, setAccessToken] = useState<string | null>(null)
   const [refreshToken, setRefreshTokenState] = useState<string | null>(null)
   const [isBootstrapping, setIsBootstrapping] = useState(true)
+
+  const finalizeSessionSnapshot = async (snapshot: AuthSessionSnapshot) => {
+    let nextUser = snapshot.user
+
+    try {
+      nextUser = await userService.syncMyProfile(snapshot.user, {
+        skipGlobalErrorHandling: true,
+      })
+    } catch {
+      nextUser = snapshot.user
+    }
+
+    const latestAccessToken = getAccessToken() ?? snapshot.accessToken
+    const latestRefreshToken = getRefreshToken() ?? snapshot.refreshToken
+    const nextSnapshot: AuthSessionSnapshot = {
+      ...snapshot,
+      accessToken: latestAccessToken,
+      refreshToken: latestRefreshToken,
+      claims: parseTokenClaims(latestAccessToken) ?? snapshot.claims,
+      user: nextUser,
+    }
+
+    setSession(nextSnapshot)
+    applySnapshot(nextSnapshot, setUser, setClaims, setAccessToken, setRefreshTokenState)
+    return nextSnapshot
+  }
 
   useEffect(() => {
     let isActive = true
@@ -245,6 +275,48 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const changePassword = async (payload: ChangePasswordPayload) => authService.changePassword(payload)
 
+  const syncAuthSession = async (tokens?: {
+    accessToken?: string | null
+    refreshToken?: string | null
+    fallbackUserId?: unknown
+  }) => {
+    let nextAccessToken = tokens?.accessToken?.trim() ?? ''
+    let nextRefreshToken = tokens?.refreshToken?.trim() ?? ''
+    let fallbackUserId = tokens?.fallbackUserId
+
+    if (!nextAccessToken || !nextRefreshToken) {
+      const currentRefreshToken = getRefreshToken() ?? refreshToken
+
+      if (!currentRefreshToken) {
+        const snapshot = authService.restoreSession()
+        applySnapshot(snapshot, setUser, setClaims, setAccessToken, setRefreshTokenState)
+        return snapshot
+      }
+
+      const refreshedTokens = await authApi.refreshToken(currentRefreshToken)
+      nextAccessToken = refreshedTokens.access_token?.trim() ?? ''
+      nextRefreshToken = refreshedTokens.refresh_token?.trim() ?? ''
+      fallbackUserId = refreshedTokens.user_id ?? refreshedTokens.userId
+
+      if (!nextAccessToken || !nextRefreshToken) {
+        throw new Error('Refresh response is missing tokens.')
+      }
+    }
+
+    const nextSnapshot = buildSessionSnapshot({
+      accessToken: nextAccessToken,
+      refreshToken: nextRefreshToken,
+      existingUser: getStoredUser() ?? user ?? undefined,
+      fallbackUserId,
+      fallbackEmail: user?.email,
+      fallbackName: user?.name,
+      profileCompleted: user?.profileCompleted,
+    })
+
+    setSession(nextSnapshot)
+    return finalizeSessionSnapshot(nextSnapshot)
+  }
+
   const logout = async () => {
     authFlowTrace('logout called')
     await authService.logout()
@@ -284,6 +356,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         completeProfile,
         updateProfile,
         changePassword,
+        syncAuthSession,
         logout,
         deactivateMe,
       }}
