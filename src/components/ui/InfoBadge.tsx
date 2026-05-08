@@ -9,16 +9,16 @@ interface InfoBadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const toneClassMap: Record<InfoBadgeTone, string> = {
-  default: 'border-white/10 bg-[color:var(--surface-muted)] text-slate-300',
-  success: 'border-emerald-300/35 bg-emerald-500/10 text-emerald-200',
-  warning: 'border-amber-300/35 bg-amber-500/10 text-amber-200',
-  danger: 'border-rose-300/35 bg-rose-500/10 text-rose-200',
+  default: 'border-[color:var(--border)] bg-[color:var(--surface-white)] text-[color:var(--text-muted)]',
+  success: 'border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] text-[color:var(--text-heading)]',
+  warning: 'border-[color:var(--border)] bg-[color:var(--surface-muted-mandarin)] text-[color:var(--text-heading)]',
+  danger: 'border-[color:var(--border)] bg-[color:var(--surface-soft-peach)] text-[color:var(--text-heading)]',
 }
 
 const InfoBadge = ({ children, className, tone = 'default', ...props }: InfoBadgeProps) => (
   <span
     className={cn(
-      'inline-flex items-center rounded-full border px-3 py-1 text-xs',
+      'inline-flex items-center rounded-[var(--radius-badges)] border px-3 py-1 text-xs font-medium',
       toneClassMap[tone],
       className,
     )}

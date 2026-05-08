@@ -1,5 +1,4 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from 'react'
-import { useTheme } from '../../hooks/useTheme'
 import { cn } from '../../utils/helpers'
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -11,17 +10,13 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, error, helperText, icon, id, label, ...props }, ref) => {
-    const { theme } = useTheme()
-    const isLight = theme === 'light'
-
     return (
       <label className="flex w-full flex-col gap-2" htmlFor={id}>
-        {label ? <span className="theme-text text-sm font-medium">{label}</span> : null}
+        {label ? <span className="theme-heading text-sm font-semibold">{label}</span> : null}
         <span
           className={cn(
-            'group flex h-12 items-center gap-3 rounded-2xl border px-4 transition focus-within:border-cyan-300/40 focus-within:ring-2 focus-within:ring-cyan-300/20',
-            isLight ? 'border-slate-200/90 bg-slate-100/55' : 'theme-surface-strong border-white/10',
-            error && 'border-rose-400/45 focus-within:border-rose-400/55 focus-within:ring-rose-400/20',
+            'group flex h-12 items-center gap-3 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 transition-colors focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]',
+            error && 'border-[color:var(--danger)] focus-within:border-[color:var(--danger)] focus-within:ring-[color:rgba(138,47,63,0.2)]',
             className,
           )}
         >
@@ -29,15 +24,15 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             aria-invalid={Boolean(error)}
-            className="theme-text theme-placeholder w-full bg-transparent text-sm outline-none placeholder:text-slate-500"
+            className="theme-text theme-placeholder w-full bg-transparent text-sm outline-none"
             id={id}
             {...props}
           />
         </span>
         {error ? (
-          <span className="text-xs text-rose-300">{error}</span>
+          <span className="text-xs text-[color:var(--danger)]">{error}</span>
         ) : helperText ? (
-          <span className="theme-subtle text-xs">{helperText}</span>
+          <span className="theme-muted text-xs">{helperText}</span>
         ) : null}
       </label>
     )

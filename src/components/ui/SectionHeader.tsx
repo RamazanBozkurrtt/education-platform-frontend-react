@@ -7,10 +7,10 @@ interface SectionHeaderProps {
 }
 
 const SectionHeader = ({ title, description, action }: SectionHeaderProps) => (
-  <div className="flex flex-wrap items-start justify-between gap-3">
-    <div>
-      <h2 className="text-xl font-semibold text-white">{title}</h2>
-      {description ? <p className="mt-1 text-sm text-slate-400">{description}</p> : null}
+  <div className="flex flex-wrap items-start justify-between gap-[var(--element-gap)]">
+    <div className="space-y-2">
+      <h2 className="theme-heading text-2xl font-semibold leading-[var(--leading-heading-sm)]">{title}</h2>
+      {description ? <p className="theme-muted text-sm">{description}</p> : null}
     </div>
     {action ? <div>{action}</div> : null}
   </div>

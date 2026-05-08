@@ -8,7 +8,7 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 const Card = ({ children, className, ...props }: CardProps) => (
   <div
     className={cn(
-      'glass-panel theme-text rounded-lg border border-white/10 p-6',
+      'theme-surface-strong theme-text rounded-[var(--radius-cards)] border border-[color:var(--border)] p-[var(--card-padding)] shadow-[var(--shadow-sm)]',
       className,
     )}
     {...props}
