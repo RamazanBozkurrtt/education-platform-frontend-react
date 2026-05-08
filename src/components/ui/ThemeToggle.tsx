@@ -15,7 +15,8 @@ const ThemeToggle = ({ compact = false }: ThemeToggleProps) => {
   return (
     <Button
       aria-label={isDark ? t('theme.switchToLight') : t('theme.switchToDark')}
-      className={compact ? 'w-11 px-0' : undefined}
+      aria-pressed={isDark}
+      className={compact ? 'h-10 w-10 rounded-[var(--radius-navigation)] px-0' : undefined}
       onClick={toggleTheme}
       variant="secondary"
     >

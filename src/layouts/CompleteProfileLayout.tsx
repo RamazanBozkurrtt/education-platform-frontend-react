@@ -18,8 +18,8 @@ const CompleteProfileLayout = () => {
         className={cn(
           'absolute inset-0',
           isLight
-            ? 'bg-[radial-gradient(circle_at_top,rgba(15,76,129,0.08),transparent_34%),linear-gradient(180deg,rgba(247,249,252,0.52)_0%,rgba(238,243,248,0.7)_100%)]'
-            : 'bg-[radial-gradient(circle_at_top,rgba(41,65,107,0.16),transparent_30%),linear-gradient(180deg,rgba(13,21,33,0.52)_0%,rgba(17,27,42,0.72)_100%)]',
+            ? 'bg-[linear-gradient(180deg,rgba(255,245,238,0.62)_0%,rgba(255,245,238,0.78)_100%)]'
+            : 'bg-[linear-gradient(180deg,rgba(15,22,30,0.46)_0%,rgba(15,22,30,0.62)_100%)]',
         )}
       />
 
@@ -30,10 +30,10 @@ const CompleteProfileLayout = () => {
       <div className="relative z-10 mx-auto flex min-h-[calc(100dvh-6rem)] max-w-[1240px] items-center justify-center py-6">
         <section
           className={cn(
-            'w-full max-w-[760px] rounded-[34px] border p-6 shadow-[0_30px_90px_rgba(15,23,42,0.12)] backdrop-blur-sm sm:p-8',
+            'w-full max-w-[760px] rounded-[var(--radius-cards)] border p-6 shadow-[var(--shadow-sm)] sm:p-8',
             isLight
-              ? 'border-slate-900/10 bg-white/55'
-              : 'border-white/10 bg-[linear-gradient(180deg,rgba(10,17,30,0.5),rgba(15,23,36,0.42))]',
+              ? 'border-[color:var(--border)] bg-[color:var(--surface-white)]/96'
+              : 'border-[color:var(--border)] bg-[color:var(--surface-strong)]/94',
           )}
         >
           <Outlet />

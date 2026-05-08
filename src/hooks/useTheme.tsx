@@ -24,7 +24,7 @@ const getPreferredTheme = (): ThemeMode => {
     return storedTheme
   }
 
-  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+  return 'light'
 }
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {

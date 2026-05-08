@@ -87,7 +87,7 @@ const PublicNavbar = ({
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[color:var(--border)] bg-[color:var(--surface-strong)] shadow-[0_10px_30px_rgba(15,23,42,0.05)]">
+    <header className="sticky top-0 z-50 border-b border-[color:var(--border)] bg-[color:var(--surface-white)]">
       <div className="mx-auto flex max-w-[1480px] items-center justify-between gap-4 px-4 py-4 lg:px-8">
         <Link className="flex items-center gap-3" to={ROUTES.home}>
           <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
@@ -99,7 +99,7 @@ const PublicNavbar = ({
           </div>
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex">
+        <nav aria-label="Main navigation" className="hidden items-center gap-1 lg:flex">
           {shouldShowHomeNavLink ? (
             <Link className="public-nav-link public-nav-home-link" to={ROUTES.home}>
               <House className="h-4 w-4" />
@@ -115,6 +115,8 @@ const PublicNavbar = ({
 
           <div className="relative" onMouseEnter={() => setOpenDesktopMenu('courses')} onMouseLeave={() => setOpenDesktopMenu((current) => current === 'courses' ? null : current)}>
             <button
+              aria-expanded={openDesktopMenu === 'courses'}
+              aria-haspopup="menu"
               className={cn(
                 'public-nav-link',
                 isCatalog && 'public-nav-link-active',
@@ -157,7 +159,12 @@ const PublicNavbar = ({
           </div>
 
           <div className="relative" onMouseEnter={() => setOpenDesktopMenu('categories')} onMouseLeave={() => setOpenDesktopMenu((current) => current === 'categories' ? null : current)}>
-            <button className="public-nav-link" type="button">
+            <button
+              aria-expanded={openDesktopMenu === 'categories'}
+              aria-haspopup="menu"
+              className="public-nav-link"
+              type="button"
+            >
               {copy.categories}
               <ChevronDown className="h-4 w-4" />
             </button>
@@ -185,7 +192,7 @@ const PublicNavbar = ({
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
-          <div className="flex items-center gap-2 rounded-xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-1">
+          <div className="flex items-center gap-2 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-1">
             <Languages className="h-4 w-4 text-[color:var(--primary)]" />
             <LanguageSwitcher compact />
           </div>
@@ -200,6 +207,8 @@ const PublicNavbar = ({
 
         <button
           aria-label={mobileOpen ? copy.close : copy.menu}
+          aria-controls="public-mobile-menu"
+          aria-expanded={mobileOpen}
           className="public-outline-button h-11 w-11 px-0 lg:hidden"
           onClick={() => setMobileOpen((current) => !current)}
           type="button"
@@ -209,7 +218,7 @@ const PublicNavbar = ({
       </div>
 
       {mobileOpen ? (
-        <div className="border-t border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-4 shadow-[0_18px_34px_rgba(15,23,42,0.08)] lg:hidden">
+        <div className="border-t border-[color:var(--border)] bg-[color:var(--surface-white)] px-4 py-4 lg:hidden" id="public-mobile-menu">
           <div className="mx-auto max-w-[1480px] space-y-3">
             {shouldShowHomeNavLink ? (
               <Link className="public-mobile-link" to={ROUTES.home}>
@@ -224,12 +233,18 @@ const PublicNavbar = ({
             ))}
 
             <div className="public-mobile-group">
-              <button className="public-mobile-toggle" onClick={() => setOpenMobileMenu((current) => current === 'courses' ? null : 'courses')} type="button">
+              <button
+                aria-controls="public-mobile-courses"
+                aria-expanded={openMobileMenu === 'courses'}
+                className="public-mobile-toggle"
+                onClick={() => setOpenMobileMenu((current) => current === 'courses' ? null : 'courses')}
+                type="button"
+              >
                 <span>{copy.mobileCoursesLabel}</span>
                 <ChevronDown className={cn('h-4 w-4 transition-transform', openMobileMenu === 'courses' && 'rotate-180')} />
               </button>
               {openMobileMenu === 'courses' ? (
-                <div className="space-y-2 px-2 pb-2">
+                <div className="space-y-2 px-2 pb-2" id="public-mobile-courses">
                   <Link className="public-mobile-subitem" to={ROUTES.catalog}>
                     {copy.allCourses}
                   </Link>
@@ -243,12 +258,18 @@ const PublicNavbar = ({
             </div>
 
             <div className="public-mobile-group">
-              <button className="public-mobile-toggle" onClick={() => setOpenMobileMenu((current) => current === 'categories' ? null : 'categories')} type="button">
+              <button
+                aria-controls="public-mobile-categories"
+                aria-expanded={openMobileMenu === 'categories'}
+                className="public-mobile-toggle"
+                onClick={() => setOpenMobileMenu((current) => current === 'categories' ? null : 'categories')}
+                type="button"
+              >
                 <span>{copy.mobileCategoriesLabel}</span>
                 <ChevronDown className={cn('h-4 w-4 transition-transform', openMobileMenu === 'categories' && 'rotate-180')} />
               </button>
               {openMobileMenu === 'categories' ? (
-                <div className="space-y-2 px-2 pb-2">
+                <div className="space-y-2 px-2 pb-2" id="public-mobile-categories">
                   {categories.map((category) => (
                     <Link className="public-mobile-subitem" key={category.key} to={buildCatalogPath({ category: category.key })}>
                       {category.label}
