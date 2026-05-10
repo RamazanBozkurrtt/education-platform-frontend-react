@@ -5,6 +5,7 @@ import type {
   ApiEnvelope,
   AppLanguage,
   Course,
+  CourseCategoryOption,
   DashboardOverview,
 } from '../utils/types'
 import { isAppError } from '../shared/errors/types'
@@ -86,6 +87,80 @@ const toIdentifier = (value: unknown) => {
   }
 
   return undefined
+}
+
+const toCategoryOption = (value: unknown): CourseCategoryOption | null => {
+  const payload = toRecord(value)
+  const categoryId = toIdentifier(payload.id ?? payload.categoryId)
+  const categoryNameRaw = payload.categoryName ?? payload.name
+  const categoryName = typeof categoryNameRaw === 'string' && categoryNameRaw.trim().length > 0
+    ? categoryNameRaw.trim()
+    : undefined
+
+  if (!categoryId || !categoryName) {
+    return null
+  }
+
+  return {
+    id: categoryId,
+    categoryName,
+  }
+}
+
+const buildCategoryIndex = (categories: CourseCategoryOption[]) =>
+  categories.reduce<Record<string, string>>((accumulator, category) => {
+    accumulator[category.id] = category.categoryName
+    return accumulator
+  }, {})
+
+const enrichCourseCategory = (course: Course, categoryIndex: Record<string, string>): Course => {
+  const categoryId = toIdentifier(course.categoryId)
+
+  if (!categoryId) {
+    return course
+  }
+
+  const resolvedCategoryName = categoryIndex[categoryId]
+
+  if (!resolvedCategoryName) {
+    return course
+  }
+
+  const normalizedCurrentCategory = typeof course.category === 'string' ? course.category.trim() : ''
+  const shouldReplaceCategory = normalizedCurrentCategory.length === 0 || normalizedCurrentCategory === categoryId
+
+  if (!shouldReplaceCategory) {
+    return course
+  }
+
+  return {
+    ...course,
+    category: resolvedCategoryName,
+  }
+}
+
+const enrichCoursesWithCategories = async (courses: Course[]) => {
+  if (courses.length === 0) {
+    return courses
+  }
+
+  try {
+    const categories = await courseService.getPublicCategories()
+
+    if (categories.length === 0) {
+      return courses
+    }
+
+    const categoryIndex = buildCategoryIndex(categories)
+    return courses.map((course) => enrichCourseCategory(course, categoryIndex))
+  } catch {
+    return courses
+  }
+}
+
+const enrichCourseWithCategories = async (course: Course) => {
+  const enrichedCourses = await enrichCoursesWithCategories([course])
+  return enrichedCourses[0] ?? course
 }
 
 const fetchPagedCourseList = async (endpoint: string, options: PagedCourseListOptions = {}) => {
@@ -362,17 +437,51 @@ export const courseService = {
 
   async getCourses(language: AppLanguage) {
     const rawCourses = await fetchPublicCoursesRaw(language)
-    return extractCourseCollection(rawCourses)
+    const courses = extractCourseCollection(rawCourses)
+    return enrichCoursesWithCategories(courses)
   },
 
   async getMyCourses(language: AppLanguage, options?: CourseQueryOptions) {
     const audience = options?.audience ?? 'instructor'
     const rawCourses = await fetchMyCoursesRaw(language, audience)
-    return extractCourseCollection(rawCourses)
+    const courses = extractCourseCollection(rawCourses)
+    return enrichCoursesWithCategories(courses)
   },
 
   async getCourseBySlug(identifier: string, language: AppLanguage) {
-    return getCourseByIdentifier(identifier, language)
+    const course = await getCourseByIdentifier(identifier, language)
+    return enrichCourseWithCategories(course)
+  },
+
+  async getPublicCategories() {
+    const response = await api.get<ApiEnvelope<unknown>>(API_ENDPOINTS.courses.publicCategories, {
+      skipAuthRefresh: true,
+      skipGlobalErrorHandling: true,
+    })
+    const data = requireEnvelopeData(response.data, 'Course category response is missing data.')
+    const rawItems = Array.isArray(data)
+      ? data
+      : Array.isArray(toRecord(data).items)
+        ? toRecord(data).items as unknown[]
+        : Array.isArray(toRecord(data).content)
+          ? toRecord(data).content as unknown[]
+          : []
+
+    const seenIds = new Set<string>()
+    const mappedCategories: CourseCategoryOption[] = []
+
+    for (const item of rawItems) {
+      const option = toCategoryOption(item)
+
+      if (!option || seenIds.has(option.id)) {
+        continue
+      }
+
+      seenIds.add(option.id)
+      mappedCategories.push(option)
+    }
+
+    return mappedCategories
   },
 
   async createCourse(payload: CoursePayload) {
@@ -392,6 +501,11 @@ export const courseService = {
   async publishCourse(courseId: string) {
     const response = await api.post<ApiEnvelope<unknown>>(API_ENDPOINTS.courses.publish(courseId))
     return requireEnvelopeData(response.data, 'Course publish response is missing data.')
+  },
+
+  async unpublishCourse(courseId: string) {
+    const response = await api.post<ApiEnvelope<unknown>>(API_ENDPOINTS.courses.unpublish(courseId))
+    return requireEnvelopeData(response.data, 'Course unpublish response is missing data.')
   },
 
   async createLesson(courseId: string, payload: LessonPayload) {

@@ -1,5 +1,4 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { useTheme } from '../../hooks/useTheme'
 import { cn } from '../../utils/helpers'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -11,18 +10,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants = {
   primary:
-    'border border-[color:var(--primary)] bg-[color:var(--primary)] text-white shadow-sm shadow-slate-900/10 hover:border-[color:var(--primary-strong)] hover:bg-[color:var(--primary-strong)]',
+    'border border-[color:var(--primary)] bg-[color:var(--primary)] text-white hover:border-[color:var(--primary-strong)] hover:bg-[color:var(--primary-strong)]',
   secondary:
-    'border border-white/12 bg-[color:var(--surface-muted)] text-slate-100 hover:border-white/18 hover:bg-[color:var(--surface-hover)]',
-  ghost: 'bg-transparent text-slate-400 hover:bg-[color:var(--surface-muted)] hover:text-slate-100',
-}
-
-const lightVariants = {
-  primary:
-    'border border-slate-200/90 bg-slate-100/55 text-slate-950 shadow-[0_18px_40px_rgba(15,23,42,0.08)] hover:border-slate-300 hover:bg-slate-200/75',
-  secondary:
-    'border border-slate-200/90 bg-white/80 text-slate-900 shadow-[0_12px_30px_rgba(15,23,42,0.05)] hover:border-slate-300 hover:bg-slate-100/85',
-  ghost: 'bg-transparent text-slate-700 hover:bg-slate-100/80 hover:text-slate-950',
+    'border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text-heading)] hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]',
+  ghost: 'border border-transparent bg-transparent text-[color:var(--text-muted)] hover:bg-[color:var(--surface-muted)] hover:text-[color:var(--text-heading)]',
 }
 
 const sizes = {
@@ -40,12 +31,9 @@ const Button = ({
   variant = 'primary',
   ...props
 }: ButtonProps) => {
-  const { theme } = useTheme()
-  const isLight = theme === 'light'
-
   const classes = cn(
-    'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-slate-400/20 disabled:cursor-not-allowed disabled:opacity-60',
-    isLight ? lightVariants[variant] : variants[variant],
+    'inline-flex items-center justify-center gap-2 rounded-[var(--radius-buttons)] font-semibold shadow-none transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg)] disabled:cursor-not-allowed disabled:opacity-45',
+    variants[variant],
     sizes[size],
     className,
   )

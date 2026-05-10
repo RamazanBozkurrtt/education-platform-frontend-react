@@ -65,15 +65,15 @@ const Sidebar = ({
 
     <aside
       className={cn(
-        'glass-panel fixed inset-y-4 left-4 z-40 flex w-[288px] flex-col rounded-lg border border-white/10 px-4 py-5 transition-all duration-300 ease-out lg:static lg:inset-auto lg:h-[calc(100vh-2rem)]',
+        'fixed inset-y-4 left-4 z-40 flex w-[288px] flex-col rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-4 py-5 shadow-[var(--shadow-sm)] transition-all duration-300 ease-out lg:static lg:inset-auto lg:h-[calc(100vh-2rem)]',
         collapsed ? 'lg:w-[96px]' : 'lg:w-[280px]',
         mobileOpen ? 'translate-x-0' : '-translate-x-[115%] lg:translate-x-0',
       )}
     >
-      <div className="mb-6 flex items-center justify-between border-b border-white/8 pb-5">
+      <div className="mb-6 flex items-center justify-between border-b border-[color:var(--border)] pb-5">
         <button
           className={cn(
-            'flex items-center gap-3 rounded-md bg-transparent p-0 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-[color:var(--primary)]/35',
+            'flex items-center gap-3 rounded-[var(--radius-navigation)] bg-transparent p-0 text-left outline-none transition focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)]',
             collapsed ? 'cursor-pointer' : 'cursor-default',
           )}
           disabled={!collapsed}
@@ -91,10 +91,11 @@ const Sidebar = ({
           </div>
         </button>
         <div className="flex items-center gap-2">
-          <Button className="lg:hidden" onClick={onCloseMobile} size="sm" variant="ghost">
+          <Button aria-label="Close menu" className="lg:hidden" onClick={onCloseMobile} size="sm" variant="ghost">
             <X className="h-4 w-4" />
           </Button>
           <Button
+            aria-label="Collapse sidebar"
             className={cn('hidden lg:inline-flex', collapsed && 'lg:hidden')}
             onClick={onToggleCollapsed}
             size="sm"
@@ -111,8 +112,8 @@ const Sidebar = ({
             key={item.to}
             className={({ isActive }) =>
               cn(
-                'group flex items-center gap-3 rounded-md border border-transparent px-3 py-3 text-sm font-medium text-slate-400 transition-colors hover:border-white/8 hover:bg-[color:var(--surface-muted)] hover:text-slate-100',
-                isActive && 'border-white/10 bg-[color:var(--surface-muted)] text-slate-100',
+                'group flex items-center gap-3 rounded-[var(--radius-navigation)] border border-transparent px-3 py-3 text-sm font-medium text-[color:var(--text-muted)] transition-colors hover:border-[color:var(--border)] hover:bg-[color:var(--surface-muted)] hover:text-[color:var(--text-heading)]',
+                isActive && 'border-[color:var(--border)] bg-[color:var(--surface-muted)] text-[color:var(--text-heading)]',
                 collapsed && 'lg:justify-center',
               )
             }
@@ -128,7 +129,7 @@ const Sidebar = ({
             >
               <span className="truncate">{item.label}</span>
               {item.badge && item.badge > 0 ? (
-                <span className="rounded-md border border-white/10 bg-[color:var(--surface-muted)] px-2 py-0.5 text-[11px] font-semibold text-slate-200">
+                <span className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-0.5 text-[11px] font-semibold text-[color:var(--text)]">
                   {item.badge}
                 </span>
               ) : null}

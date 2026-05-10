@@ -73,7 +73,7 @@ const DashboardLayout = () => {
 
   return (
     <div className="theme-app min-h-screen">
-      <div className="page-shell mx-auto flex max-w-[1600px] gap-4 px-4 py-4">
+      <div className="page-shell mx-auto flex max-w-[1600px] gap-6 px-4 py-4 lg:px-8 lg:py-6">
         <Sidebar
           collapsed={collapsed}
           mobileOpen={mobileOpen}
@@ -81,9 +81,9 @@ const DashboardLayout = () => {
           onToggleCollapsed={() => setCollapsed((current) => !current)}
         />
 
-        <div className="flex min-h-[calc(100vh-2rem)] flex-1 flex-col pb-8">
+        <div className="flex min-h-[calc(100vh-2rem)] flex-1 flex-col pb-8 lg:pb-10">
           <TopNavbar onOpenMobileMenu={() => setMobileOpen(true)} title={pageTitle} user={user} />
-          <main className="mt-6 flex-1 pb-2">
+          <main className="mt-8 flex-1 pb-2">
             <Outlet />
           </main>
         </div>

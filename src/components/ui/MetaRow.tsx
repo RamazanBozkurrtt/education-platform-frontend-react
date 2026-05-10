@@ -14,18 +14,18 @@ interface MetaRowProps {
 }
 
 const MetaRow = ({ items, className }: MetaRowProps) => (
-  <div className={cn('flex flex-wrap gap-2.5', className)}>
+  <div className={cn('flex flex-wrap gap-2', className)}>
     {items.map((item) => {
       const Icon = item.icon
 
       return (
         <div
-          className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-[color:var(--surface-muted)] px-3 py-1.5"
+          className="inline-flex items-center gap-2 rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1"
           key={item.key}
         >
-          {Icon ? <Icon className="h-3.5 w-3.5 text-slate-500" /> : null}
-          <span className="text-xs text-slate-400">{item.label}:</span>
-          <span className="text-xs font-medium text-slate-200">{item.value}</span>
+          {Icon ? <Icon className="h-3.5 w-3.5 text-[color:var(--text-muted)]" /> : null}
+          <span className="text-xs text-[color:var(--text-muted)]">{item.label}:</span>
+          <span className="text-xs font-semibold text-[color:var(--text-heading)]">{item.value}</span>
         </div>
       )
     })}

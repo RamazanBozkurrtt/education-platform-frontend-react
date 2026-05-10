@@ -6,7 +6,6 @@ import { ROUTES } from '../../utils/constants'
 import type { User } from '../../utils/types'
 import Button from '../ui/Button'
 import LanguageSwitcher from '../ui/LanguageSwitcher'
-import ThemeToggle from '../ui/ThemeToggle'
 
 interface TopNavbarProps {
   onOpenMobileMenu: () => void
@@ -19,9 +18,9 @@ const TopNavbar = ({ onOpenMobileMenu, title, user }: TopNavbarProps) => {
   const { itemCount } = useCart()
 
   return (
-    <header className="glass-panel sticky top-4 z-20 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-white/10 px-4 py-4 !bg-[color:var(--surface-strong)] lg:flex-nowrap lg:px-5">
+    <header className="sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4 rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-4 py-4 lg:flex-nowrap lg:px-5">
       <div className="flex items-center gap-3">
-        <Button className="lg:hidden" onClick={onOpenMobileMenu} size="sm" variant="ghost">
+        <Button aria-label="Open menu" className="lg:hidden" onClick={onOpenMobileMenu} size="sm" variant="ghost">
           <Menu className="h-5 w-5" />
         </Button>
         <div>
@@ -31,10 +30,11 @@ const TopNavbar = ({ onOpenMobileMenu, title, user }: TopNavbarProps) => {
       </div>
 
       <div className="order-3 flex w-full justify-center lg:order-none lg:flex-1">
-        <div className="theme-surface-strong theme-muted flex h-11 w-full max-w-xl items-center gap-3 rounded-md border border-white/10 px-4">
+        <div className="theme-surface-soft theme-muted flex h-11 w-full max-w-xl items-center gap-3 rounded-[var(--radius-navigation)] border border-[color:var(--border)] px-4">
           <Search className="h-4 w-4" />
           <input
-            className="theme-text w-full bg-transparent text-sm outline-none placeholder:text-slate-500"
+            aria-label={t('nav.searchPlaceholder')}
+            className="theme-text w-full bg-transparent text-sm outline-none placeholder:text-[color:var(--text-subtle)]"
             placeholder={t('nav.searchPlaceholder')}
             type="search"
           />
@@ -45,19 +45,18 @@ const TopNavbar = ({ onOpenMobileMenu, title, user }: TopNavbarProps) => {
         <div className="hidden xl:block">
           <LanguageSwitcher compact />
         </div>
-        <ThemeToggle compact />
         <Link
-          className="hidden rounded-md border border-white/10 bg-[color:var(--surface-muted)] px-4 py-2.5 text-sm text-slate-200 transition hover:border-white/16 hover:bg-[color:var(--surface-hover)] sm:flex sm:items-center sm:gap-2"
+          className="hidden items-center gap-2 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-4 py-2.5 text-sm text-[color:var(--text)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] sm:flex"
           to={ROUTES.cart}
         >
           <ShoppingCart className="h-4 w-4" />
           {t('cart.courseCount', { count: itemCount })}
         </Link>
         <Link
-          className="theme-surface-muted flex items-center gap-3 rounded-md border border-white/10 px-2.5 py-2 transition hover:border-white/16 hover:bg-[color:var(--surface-hover)]"
+          className="theme-surface-muted flex items-center gap-3 rounded-[var(--radius-navigation)] border border-[color:var(--border)] px-2.5 py-2 transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]"
           to={ROUTES.profile}
         >
-          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-[color:var(--primary)] text-sm font-semibold text-white">
+          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--primary)] text-sm font-semibold text-white">
             {user.avatarUrl ? (
               <img alt={user.name} className="h-full w-full object-cover" src={user.avatarUrl} />
             ) : (

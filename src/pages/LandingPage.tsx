@@ -2,13 +2,15 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowRight,
-  BadgeCheck,
-  Blocks,
-  BriefcaseBusiness,
-  Building2,
+  BookOpenText,
   ChartColumnIncreasing,
   GraduationCap,
+  LayoutDashboard,
+  PlayCircle,
   ShieldCheck,
+  Star,
+  UserRound,
+  Users2,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -21,7 +23,7 @@ import { courseService } from '../services/courseService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { buildCatalogPath, getCatalogCategories } from '../utils/catalogFilters'
 import { ROUTES } from '../utils/constants'
-import { formatCurrency } from '../utils/helpers'
+import { getCourseCategoryFilterKey, getCourseCategoryLabel } from '../utils/courseCategory'
 
 const parseStudentCount = (value: string) => {
   if (value.trim().toLowerCase().endsWith('k')) {
@@ -39,91 +41,49 @@ const LandingPage = () => {
   const copy = language === 'tr'
     ? {
       navSections: [
-        { id: 'platform', label: 'Nasıl işler' },
+        { id: 'platform', label: 'Nasil calisir' },
         { id: 'results', label: 'Neden Edubase' },
       ],
-      eyebrow: 'Online eğitim ve mesleki gelişim',
-      title: 'İhtiyacına uygun kursları keşfet, eğitmenleri incele ve öğrenmeye bugün başla.',
-      description:
-        'Teknik becerilerden ürün ve tasarıma kadar farklı alanlardaki kursları tek katalogda inceleyebilir, seviyene uygun programları kolayca bulabilirsin.',
-      primaryCta: 'Kursları keşfet',
-      secondaryCta: 'Hesap oluştur',
-      proof: 'Seviye, eğitmen, süre ve içerik bilgileri baştan görünür.',
-      heroStats: [
-        { value: '12', label: 'Kurs alanı' },
-        { value: '4.8', label: 'Ortalama puan' },
-        { value: '24/7', label: 'Katalog erişimi' },
+      eyebrow: 'EduBase Platformu',
+      title: 'Ogrenme ve icerik yonetimi tek platformda.',
+      description: 'EduBase ile kurslarini olusturabilir, ders videolarini yonetebilir ve ogrencilerinle tek bir panelden bulusabilirsin.',
+      primaryCta: 'Ucretsiz Basla',
+      secondaryCta: 'Egitmen Ol',
+      proof: 'Kurs yonetimi, video icerikleri ve ogrenci takibi tek akista sunulur.',
+      heroVisualTitle: 'EduBase Ogrenme Paneli',
+      heroVisualSubtitle: 'Canli ders akisi ve kurs yonetimi',
+      heroCourseTitle: 'React ile Uygulama Gelistirme',
+      heroCourseMeta: '42 ders - Orta seviye',
+      heroInstructorName: 'Selin A.',
+      heroInstructorRole: 'Kidemli Egitmen',
+      heroStudentNote: 'Ogrenci ilerlemesi guncel',
+      heroMetricLearners: 'Toplam ogrenci',
+      heroMetricRating: 'Ortalama puan',
+      heroImagePlaceholder: 'Final hero gorseli alani',
+      heroFloatingLabels: ['Video Dersler', 'Egitmen Paneli', 'Kurs Yonetimi', 'Ogrenci Takibi', 'Sertifikalar'],
+      platformTitle: 'Kurs secimini kolaylastiran sade akis',
+      platformDescription: 'Filtreleri kullan, kurslari karsilastir ve detay sayfasinda ders yapisini gor.',
+      platformItems: [
+        'Kurslari kategori ve seviyeye gore filtrele.',
+        'Kurs kartlarinda temel bilgileri tek bakista gor.',
+        'Detay sayfasinda dersler ve degerlendirmeleri incele.',
       ],
-      heroPanelEyebrow: 'Kursları keşfet',
-      heroPanelTitle: 'Kurs, eğitmen ve seviye bilgilerine tek bakışta ulaş.',
-      heroPanelDescription:
-        'Kategoriye göre gezebilir, öne çıkan kursları inceleyebilir ve ilgilendiğin eğitimin detaylarına kolayca geçebilirsin.',
-      heroHighlights: [
-        'Kursları kategori, seviye veya konuya göre hızlıca filtrele.',
-        'Eğitmen, süre, puan ve fiyat bilgilerini kart üzerinde gör.',
-        'Mobilde ve masaüstünde aynı sade akışla ilerle.',
-      ],
-      featuredMetrics: {
-        learners: 'Katılımcı',
-        rating: 'Puan',
-        duration: 'Süre',
-      },
-      leadershipLabel: 'Öğrenme deneyimi',
-      leadershipTitle: 'Kendi hızında ilerlemek isteyenler için düzenli bir kurs kataloğu',
-      leadershipDescription:
-        'Edubase, farklı seviyelerdeki kursları anlaşılır bir yapıda sunar. Böylece hangi kursun sana uygun olduğunu hızlıca görebilir ve öğrenmeye zaman kaybetmeden başlayabilirsin.',
-      leadershipCards: [
-        {
-          title: 'Açık kurs bilgisi',
-          description: 'Her kursta seviye, süre, eğitmen ve içerik bilgileri net şekilde yer alır.',
-        },
-        {
-          title: 'Kolay karşılaştırma',
-          description: 'Benzer kursları süre, puan ve fiyat bilgileriyle rahatça değerlendirebilirsin.',
-        },
-        {
-          title: 'Düzenli öğrenme takibi',
-          description: 'Satın aldığın kurslara panelinden dönebilir, kaldığın yerden devam edebilirsin.',
-        },
-      ],
-      categoryEyebrow: 'Kategoriler',
-      categoryTitle: 'İlgilendiğin alana göre kursları keşfet',
-      categoryDescription:
-        'Ürün, veri, tasarım ve mühendislik gibi alanlarda kursları filtreleyerek sana uygun içeriklere ulaşabilirsin.',
-      categoryButton: 'Tüm kurslar',
-      categoryFocus: 'Odak',
+      categoryTitle: 'Kategoriler',
+      categoryDescription: 'Ilgilendigin alana gore kurslara ulas.',
       categoryCourses: 'kurs',
-      showcaseEyebrow: 'Öne çıkan kurslar',
-      showcaseTitle: 'Popüler kursları hızlıca karşılaştır',
-      showcaseDescription:
-        'Kurs kartlarında süre, katılımcı sayısı, puan, fiyat ve eğitmen bilgisi yer alır. Böylece karar vermeden önce temel bilgileri kolayca görebilirsin.',
-      showcaseButton: 'Kataloğu aç',
-      resultsEyebrow: 'Neden Edubase',
-      resultsTitle: 'Kurs seçimini kolaylaştıran sade bir deneyim',
-      resultsDescription:
-        'Edubase, kursları gereksiz karmaşa olmadan incelemeni sağlar. Kategorileri gezebilir, seviyeleri karşılaştırabilir ve detay sayfasında ne öğreneceğini görebilirsin.',
-      resultStats: [
-        { value: '4+', label: 'Öğrenme alanı' },
-        { value: '4.8', label: 'Ortalama kurs puanı' },
-        { value: '24/7', label: 'Katalog erişimi' },
-      ],
-      roadmapTitle: 'Öğrenmeye başlamadan önce neleri görebilirsin?',
+      showcaseTitle: 'One cikan kurslar',
+      showcaseDescription: 'Populer kurslari hizlica incele.',
+      resultsTitle: 'Edubase ile ne gorebilirsin?',
+      resultsDescription: 'Kursa baslamadan once temel bilgileri net sekilde inceleyebilirsin.',
+      roadmapTitle: 'Kurs detaylarinda neler var?',
       roadmap: [
-        'Kursların seviyesi, süresi ve eğitmeni kartlarda açıkça yer alır.',
-        'Kategori ve seviye filtreleriyle ilgini çeken programlara daha hızlı ulaşırsın.',
-        'Kurs detayında içerik, kazanımlar ve modüller tek sayfada gösterilir.',
+        'Kurs detaylari',
+        'Dersler',
+        'Degerlendirmeler',
       ],
-      summaryMetrics: {
-        programs: 'Program',
-        learners: 'Katılımcı',
-        rating: 'Ortalama puan',
-      },
-      systemNotes: 'Kurs seçimi',
-      ctaEyebrow: 'Öğrenmeye hazır mısın?',
-      ctaTitle: 'Kendine uygun kursu seç ve ilk dersine başla.',
-      ctaDescription:
-        'Kataloğu incele, detayları karşılaştır ve hesabını oluşturarak öğrenmeye devam et.',
-      finalPrimary: 'Kursları gör',
+      ctaTitle: 'Hemen basla',
+      ctaDescription: 'Katalogu ac ve sana uygun kursu sec.',
+      finalPrimary: 'Kursları keşfet',
       finalSecondary: 'Giriş yap',
     }
     : {
@@ -131,94 +91,56 @@ const LandingPage = () => {
         { id: 'platform', label: 'How it works' },
         { id: 'results', label: 'Why Edubase' },
       ],
-      eyebrow: 'Online learning and professional development',
-      title: 'Find the right course, review the instructor, and start learning today.',
-      description:
-        'Explore courses across technical skills, product, data, and design. Filter by level or topic and choose the program that fits your next goal.',
-      primaryCta: 'Explore courses',
-      secondaryCta: 'Create account',
-      proof: 'Level, instructor, duration, and content details are visible before you enroll.',
-      heroStats: [
-        { value: '12', label: 'Learning areas' },
-        { value: '4.8', label: 'Average rating' },
-        { value: '24/7', label: 'Catalog access' },
+      eyebrow: 'EduBase Platform',
+      title: 'Learning and content management on one platform.',
+      description: 'With EduBase, create courses, manage lesson videos, and connect with students through a single dashboard.',
+      primaryCta: 'Start Free',
+      secondaryCta: 'Become an Instructor',
+      proof: 'Course management, video content, and student tracking are delivered in one clear flow.',
+      heroVisualTitle: 'EduBase Learning Dashboard',
+      heroVisualSubtitle: 'Live lesson flow and course operations',
+      heroCourseTitle: 'React Application Development',
+      heroCourseMeta: '42 lessons - Intermediate',
+      heroInstructorName: 'Selin A.',
+      heroInstructorRole: 'Senior Instructor',
+      heroStudentNote: 'Student progress is up to date',
+      heroMetricLearners: 'Total learners',
+      heroMetricRating: 'Average rating',
+      heroImagePlaceholder: 'Final hero visual slot',
+      heroFloatingLabels: ['Video Lessons', 'Instructor Panel', 'Course Management', 'Student Tracking', 'Certificates'],
+      platformTitle: 'A clear flow for course discovery',
+      platformDescription: 'Use filters, compare courses, and review lesson structure on the detail page.',
+      platformItems: [
+        'Filter by category and level.',
+        'See key details directly on course cards.',
+        'Review lessons and ratings on the detail page.',
       ],
-      heroPanelEyebrow: 'Course discovery',
-      heroPanelTitle: 'See course, instructor, and level details at a glance.',
-      heroPanelDescription:
-        'Browse by category, review featured courses, and open the details page when a course looks right for you.',
-      heroHighlights: [
-        'Filter courses by category, level, or topic.',
-        'Check instructor, duration, rating, and price on each card.',
-        'Move through the same simple flow on desktop and mobile.',
-      ],
-      featuredMetrics: {
-        learners: 'Learners',
-        rating: 'Rating',
-        duration: 'Duration',
-      },
-      leadershipLabel: 'Learning experience',
-      leadershipTitle: 'A clear course catalog for people who want to learn at their own pace',
-      leadershipDescription:
-        'Edubase presents courses in a simple structure, so you can understand what each program covers and choose without digging through extra pages.',
-      leadershipCards: [
-        {
-          title: 'Clear course details',
-          description: 'Each course shows level, duration, instructor, and content information up front.',
-        },
-        {
-          title: 'Easy comparison',
-          description: 'Compare similar courses by duration, rating, and price before you decide.',
-        },
-        {
-          title: 'Learning progress',
-          description: 'Return to purchased courses from your dashboard and continue where you left off.',
-        },
-      ],
-      categoryEyebrow: 'Categories',
-      categoryTitle: 'Explore courses by the topic you care about',
-      categoryDescription:
-        'Filter courses in product, data, design, engineering, and other practical learning areas.',
-      categoryButton: 'All courses',
-      categoryFocus: 'Focus',
+      categoryTitle: 'Categories',
+      categoryDescription: 'Open courses by your focus area.',
       categoryCourses: 'courses',
-      showcaseEyebrow: 'Featured courses',
-      showcaseTitle: 'Compare popular courses quickly',
-      showcaseDescription:
-        'Each card shows duration, learners, rating, price, and instructor details so you can review the essentials before opening the course.',
-      showcaseButton: 'Open catalog',
-      resultsEyebrow: 'Why Edubase',
-      resultsTitle: 'A simpler way to choose your next course',
-      resultsDescription:
-        'Edubase keeps the course search focused. Browse categories, compare levels, and check what you will learn on the course detail page.',
-      resultStats: [
-        { value: '4+', label: 'Learning areas' },
-        { value: '4.8', label: 'Average course rating' },
-        { value: '24/7', label: 'Catalog availability' },
-      ],
-      roadmapTitle: 'What you can review before you start',
+      showcaseTitle: 'Featured courses',
+      showcaseDescription: 'Review popular courses quickly.',
+      resultsTitle: 'What can you review?',
+      resultsDescription: 'See key information before you start a course.',
+      roadmapTitle: 'Inside course details',
       roadmap: [
-        'Course level, duration, and instructor details are visible on the cards.',
-        'Category and level filters help you reach relevant courses faster.',
-        'Course detail pages show content, outcomes, and modules in one place.',
+        'Course details',
+        'Lessons',
+        'Reviews',
       ],
-      summaryMetrics: {
-        programs: 'Programs',
-        learners: 'Learners',
-        rating: 'Average rating',
-      },
-      systemNotes: 'Course choice',
-      ctaEyebrow: 'Ready to learn?',
-      ctaTitle: 'Choose a course that fits your goal and start your first lesson.',
-      ctaDescription:
-        'Explore the catalog, compare course details, and create an account when you are ready to continue.',
-      finalPrimary: 'View courses',
+      ctaTitle: 'Start now',
+      ctaDescription: 'Open the catalog and pick your course.',
+      finalPrimary: 'Explore courses',
       finalSecondary: 'Sign in',
     }
 
   const { data: courses, error, isLoading } = useQuery({
     queryKey: ['landing-courses', language],
     queryFn: () => courseService.getCourses(language),
+  })
+  const { data: categoriesFromApi = [] } = useQuery({
+    queryKey: ['landing-categories'],
+    queryFn: () => courseService.getPublicCategories(),
   })
   const appError = error ? normalizeApiError(error) : null
   const hasRecoverablePublicError = appError?.kind === 'auth' || appError?.kind === 'forbidden'
@@ -242,9 +164,23 @@ const LandingPage = () => {
       totalLearners,
       averageRating,
       featuredCourses: sortedCourses.slice(0, 3),
-      categories: getCatalogCategories(resolvedCourses),
+      categories: categoriesFromApi.length > 0
+        ? categoriesFromApi.map((category) => ({
+          key: category.id,
+          label: category.categoryName,
+          count: resolvedCourses.filter((course) => getCourseCategoryFilterKey(course) === category.id).length,
+          highlight: resolvedCourses.find((course) => getCourseCategoryFilterKey(course) === category.id)?.tags.slice(0, 2).join(' / ')
+            ?? (language === 'tr' ? 'Kurslari incele' : 'Explore courses'),
+        })).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
+        : getCatalogCategories(resolvedCourses).map((category) => ({
+          ...category,
+          label: getCourseCategoryLabel({
+            category: category.label,
+            categoryId: category.key,
+          }),
+        })),
     }
-  }, [resolvedCourses])
+  }, [categoriesFromApi, language, resolvedCourses])
 
   const handleAnchorClick = (id: string) => {
     const section = document.getElementById(id)
@@ -258,7 +194,7 @@ const LandingPage = () => {
   }
 
   if (isBootstrapping) {
-    return <main className="flex min-h-screen items-center justify-center px-4 theme-muted">{t('loader.restoringWorkspace')}</main>
+    return <main className="theme-muted flex min-h-screen items-center justify-center px-4">{t('loader.restoringWorkspace')}</main>
   }
 
   if (error && !hasRecoverablePublicError) {
@@ -266,10 +202,8 @@ const LandingPage = () => {
   }
 
   if (isLoading) {
-    return <main className="flex min-h-screen items-center justify-center px-4 theme-muted">{t('loader.courseCatalog')}</main>
+    return <main className="theme-muted flex min-h-screen items-center justify-center px-4">{t('loader.courseCatalog')}</main>
   }
-
-  const featuredCourse = content.featuredCourses[0]
 
   return (
     <div className="public-page theme-app">
@@ -282,20 +216,13 @@ const LandingPage = () => {
 
       <main className="relative">
         <section className="mx-auto max-w-[1480px] px-4 pb-10 pt-8 lg:px-8 lg:pb-14 lg:pt-12">
-          <div className="grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
-            <div className="public-section-card overflow-hidden rounded-lg p-7 md:p-10">
-              <span className="inline-flex items-center gap-2 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] theme-heading">
-                <Building2 className="h-3.5 w-3.5 text-[color:var(--primary)]" />
-                {copy.eyebrow}
-              </span>
-
-              <h1 className="theme-heading mt-6 max-w-4xl text-5xl font-semibold leading-[1.02] tracking-[-0.05em] md:text-6xl">
+          <div className="grid gap-6 lg:gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+            <div className="public-section-card rounded-[var(--radius-cards)] p-8 md:p-10">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--primary)]">{copy.eyebrow}</p>
+              <h1 className="theme-heading mt-4 text-4xl font-semibold leading-tight tracking-[-0.03em] md:text-5xl">
                 {copy.title}
               </h1>
-
-              <p className="theme-muted mt-6 max-w-2xl text-base leading-8 md:text-lg">
-                {copy.description}
-              </p>
+              <p className="theme-muted mt-5 max-w-2xl text-sm leading-8 md:text-base">{copy.description}</p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <Link to={ROUTES.catalog}>
@@ -305,126 +232,133 @@ const LandingPage = () => {
                   </span>
                 </Link>
 
-                <Link to={ROUTES.register}>
+                <Link to={ROUTES.becomeInstructor}>
                   <span className="public-outline-button h-12 px-5 text-sm font-semibold">
                     {copy.secondaryCta}
                   </span>
                 </Link>
               </div>
 
-              <div className="mt-8 flex flex-wrap items-center gap-3 text-sm theme-muted">
-                <BadgeCheck className="h-4 w-4 text-emerald-500" />
+              <div className="theme-muted mt-8 flex items-center gap-3 text-sm">
+                <ShieldCheck className="h-4 w-4 text-[color:var(--primary)]" />
                 <span>{copy.proof}</span>
-              </div>
-
-              <div className="mt-10 grid gap-4 md:grid-cols-3">
-                {copy.heroStats.map((item) => (
-                  <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-5 py-5" key={item.label}>
-                    <p className="theme-heading text-3xl font-semibold tracking-[-0.04em]">{item.value}</p>
-                    <p className="theme-subtle mt-2 text-xs font-semibold uppercase tracking-[0.22em]">{item.label}</p>
-                  </div>
-                ))}
               </div>
             </div>
 
-            <div className="grid gap-6">
-              <div className="public-section-card rounded-lg p-8">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--primary)]">
-                  {copy.heroPanelEyebrow}
-                </p>
-                <h2 className="theme-heading mt-4 max-w-lg text-3xl font-semibold tracking-[-0.04em]">
-                  {copy.heroPanelTitle}
-                </h2>
-                <p className="theme-muted mt-4 max-w-xl text-sm leading-8">
-                  {copy.heroPanelDescription}
-                </p>
+            <div className="public-section-card relative overflow-hidden rounded-[var(--radius-cards)] p-5 sm:p-6 md:p-8">
+              <div className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-[color:var(--surface-muted)] opacity-70" />
+              <div className="pointer-events-none absolute -bottom-12 -left-8 h-32 w-32 rounded-full border border-[color:var(--border)] bg-[color:var(--surface-soft)] opacity-80" />
 
-                <div className="mt-8 grid gap-3">
-                  {copy.heroHighlights.map((item) => (
-                    <div
-                      className="flex items-start gap-3 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-4 py-4"
-                      key={item}
-                    >
-                      <ShieldCheck className="mt-0.5 h-4 w-4 flex-none text-[color:var(--accent)]" />
-                      <p className="theme-text text-sm leading-7">{item}</p>
+              <div className="relative space-y-4">
+                <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-white)] p-4 shadow-[var(--panel-shadow)] sm:p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="theme-heading text-sm font-semibold">{copy.heroVisualTitle}</p>
+                      <p className="theme-muted mt-1 text-xs">{copy.heroVisualSubtitle}</p>
                     </div>
-                  ))}
+                    <span className="inline-flex items-center gap-1 rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1 text-[11px] font-semibold theme-muted">
+                      <LayoutDashboard className="h-3.5 w-3.5 text-[color:var(--primary)]" />
+                      Live
+                    </span>
+                  </div>
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-[1.25fr_0.95fr]">
+                    <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-[color:var(--primary)]">
+                        <PlayCircle className="h-3.5 w-3.5" />
+                        Video Ders
+                      </span>
+                      <p className="theme-heading mt-2 text-sm font-semibold">{copy.heroCourseTitle}</p>
+                      <p className="theme-muted mt-1 text-xs">{copy.heroCourseMeta}</p>
+                      <div className="mt-4 h-16 rounded-[var(--radius-navigation)] border border-dashed border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-2 text-[11px] theme-subtle">
+                        {copy.heroImagePlaceholder}
+                      </div>
+                    </div>
+
+                    <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[color:var(--border)] bg-[color:var(--surface-white)]">
+                          <UserRound className="h-4 w-4 text-[color:var(--primary)]" />
+                        </span>
+                        <div>
+                          <p className="theme-heading text-sm font-semibold">{copy.heroInstructorName}</p>
+                          <p className="theme-muted text-xs">{copy.heroInstructorRole}</p>
+                        </div>
+                      </div>
+                      <div className="mt-3 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-2">
+                        <p className="theme-muted text-xs">{copy.heroStudentNote}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4">
+                    <p className="theme-subtle text-[11px] font-semibold uppercase tracking-[0.15em]">{copy.heroMetricLearners}</p>
+                    <p className="theme-heading mt-2 text-2xl font-semibold">
+                      {content.totalLearners.toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')}
+                    </p>
+                  </div>
+                  <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4">
+                    <p className="theme-subtle text-[11px] font-semibold uppercase tracking-[0.15em]">{copy.heroMetricRating}</p>
+                    <p className="theme-heading mt-2 flex items-center gap-1 text-2xl font-semibold">
+                      <Star className="h-4 w-4 text-[color:var(--primary)]" />
+                      {content.averageRating.toFixed(1)}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {featuredCourse ? (
-                <div className="public-section-card rounded-lg p-7">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="theme-subtle text-[11px] font-semibold uppercase tracking-[0.16em]">{featuredCourse.category}</p>
-                      <h3 className="theme-heading mt-2 text-2xl font-semibold tracking-[-0.03em]">{featuredCourse.title}</h3>
-                    </div>
-                    <div className="rounded-md bg-[color:var(--surface-muted)] px-4 py-2 text-sm font-semibold theme-heading">
-                      {formatCurrency(featuredCourse.price)}
-                    </div>
-                  </div>
+              <div className="relative mt-4 flex flex-wrap gap-2 sm:hidden">
+                {copy.heroFloatingLabels.map((label) => (
+                  <span className="inline-flex rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1 text-[11px] font-semibold theme-muted" key={label}>
+                    {label}
+                  </span>
+                ))}
+              </div>
 
-                  <p className="theme-muted mt-4 text-sm leading-8">{featuredCourse.summary}</p>
-
-                  <div className="mt-6 grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-4 py-4">
-                      <p className="theme-subtle text-xs uppercase tracking-[0.18em]">{copy.featuredMetrics.learners}</p>
-                      <p className="theme-heading mt-2 text-lg font-semibold">{featuredCourse.students}</p>
-                    </div>
-                    <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-4 py-4">
-                      <p className="theme-subtle text-xs uppercase tracking-[0.18em]">{copy.featuredMetrics.rating}</p>
-                      <p className="theme-heading mt-2 text-lg font-semibold">{featuredCourse.rating}</p>
-                    </div>
-                    <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-4 py-4">
-                      <p className="theme-subtle text-xs uppercase tracking-[0.18em]">{copy.featuredMetrics.duration}</p>
-                      <p className="theme-heading mt-2 text-lg font-semibold">{featuredCourse.duration}</p>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
+              <div className="pointer-events-none absolute -right-3 top-8 hidden rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1 text-[11px] font-semibold theme-muted sm:inline-flex">
+                <PlayCircle className="mr-1 h-3.5 w-3.5 text-[color:var(--primary)]" />
+                {copy.heroFloatingLabels[0]}
+              </div>
+              <div className="pointer-events-none absolute -left-5 top-[34%] hidden rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1 text-[11px] font-semibold theme-muted sm:inline-flex">
+                <LayoutDashboard className="mr-1 h-3.5 w-3.5 text-[color:var(--primary)]" />
+                {copy.heroFloatingLabels[1]}
+              </div>
+              <div className="pointer-events-none absolute right-10 top-[52%] hidden rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1 text-[11px] font-semibold theme-muted sm:inline-flex">
+                <BookOpenText className="mr-1 h-3.5 w-3.5 text-[color:var(--primary)]" />
+                {copy.heroFloatingLabels[2]}
+              </div>
+              <div className="pointer-events-none absolute -left-3 bottom-20 hidden rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1 text-[11px] font-semibold theme-muted sm:inline-flex">
+                <Users2 className="mr-1 h-3.5 w-3.5 text-[color:var(--primary)]" />
+                {copy.heroFloatingLabels[3]}
+              </div>
+              <div className="pointer-events-none absolute bottom-6 right-4 hidden rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-3 py-1 text-[11px] font-semibold theme-muted sm:inline-flex">
+                <GraduationCap className="mr-1 h-3.5 w-3.5 text-[color:var(--primary)]" />
+                {copy.heroFloatingLabels[4]}
+              </div>
             </div>
           </div>
         </section>
 
-        <section className="mx-auto max-w-[1480px] px-4 py-6 lg:px-8" id="platform">
-          <div className="grid gap-5 lg:grid-cols-[0.86fr_1.14fr]">
-            <div className="public-section-card rounded-lg p-7 md:p-8">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--primary)]">{copy.leadershipLabel}</p>
-              <h2 className="theme-heading mt-4 text-3xl font-semibold tracking-[-0.04em] md:text-4xl">{copy.leadershipTitle}</h2>
-              <p className="theme-muted mt-5 text-sm leading-8">{copy.leadershipDescription}</p>
+        <section className="mx-auto max-w-[1480px] px-4 py-10 lg:px-8" id="platform">
+          <div className="public-section-card rounded-[var(--radius-cards)] p-8">
+            <h2 className="theme-heading text-3xl font-semibold tracking-[-0.03em] md:text-4xl">{copy.platformTitle}</h2>
+            <p className="theme-muted mt-4 max-w-3xl text-sm leading-8">{copy.platformDescription}</p>
 
-              <div className="mt-8 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] p-5">
-                  <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{copy.summaryMetrics.programs}</p>
-                  <p className="theme-heading mt-2 text-3xl font-semibold tracking-[-0.04em]">{resolvedCourses.length}</p>
-                </div>
-                <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] p-5">
-                  <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{copy.summaryMetrics.learners}</p>
-                  <p className="theme-heading mt-2 text-3xl font-semibold tracking-[-0.04em]">
-                    {content.totalLearners.toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')}
-                  </p>
-                </div>
-                <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] p-5 sm:col-span-2">
-                  <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{copy.summaryMetrics.rating}</p>
-                  <p className="theme-heading mt-2 text-3xl font-semibold tracking-[-0.04em]">{content.averageRating.toFixed(1)}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid gap-5 md:grid-cols-3">
-              {[Building2, BriefcaseBusiness, ChartColumnIncreasing].map((Icon, index) => {
-                const item = copy.leadershipCards[index]
-
-                return (
-                  <article className="public-section-card rounded-lg p-6" key={item.title}>
-                    <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
-                      <Icon className="h-5 w-5" />
-                    </div>
-                    <h3 className="theme-heading mt-5 text-xl font-semibold tracking-[-0.03em]">{item.title}</h3>
-                    <p className="theme-muted mt-3 text-sm leading-8">{item.description}</p>
-                  </article>
-                )
-              })}
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              <article className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-5">
+                <BookOpenText className="h-5 w-5 text-[color:var(--primary)]" />
+                <p className="theme-text mt-3 text-sm leading-7">{copy.platformItems[0]}</p>
+              </article>
+              <article className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-5">
+                <Users2 className="h-5 w-5 text-[color:var(--primary)]" />
+                <p className="theme-text mt-3 text-sm leading-7">{copy.platformItems[1]}</p>
+              </article>
+              <article className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-5">
+                <ChartColumnIncreasing className="h-5 w-5 text-[color:var(--primary)]" />
+                <p className="theme-text mt-3 text-sm leading-7">{copy.platformItems[2]}</p>
+              </article>
             </div>
           </div>
         </section>
@@ -432,14 +366,12 @@ const LandingPage = () => {
         <section className="mx-auto max-w-[1480px] px-4 py-10 lg:px-8" id="categories">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--primary)]">{copy.categoryEyebrow}</p>
-              <h2 className="theme-heading mt-4 text-3xl font-semibold tracking-[-0.04em] md:text-4xl">{copy.categoryTitle}</h2>
-              <p className="theme-muted mt-5 text-sm leading-8">{copy.categoryDescription}</p>
+              <h2 className="theme-heading text-3xl font-semibold tracking-[-0.03em] md:text-4xl">{copy.categoryTitle}</h2>
+              <p className="theme-muted mt-4 text-sm leading-8">{copy.categoryDescription}</p>
             </div>
-
             <Link to={ROUTES.catalog}>
               <span className="public-outline-button h-11 px-4 text-sm font-semibold">
-                {copy.categoryButton}
+                {copy.primaryCta}
                 <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
@@ -448,23 +380,13 @@ const LandingPage = () => {
           <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             {content.categories.map((category) => (
               <Link className="group" key={category.key} to={buildCatalogPath({ category: category.key })}>
-                <article className="public-section-card h-full rounded-lg p-6">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
-                      <Blocks className="h-5 w-5" />
-                    </div>
-                    <span className="rounded-md border border-[color:var(--border)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] theme-subtle">
-                      {category.count} {copy.categoryCourses}
-                    </span>
-                  </div>
-
-                  <h3 className="theme-heading mt-6 text-2xl font-semibold tracking-[-0.03em]">{category.label}</h3>
-                  <div className="mt-6 border-t border-[color:var(--border)] pt-4">
-                    <p className="theme-subtle text-[11px] font-semibold uppercase tracking-[0.16em]">{copy.categoryFocus}</p>
-                    <p className="theme-muted mt-2 text-sm leading-7">{category.highlight}</p>
-                  </div>
-
-                  <span className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--primary)] transition-colors group-hover:text-[color:var(--primary-strong)]">
+                <article className="public-section-card h-full rounded-[var(--radius-cards)] p-6">
+                  <span className="theme-subtle text-xs font-semibold uppercase tracking-[0.14em]">
+                    {category.count} {copy.categoryCourses}
+                  </span>
+                  <h3 className="theme-heading mt-4 text-2xl font-semibold tracking-[-0.02em]">{category.label}</h3>
+                  <p className="theme-muted mt-3 text-sm leading-7">{category.highlight}</p>
+                  <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--primary)] transition-colors group-hover:text-[color:var(--primary-strong)]">
                     {copy.primaryCta}
                     <ArrowRight className="h-4 w-4" />
                   </span>
@@ -477,14 +399,12 @@ const LandingPage = () => {
         <section className="mx-auto max-w-[1480px] px-4 py-10 lg:px-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--primary)]">{copy.showcaseEyebrow}</p>
-              <h2 className="theme-heading mt-4 text-3xl font-semibold tracking-[-0.04em] md:text-4xl">{copy.showcaseTitle}</h2>
-              <p className="theme-muted mt-5 text-sm leading-8">{copy.showcaseDescription}</p>
+              <h2 className="theme-heading text-3xl font-semibold tracking-[-0.03em] md:text-4xl">{copy.showcaseTitle}</h2>
+              <p className="theme-muted mt-4 text-sm leading-8">{copy.showcaseDescription}</p>
             </div>
-
             <Link to={ROUTES.catalog}>
               <span className="public-outline-button h-11 px-4 text-sm font-semibold">
-                {copy.showcaseButton}
+                {copy.finalPrimary}
                 <ArrowRight className="h-4 w-4" />
               </span>
             </Link>
@@ -499,36 +419,28 @@ const LandingPage = () => {
 
         <section className="mx-auto max-w-[1480px] px-4 py-10 lg:px-8" id="results">
           <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="public-section-card rounded-lg p-8">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--primary)]">{copy.resultsEyebrow}</p>
-              <h2 className="theme-heading mt-4 max-w-2xl text-3xl font-semibold tracking-[-0.04em] md:text-4xl">{copy.resultsTitle}</h2>
-              <p className="theme-muted mt-5 max-w-2xl text-sm leading-8">{copy.resultsDescription}</p>
+            <div className="public-section-card rounded-[var(--radius-cards)] p-8">
+              <h2 className="theme-heading text-3xl font-semibold tracking-[-0.03em] md:text-4xl">{copy.resultsTitle}</h2>
+              <p className="theme-muted mt-4 text-sm leading-8">{copy.resultsDescription}</p>
 
-              <div className="mt-8 grid gap-4 sm:grid-cols-3">
-                {copy.resultStats.map((item) => (
-                  <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-5 py-5" key={item.label}>
-                    <p className="theme-heading text-3xl font-semibold tracking-[-0.04em]">{item.value}</p>
-                    <p className="theme-subtle mt-2 text-xs uppercase tracking-[0.16em]">{item.label}</p>
-                  </div>
-                ))}
+              <div className="mt-6 flex flex-wrap gap-2">
+                <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1 text-xs theme-muted">
+                  <Star className="mr-1 inline h-3.5 w-3.5 text-[color:var(--primary)]" />
+                  {content.averageRating.toFixed(1)}
+                </span>
+                <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1 text-xs theme-muted">
+                  <Users2 className="mr-1 inline h-3.5 w-3.5 text-[color:var(--primary)]" />
+                  {content.totalLearners.toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')}
+                </span>
               </div>
             </div>
 
-            <div className="public-section-card rounded-lg p-8">
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-md bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
-                  <GraduationCap className="h-5 w-5" />
-                </div>
-                <div>
-                  <p className="theme-subtle text-[11px] font-semibold uppercase tracking-[0.16em]">{copy.systemNotes}</p>
-                  <h3 className="theme-heading mt-1 text-2xl font-semibold tracking-[-0.03em]">{copy.roadmapTitle}</h3>
-                </div>
-              </div>
-
-              <div className="mt-7 space-y-4">
+            <div className="public-section-card rounded-[var(--radius-cards)] p-8">
+              <h3 className="theme-heading text-2xl font-semibold tracking-[-0.02em]">{copy.roadmapTitle}</h3>
+              <div className="mt-6 space-y-3">
                 {copy.roadmap.map((item) => (
-                  <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-5 py-5" key={item}>
-                    <p className="theme-muted text-sm leading-8">{item}</p>
+                  <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-5 py-4" key={item}>
+                    <p className="theme-text text-sm leading-7">{item}</p>
                   </div>
                 ))}
               </div>
@@ -537,12 +449,11 @@ const LandingPage = () => {
         </section>
 
         <section className="mx-auto max-w-[1480px] px-4 pb-16 pt-10 lg:px-8 lg:pb-20">
-          <div className="public-section-card rounded-lg p-8 md:p-10">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--primary)]">{copy.ctaEyebrow}</p>
-            <div className="mt-4 grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div className="public-section-card rounded-[var(--radius-cards)] p-8 md:p-10">
+            <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
               <div className="max-w-3xl">
-                <h2 className="theme-heading text-3xl font-semibold tracking-[-0.04em] md:text-4xl">{copy.ctaTitle}</h2>
-                <p className="theme-muted mt-5 text-sm leading-8">{copy.ctaDescription}</p>
+                <h2 className="theme-heading text-3xl font-semibold tracking-[-0.03em] md:text-4xl">{copy.ctaTitle}</h2>
+                <p className="theme-muted mt-4 text-sm leading-8">{copy.ctaDescription}</p>
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
@@ -568,3 +479,4 @@ const LandingPage = () => {
 }
 
 export default LandingPage
+

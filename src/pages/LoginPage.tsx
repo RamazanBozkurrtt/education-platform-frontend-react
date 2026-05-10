@@ -111,10 +111,10 @@ const LoginPage = () => {
           </div>
         ) : null}
         {reactivationLink ? (
-          <div className="rounded-2xl border border-amber-400/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+          <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-muted-mandarin)] px-4 py-3 text-sm text-[color:var(--text-heading)]">
             <p>{reactivationMessage}</p>
             <a
-              className="mt-2 block break-all font-medium text-amber-200 underline underline-offset-4"
+              className="mt-2 block break-all font-medium text-[color:var(--text-heading)] underline underline-offset-4"
               href={reactivationLink}
               rel="noreferrer"
               target="_blank"
@@ -123,7 +123,7 @@ const LoginPage = () => {
             </a>
           </div>
         ) : null}
-        <Button className="mt-2 w-full" size="lg" type="submit">
+        <Button className="mt-2 w-full text-white" size="lg" type="submit">
           {submitting ? t('auth.signingIn') : t('auth.signIn')}
         </Button>
       </form>

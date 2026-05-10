@@ -5,6 +5,7 @@ import Button from '../ui/Button'
 import { useLanguage } from '../../hooks/useLanguage'
 import type { InstructorProfilePayload } from '../../utils/types'
 import { normalizeApiError } from '../../shared/errors/normalizeApiError'
+import { emitAppToast } from '../../shared/notifications/appToast'
 
 interface InstructorProfileFormProps {
   initialValues?: Partial<InstructorProfilePayload>
@@ -144,8 +145,6 @@ const InstructorProfileForm = ({
     profileImageUrl: toInitialValue(forcedProfileImageUrl ?? initialValues?.profileImageUrl),
   })
   const [errors, setErrors] = useState<FormErrors>({})
-  const [formError, setFormError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -213,8 +212,6 @@ const InstructorProfileForm = ({
     event.preventDefault()
     const validationErrors = validate()
     setErrors(validationErrors)
-    setFormError(null)
-    setSuccessMessage(null)
 
     if (Object.keys(validationErrors).length > 0) {
       return
@@ -232,12 +229,18 @@ const InstructorProfileForm = ({
         githubUrl: form.githubUrl?.trim() || undefined,
         profileImageUrl: forcedProfileImageUrl?.trim() || form.profileImageUrl?.trim() || undefined,
       })
-      setSuccessMessage(language === 'tr'
-        ? 'Eğitmen profili başvurun başarıyla gönderildi.'
-        : 'Your instructor profile application was submitted successfully.')
+      emitAppToast({
+        tone: 'success',
+        message: language === 'tr'
+          ? 'Eğitmen profili başvurun başarıyla gönderildi.'
+          : 'Your instructor profile application was submitted successfully.',
+      })
     } catch (error) {
       const appError = normalizeApiError(error)
-      setFormError(appError.message)
+      emitAppToast({
+        tone: 'error',
+        message: appError.message,
+      })
     } finally {
       setSubmitting(false)
     }
@@ -258,11 +261,11 @@ const InstructorProfileForm = ({
       />
 
       <label className="flex w-full flex-col gap-2" htmlFor="instructor-biography">
-        <span className="theme-text text-sm font-medium">{copy.biography}</span>
-        <span className="flex rounded-2xl border border-white/10 bg-[color:var(--surface-muted)] px-4 py-3 transition focus-within:border-cyan-300/40 focus-within:ring-2 focus-within:ring-cyan-300/20">
+        <span className="theme-heading text-sm font-semibold">{copy.biography}</span>
+        <span className="flex rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
           <textarea
             aria-invalid={Boolean(errors.biography)}
-            className="theme-text theme-placeholder min-h-[120px] w-full resize-none bg-transparent text-sm leading-6 outline-none placeholder:text-slate-500"
+            className="theme-text theme-placeholder min-h-[120px] w-full resize-none bg-transparent text-sm leading-6 outline-none"
             id="instructor-biography"
             onChange={(event) => setForm((current) => ({ ...current, biography: event.target.value }))}
             placeholder={copy.biographyPlaceholder}
@@ -342,18 +345,6 @@ const InstructorProfileForm = ({
       <Button className="w-full" disabled={submitting} type="submit">
         {submitting ? (submittingLabel ?? copy.submittingLabel) : (submitLabel ?? copy.submitLabel)}
       </Button>
-
-      {formError ? (
-        <div className="rounded-md border border-rose-400/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-          {formError}
-        </div>
-      ) : null}
-
-      {successMessage ? (
-        <div className="rounded-md border border-emerald-400/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200">
-          {successMessage}
-        </div>
-      ) : null}
     </form>
   )
 }

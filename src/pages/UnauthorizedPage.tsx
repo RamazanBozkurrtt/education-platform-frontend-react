@@ -15,9 +15,9 @@ const UnauthorizedPage = () => {
   const copy = language === 'tr'
     ? {
       code: '403',
-      title: 'Bu alana erisim iznin yok.',
-      description: 'Bu sayfayi goruntulemek icin gerekli role sahip olmalisin.',
-      back: 'Dashboarda Don',
+      title: 'Bu i\u015flem i\u00e7in yetkin yok.',
+      description: 'Bu sayfay\u0131 a\u00e7mak i\u00e7in gerekli role sahip olmal\u0131s\u0131n.',
+      back: 'Panele d\u00f6n',
       from: 'Talep edilen yol',
     }
     : {
@@ -31,11 +31,11 @@ const UnauthorizedPage = () => {
   return (
     <main className="flex min-h-[65vh] items-center justify-center px-4">
       <Card className="max-w-xl text-center">
-        <p className="text-sm uppercase tracking-[0.24em] text-amber-200">{copy.code}</p>
-        <h1 className="mt-4 text-4xl font-semibold text-white">{copy.title}</h1>
-        <p className="mt-4 text-sm leading-7 text-slate-400">{copy.description}</p>
+        <p className="text-sm uppercase tracking-[0.24em] text-[color:var(--primary)]">{copy.code}</p>
+        <h1 className="theme-heading mt-4 text-4xl font-semibold">{copy.title}</h1>
+        <p className="theme-muted mt-4 text-sm leading-7">{copy.description}</p>
         {state?.from ? (
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="theme-subtle mt-3 break-all text-xs">
             {copy.from}: {state.from}
           </p>
         ) : null}

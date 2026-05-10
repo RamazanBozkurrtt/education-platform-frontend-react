@@ -1,7 +1,11 @@
 import { ArrowRight, Clock3, GraduationCap, Star, UserRound } from 'lucide-react'
+import type { SyntheticEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import { resolveServiceUrl } from '../config/api'
+import { API_ENDPOINTS } from '../services/endpoints'
 import { ROUTES } from '../utils/constants'
+import { getCourseCategoryLabel } from '../utils/courseCategory'
 import { formatCurrency } from '../utils/helpers'
 import type { Course } from '../utils/types'
 
@@ -12,6 +16,19 @@ interface CatalogCourseCardProps {
 
 const CatalogCourseCard = ({ course, compact = false }: CatalogCourseCardProps) => {
   const { t } = useTranslation()
+  const fallbackImageUrl = resolveServiceUrl(API_ENDPOINTS.courses.image.public(course.id))
+  const courseImageUrl = course.imageUrl || fallbackImageUrl
+
+  const handleImageError = (event: SyntheticEvent<HTMLImageElement>) => {
+    const target = event.currentTarget
+
+    if (target.dataset.fallbackApplied === 'true') {
+      return
+    }
+
+    target.dataset.fallbackApplied = 'true'
+    target.src = fallbackImageUrl
+  }
 
   return (
     <article className="public-section-card overflow-hidden rounded-lg">
@@ -24,14 +41,15 @@ const CatalogCourseCard = ({ course, compact = false }: CatalogCourseCardProps) 
               alt={course.title}
               className="h-full w-full object-cover"
               loading="lazy"
-              src={course.imageUrl}
+              onError={handleImageError}
+              src={courseImageUrl}
             />
-            <div className="pointer-events-none absolute inset-0 bg-slate-900/15" />
+            <div className="theme-overlay pointer-events-none absolute inset-0 opacity-50" />
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <span className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs font-semibold theme-heading">
-              {course.category}
+              {getCourseCategoryLabel(course)}
             </span>
             <span className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-1 text-xs font-medium theme-muted">
               {course.level}

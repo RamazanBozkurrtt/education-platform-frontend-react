@@ -1,4 +1,5 @@
 import { ROUTES } from './constants'
+import { getCourseCategoryFilterKey, getCourseCategoryLabel } from './courseCategory'
 import type { AppLanguage, Course } from './types'
 
 export interface CatalogFilterState {
@@ -44,7 +45,7 @@ export const filterCatalogCourses = (
       course.summary.toLocaleLowerCase(language).includes(normalizedQuery) ||
       course.tags.some((tag) => tag.toLocaleLowerCase(language).includes(normalizedQuery))
 
-    const matchesCategory = !category || course.categoryKey === category
+    const matchesCategory = !category || getCourseCategoryFilterKey(course) === category
     const matchesLevel = !level || course.levelKey === level
 
     return matchesQuery && matchesCategory && matchesLevel
@@ -54,11 +55,13 @@ export const filterCatalogCourses = (
 export const getCatalogCategories = (courses: Course[]): CatalogCategorySummary[] =>
   Array.from(
     courses.reduce<Map<string, CatalogCategorySummary>>((map, course) => {
-      const current = map.get(course.categoryKey)
+      const key = getCourseCategoryFilterKey(course)
+      const label = getCourseCategoryLabel(course)
+      const current = map.get(key)
 
-      map.set(course.categoryKey, {
-        key: course.categoryKey,
-        label: course.category,
+      map.set(key, {
+        key,
+        label,
         count: (current?.count ?? 0) + 1,
         highlight: current?.highlight ?? course.tags.slice(0, 2).join(' / '),
       })

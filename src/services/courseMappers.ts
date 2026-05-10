@@ -23,12 +23,24 @@ export interface BackendLessonResponse {
   videoUrl?: string | null
 }
 
+export interface BackendCourseCategoryResponse {
+  id?: string | number | null
+  categoryName?: string | null
+  name?: string | null
+}
+
 export interface BackendCourseResponse {
   id?: string | number | null
   slug?: string | null
   title?: string | null
   imageUrl?: string | null
-  category?: string | null
+  image?: string | null
+  imagePath?: string | null
+  image_url?: string | null
+  coverImageUrl?: string | null
+  thumbnailUrl?: string | null
+  categoryId?: string | number | null
+  category?: string | BackendCourseCategoryResponse | null
   categoryName?: string | null
   level?: string | null
   levelName?: string | null
@@ -205,6 +217,14 @@ const formatDurationFromSeconds = (seconds: number) => {
 const toRecord = (value: unknown): Record<string, unknown> =>
   (typeof value === 'object' && value !== null) ? value as Record<string, unknown> : {}
 
+const toCourseCategory = (value: unknown): BackendCourseCategoryResponse | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null
+  }
+
+  return value as BackendCourseCategoryResponse
+}
+
 const extractLessonList = (course: BackendCourseResponse) => {
   const sources: unknown[] = [
     course.modules,
@@ -326,19 +346,33 @@ export const mapBackendCourseToCourse = (value: unknown): Course => {
   const course = toRecord(value) as BackendCourseResponse
   const id = toIdentifier(course.id) ?? crypto.randomUUID()
   const lessons = extractLessonList(course).map((lesson, index) => mapLesson(id, lesson, index))
-  const category = trimToUndefined(course.category) ?? trimToUndefined(course.categoryName) ?? 'General'
+  const categoryObject = toCourseCategory(course.category)
+  const categoryId = toIdentifier(course.categoryId) ?? toIdentifier(categoryObject?.id)
+  const category = trimToUndefined(categoryObject?.categoryName)
+    ?? trimToUndefined(categoryObject?.name)
+    ?? trimToUndefined(typeof course.category === 'string' ? course.category : undefined)
+    ?? trimToUndefined(course.categoryName)
+    ?? categoryId
+    ?? 'General'
   const level = trimToUndefined(course.level) ?? trimToUndefined(course.levelName) ?? 'All levels'
   const normalizedDescription = trimToUndefined(course.description)
   const normalizedSummary = trimToUndefined(course.summary)
   const title = trimToUndefined(course.title) ?? 'Untitled Course'
   const studentCount = toNumber(course.studentsCount) ?? toNumber(course.students)
   const tags = toStringArray(course.tags)
+  const normalizedImageUrl = trimToUndefined(course.imageUrl)
+    ?? trimToUndefined(course.image)
+    ?? trimToUndefined(course.imagePath)
+    ?? trimToUndefined(course.image_url)
+    ?? trimToUndefined(course.coverImageUrl)
+    ?? trimToUndefined(course.thumbnailUrl)
 
   return {
     id,
     slug: toIdentifier(course.slug) ?? id,
     title,
-    imageUrl: toAbsoluteMediaUrl(trimToUndefined(course.imageUrl) ?? `/api/v1/courses/public/${id}/image`),
+    imageUrl: toAbsoluteMediaUrl(normalizedImageUrl ?? `/api/v1/courses/public/${id}/image`),
+    categoryId,
     category,
     categoryKey: slugify(category) || 'general',
     level,

@@ -97,7 +97,7 @@ const RegisterPage = () => {
             {formError}
           </div>
         ) : null}
-        <Button className="mt-2 w-full" size="lg" type="submit">
+        <Button className="mt-2 w-full text-white" size="lg" type="submit">
           {submitting ? t('auth.creatingAccount') : t('auth.createAccount')}
         </Button>
       </form>

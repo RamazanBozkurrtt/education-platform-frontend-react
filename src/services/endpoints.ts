@@ -10,6 +10,7 @@ export const API_ENDPOINTS = {
   },
   courses: {
     publicList: '/api/v1/courses/public',
+    publicCategories: '/api/v1/courses/public/categories',
     publicDetail: (courseId: string) => `/api/v1/courses/public/${courseId}`,
     authorizedDetail: (courseId: string) => `/api/v1/courses/${courseId}`,
     listForAdmin: '/api/v1/courses',
@@ -18,6 +19,7 @@ export const API_ENDPOINTS = {
     update: (courseId: string) => `/api/v1/courses/${courseId}`,
     remove: (courseId: string) => `/api/v1/courses/${courseId}`,
     publish: (courseId: string) => `/api/v1/courses/${courseId}/publish`,
+    unpublish: (courseId: string) => `/api/v1/courses/${courseId}/unpublish`,
     image: {
       public: (courseId: string) => `/api/v1/courses/public/${courseId}/image`,
       secured: (courseId: string) => `/api/v1/courses/${courseId}/image`,

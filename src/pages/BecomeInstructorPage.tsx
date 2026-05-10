@@ -19,12 +19,12 @@ const BecomeInstructorPage = () => {
 
   const copy = language === 'tr'
     ? {
-      eyebrow: 'Eğitmen başvurusu',
-      title: 'Eğitmen profili oluştur',
-      description: 'Bilgilerini tamamla, kurslarını yayınlamaya başla.',
-      alreadyInstructorTitle: 'Eğitmen hesabın aktif',
-      alreadyInstructorDescription: 'Kurs oluşturma ve ders yönetimi için panele geçebilirsin.',
-      alreadyInstructorButton: 'Eğitmen paneline git',
+      eyebrow: 'Egitmen basvurusu',
+      title: 'Egitmen profili olustur',
+      description: 'Kurs olusturmak ve ders yonetmek icin temel bilgilerini tamamla.',
+      alreadyInstructorTitle: 'Egitmen hesabin aktif',
+      alreadyInstructorDescription: 'Kurslarini ve derslerini yonetmek icin paneli acabilirsin.',
+      alreadyInstructorButton: 'Egitmen paneline git',
       submitLabel: 'Başvuruyu tamamla',
       submittingLabel: 'Gönderiliyor...',
     }
@@ -71,8 +71,8 @@ const BecomeInstructorPage = () => {
       <div className="space-y-6">
         <PageHeader description={copy.description} eyebrow={copy.eyebrow} title={copy.title} />
         <Card>
-          <h2 className="text-lg font-semibold text-white">{copy.alreadyInstructorTitle}</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-400">{copy.alreadyInstructorDescription}</p>
+          <h2 className="theme-heading text-lg font-semibold">{copy.alreadyInstructorTitle}</h2>
+          <p className="theme-muted mt-2 text-sm leading-6">{copy.alreadyInstructorDescription}</p>
           <Button className="mt-4" onClick={() => navigate(ROUTES.instructorDashboard)}>
             {copy.alreadyInstructorButton}
           </Button>

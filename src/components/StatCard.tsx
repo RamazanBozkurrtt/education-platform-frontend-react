@@ -4,24 +4,24 @@ import { cn } from '../utils/helpers'
 
 const tones: Record<MetricCard['tone'], { dot: string; meter: string; meterTrack: string }> = {
   cyan: {
-    dot: 'bg-cyan-500/20 text-cyan-600 dark:text-cyan-300',
-    meter: 'bg-cyan-500',
-    meterTrack: 'bg-cyan-500/16',
+    dot: 'bg-[color:var(--surface-sky-haze)] text-[color:var(--text-heading)]',
+    meter: 'bg-[color:var(--primary)]',
+    meterTrack: 'bg-[color:var(--surface-sky-haze)]',
   },
   emerald: {
-    dot: 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300',
-    meter: 'bg-emerald-500',
-    meterTrack: 'bg-emerald-500/16',
+    dot: 'bg-[color:var(--surface-soft-peach)] text-[color:var(--text-heading)]',
+    meter: 'bg-[color:var(--color-muted-sage)]',
+    meterTrack: 'bg-[color:var(--surface-soft-peach)]',
   },
   amber: {
-    dot: 'bg-amber-500/20 text-amber-600 dark:text-amber-300',
-    meter: 'bg-amber-500',
-    meterTrack: 'bg-amber-500/16',
+    dot: 'bg-[color:var(--surface-muted-mandarin)] text-[color:var(--text-heading)]',
+    meter: 'bg-[color:var(--primary)]',
+    meterTrack: 'bg-[color:var(--surface-muted-mandarin)]',
   },
   indigo: {
-    dot: 'bg-indigo-500/20 text-indigo-600 dark:text-indigo-300',
-    meter: 'bg-indigo-500',
-    meterTrack: 'bg-indigo-500/16',
+    dot: 'bg-[color:var(--surface-muted)] text-[color:var(--text-heading)]',
+    meter: 'bg-[color:var(--primary)]',
+    meterTrack: 'bg-[color:var(--surface-muted)]',
   },
 }
 

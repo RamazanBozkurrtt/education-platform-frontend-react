@@ -1,4 +1,4 @@
-﻿import Button from '../ui/Button'
+import Button from '../ui/Button'
 import ReviewItem from './ReviewItem'
 import type { Review } from '../../utils/types'
 
@@ -28,11 +28,11 @@ const CourseReviewList = ({
   deletingReviewId,
 }: CourseReviewListProps) => {
   if (isLoading) {
-    return <p className="text-sm text-slate-300">Yorumlar yükleniyor...</p>
+    return <p className="theme-muted text-sm">Yorumlar yukleniyor...</p>
   }
 
   if (reviews.length === 0) {
-    return <p className="text-sm text-slate-300">Bu kurs için henüz yorum yapılmamış.</p>
+    return <p className="theme-muted text-sm">Bu kurs için henüz değerlendirme yapılmamış.</p>
   }
 
   return (
@@ -51,7 +51,7 @@ const CourseReviewList = ({
 
       {hasNextPage ? (
         <Button disabled={isFetchingNextPage} onClick={onLoadMore} type="button" variant="secondary">
-          {isFetchingNextPage ? 'Yükleniyor...' : 'Daha fazla göster'}
+          {isFetchingNextPage ? 'Yukleniyor...' : 'Daha fazla goster'}
         </Button>
       ) : null}
     </div>

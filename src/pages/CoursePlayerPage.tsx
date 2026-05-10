@@ -1,9 +1,8 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, CheckCircle2, Clock3, ListVideo, LockKeyhole, PlayCircle, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
-import PageHeader from '../components/PageHeader'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import InfoBadge from '../components/ui/InfoBadge'
@@ -19,6 +18,7 @@ import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { courseMediaService } from '../services/courseMediaService'
 import { courseService } from '../services/courseService'
 import { ROUTES } from '../utils/constants'
+import { getCourseCategoryLabel } from '../utils/courseCategory'
 
 const PLAYBACK_URL_REFRESH_BUFFER_MS = 3_000
 
@@ -186,11 +186,11 @@ const CoursePlayerPage = () => {
   if (!purchased) {
     return (
       <div className="space-y-6">
-        <PageHeader
-          description={t('player.lockedDescription')}
-          eyebrow={data.category}
-          title={t('player.lockedTitle')}
-        />
+        <Card>
+          <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{getCourseCategoryLabel(data)}</p>
+          <h1 className="theme-heading mt-2 text-3xl font-semibold tracking-tight">{t('player.lockedTitle')}</h1>
+          <p className="theme-muted mt-3 text-sm leading-7">{t('player.lockedDescription')}</p>
+        </Card>
 
         <Card>
           <SectionHeader
@@ -199,7 +199,7 @@ const CoursePlayerPage = () => {
           />
 
           <div className="mt-5 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-md bg-amber-500/10 text-amber-200">
+            <div className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
               <LockKeyhole className="h-5 w-5" />
             </div>
             <InfoBadge tone="warning">{t('player.accessRequired')}</InfoBadge>
@@ -213,7 +213,7 @@ const CoursePlayerPage = () => {
             ]}
           />
 
-          <div className="mt-5 border-t border-white/8 pt-5">
+          <div className="mt-5 border-t border-[color:var(--border)] pt-5">
             <TagList hideWhenEmpty label={language === 'tr' ? 'Etiketler' : 'Tags'} tags={data.tags} />
           </div>
 
@@ -221,7 +221,7 @@ const CoursePlayerPage = () => {
             {isInCart(data.id) ? (
               <Link className="block" to={ROUTES.cart}>
                 <Button asChild variant="secondary">
-                  <CheckCircle2 className="h-4 w-4 text-emerald-300" />
+                  <CheckCircle2 className="h-4 w-4" />
                   {t('common.goToCart')}
                 </Button>
               </Link>
@@ -245,25 +245,27 @@ const CoursePlayerPage = () => {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        actions={
+      <Card>
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="max-w-3xl">
+            <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{t('player.eyebrow')}</p>
+            <h1 className="theme-heading mt-2 break-words text-3xl font-semibold tracking-tight md:text-4xl">{data.title}</h1>
+            <p className="theme-muted mt-3 text-sm leading-7">{t('player.description')}</p>
+          </div>
           <Link to={ROUTES.courseDetail(data.slug)}>
             <Button asChild variant="secondary">
               {t('common.backToCourse')}
             </Button>
           </Link>
-        }
-        description={t('player.description')}
-        eyebrow={t('player.eyebrow')}
-        title={data.title}
-      />
+        </div>
+      </Card>
 
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
         <Card>
-          <div className="overflow-hidden rounded-lg border border-white/8 bg-slate-950/70">
+          <div className="overflow-hidden rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--color-forest-canopy)]">
             {activeModule ? (
               <video
-                className="aspect-video w-full bg-slate-950 object-cover"
+                className="aspect-video w-full bg-[color:var(--color-forest-canopy)] object-cover"
                 controls
                 controlsList="nodownload noremoteplayback"
                 disablePictureInPicture
@@ -277,20 +279,20 @@ const CoursePlayerPage = () => {
                 src={activeVideoSource || undefined}
               />
             ) : (
-              <div className="flex aspect-video items-center justify-center px-6 text-center text-sm text-slate-400">
+              <div className="theme-muted flex aspect-video items-center justify-center px-6 text-center text-sm">
                 {t('player.chooseLesson')}
               </div>
             )}
           </div>
 
           {isVideoLoading ? (
-            <p className="mt-3 text-sm text-cyan-200">{t('loader.courseDetails')}</p>
+            <p className="theme-muted mt-3 text-sm">{t('loader.courseDetails')}</p>
           ) : null}
           {videoErrorMessage ? (
-            <p className="mt-3 text-sm text-rose-300">{videoErrorMessage}</p>
+            <p className="mt-3 text-sm text-[color:var(--danger)]">{videoErrorMessage}</p>
           ) : null}
 
-          <div className="mt-5 border-t border-white/8 pt-5">
+          <div className="mt-5 border-t border-[color:var(--border)] pt-5">
             <SectionHeader title={activeModuleTitle} />
             <MetaRow
               className="mt-3"
@@ -300,7 +302,7 @@ const CoursePlayerPage = () => {
                 { key: 'access', label: t('player.accessStatus'), value: t('player.purchasedAccess') },
               ]}
             />
-            <p className="mt-4 text-sm leading-7 text-slate-300">{data.description}</p>
+            <p className="theme-text mt-4 text-sm leading-7">{data.description}</p>
           </div>
         </Card>
 
@@ -318,18 +320,18 @@ const CoursePlayerPage = () => {
                 return (
                   <button
                     key={module.id}
-                    className={`w-full rounded-lg border px-4 py-4 text-left transition ${
+                    className={`w-full rounded-[var(--radius-cards)] border px-4 py-4 text-left transition ${
                       active
-                        ? 'border-cyan-300/28 bg-cyan-400/12'
-                        : 'border-white/8 bg-[color:var(--surface-muted)] hover:border-white/14'
+                        ? 'border-[color:var(--primary)] bg-[color:var(--surface-muted)]'
+                        : 'border-[color:var(--border)] bg-[color:var(--surface-soft)] hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
                     }`}
                     onClick={() => setActiveModuleIndex(index)}
                     type="button"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="font-medium text-white">{module.title}</p>
-                        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                        <p className="theme-heading truncate font-medium">{module.title}</p>
+                        <div className="theme-muted mt-2 flex flex-wrap items-center gap-3 text-xs">
                           <span className="inline-flex items-center gap-1">
                             <Clock3 className="h-3.5 w-3.5" />
                             {module.duration}
@@ -337,7 +339,7 @@ const CoursePlayerPage = () => {
                           <span>{module.type}</span>
                         </div>
                       </div>
-                      {active ? <PlayCircle className="h-5 w-5 shrink-0 text-cyan-200" /> : null}
+                      {active ? <PlayCircle className="h-5 w-5 shrink-0 text-[color:var(--primary)]" /> : null}
                     </div>
                   </button>
                 )
@@ -347,16 +349,16 @@ const CoursePlayerPage = () => {
 
           <Card>
             <SectionHeader title={t('courseDetail.instructor')} />
-            <h3 className="mt-3 text-xl font-semibold text-white">{data.instructor.name}</h3>
-            <p className="mt-1 text-sm text-slate-400">{data.instructor.role}</p>
-            <p className="mt-4 text-sm leading-7 text-slate-300">{data.instructor.bio}</p>
+            <h3 className="theme-heading mt-3 text-xl font-semibold">{data.instructor.name}</h3>
+            <p className="theme-muted mt-1 text-sm">{data.instructor.role}</p>
+            <p className="theme-text mt-4 text-sm leading-7">{data.instructor.bio}</p>
           </Card>
 
           <Card>
             <SectionHeader title={t('player.outcomes')} />
             <div className="mt-4 space-y-3">
               {data.outcomes.slice(0, 3).map((outcome) => (
-                <div key={outcome} className="rounded-lg border border-white/8 bg-[color:var(--surface-muted)] px-4 py-3 text-sm text-slate-200">
+                <div className="theme-text rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm" key={outcome}>
                   {outcome}
                 </div>
               ))}
@@ -365,8 +367,8 @@ const CoursePlayerPage = () => {
 
           <Card>
             <div className="flex items-center gap-3">
-              <ListVideo className="h-4 w-4 text-slate-400" />
-              <p className="text-sm text-slate-300">{data.modules.length} ders</p>
+              <ListVideo className="h-4 w-4 theme-muted" />
+              <p className="theme-muted text-sm">{data.modules.length} ders</p>
             </div>
           </Card>
         </div>

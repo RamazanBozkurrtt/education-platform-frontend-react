@@ -1,3 +1,4 @@
+import { useId } from 'react'
 import Button from '../../ui/Button'
 
 interface LessonVideoPreviewProps {
@@ -17,26 +18,37 @@ const LessonVideoPreview = ({
   errorMessage,
   onToggle,
 }: LessonVideoPreviewProps) => {
+  const previewPanelId = useId()
+
   if (!hasVideo) {
-    return <p className="text-sm text-slate-400">Bu ders icin henuz video yuklenmemis.</p>
+    return <p className="theme-muted text-sm">Bu ders icin henuz video yuklenmedi.</p>
   }
 
   return (
     <div className="space-y-3">
-      <Button onClick={onToggle} size="sm" variant="ghost">
-        {isOpen ? 'Onizlemeyi gizle' : 'Onizle'}
+      <Button aria-controls={previewPanelId} aria-expanded={isOpen} onClick={onToggle} size="sm" variant="ghost">
+        {isOpen ? 'Onizlemeyi gizle' : 'Onizlemeyi ac'}
       </Button>
 
       {isOpen ? (
-        <div className="overflow-hidden rounded-xl border border-white/10 bg-slate-950/70 p-3">
+        <div className="overflow-hidden rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--color-forest-canopy)] p-3" id={previewPanelId}>
           {isLoading ? (
-            <p className="text-sm text-cyan-200">Onizleme yukleniyor...</p>
+            <p className="text-sm text-white">Onizleme yukleniyor...</p>
           ) : null}
           {errorMessage ? (
-            <p className="text-sm text-rose-300">{errorMessage}</p>
+            <p className="text-sm text-[color:var(--surface-muted-mandarin)]">{errorMessage}</p>
           ) : null}
           {videoSrc && !isLoading ? (
-            <video className="aspect-video w-full rounded-md bg-black" controls preload="metadata" src={videoSrc} />
+            <video
+              aria-label="Ders video onizlemesi"
+              className="aspect-video w-full rounded-md bg-black"
+              controls
+              controlsList="nodownload noremoteplayback"
+              disablePictureInPicture
+              onContextMenu={(event) => event.preventDefault()}
+              preload="metadata"
+              src={videoSrc}
+            />
           ) : null}
         </div>
       ) : null}
