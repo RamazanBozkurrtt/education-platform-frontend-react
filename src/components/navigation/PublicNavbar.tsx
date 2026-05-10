@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowRight, ChevronDown, House, Languages, Layers3, Menu, X } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import LanguageSwitcher from '../ui/LanguageSwitcher'
+import ThemeToggle from '../ui/ThemeToggle'
 import { useLanguage } from '../../hooks/useLanguage'
 import { APP_NAME, ROUTES } from '../../utils/constants'
 import { getCourseCategoryLabel } from '../../utils/courseCategory'
@@ -196,6 +197,7 @@ const PublicNavbar = ({
             <Languages className="h-4 w-4 text-[color:var(--primary)]" />
             <LanguageSwitcher compact />
           </div>
+          <ThemeToggle compact />
           <Link to={ROUTES.login}>
             <span className="public-outline-button h-10 px-4 text-sm font-semibold">{copy.signIn}</span>
           </Link>
@@ -279,7 +281,10 @@ const PublicNavbar = ({
             </div>
 
             <div className="flex flex-col gap-3 border-t border-[color:var(--border)] pt-3">
-              <LanguageSwitcher compact />
+              <div className="flex items-center gap-2">
+                <LanguageSwitcher compact />
+                <ThemeToggle compact />
+              </div>
               <div className="flex items-center gap-2">
                 <Link className="flex-1" to={ROUTES.login}>
                   <span className="public-outline-button h-10 w-full px-4 text-sm font-semibold">{copy.signIn}</span>

@@ -8,30 +8,6 @@
   background-color: var(--bg);
 }
 
-html[data-theme='dark'] {
-  --bg: #0f161e;
-  --surface: #111b26;
-  --surface-soft: #162432;
-  --surface-strong: #0f1b27;
-  --surface-muted: #1a2a38;
-  --surface-hover: #223548;
-  --border: rgba(255, 255, 255, 0.16);
-  --border-strong: rgba(255, 255, 255, 0.28);
-  --text: #eaf0f4;
-  --text-heading: #f7fafc;
-  --text-muted: #c2ced8;
-  --text-subtle: #97a8b7;
-  --overlay: rgba(1, 38, 32, 0.56);
-  --panel-inset-highlight: rgba(255, 255, 255, 0.05);
-  --panel-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
-  --brand-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
-  --grid-line: rgba(255, 255, 255, 0.06);
-  --page-glow-a: rgba(0, 245, 220, 0.08);
-  --page-glow-b: rgba(190, 233, 244, 0.08);
-  --focus-ring: rgba(0, 245, 220, 0.28);
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.24);
-}
-
 * {
   box-sizing: border-box;
 }

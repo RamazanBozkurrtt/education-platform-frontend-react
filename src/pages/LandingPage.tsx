@@ -1,9 +1,11 @@
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import {
   ArrowRight,
   BookOpenText,
   ChartColumnIncreasing,
+  ChevronLeft,
+  ChevronRight,
   GraduationCap,
   LayoutDashboard,
   PlayCircle,
@@ -145,6 +147,9 @@ const LandingPage = () => {
   const appError = error ? normalizeApiError(error) : null
   const hasRecoverablePublicError = appError?.kind === 'auth' || appError?.kind === 'forbidden'
   const resolvedCourses = courses ?? []
+  const categoryRailRef = useRef<HTMLDivElement | null>(null)
+  const categoryAnimationFrameRef = useRef<number | null>(null)
+  const [activeCategoryIndex, setActiveCategoryIndex] = useState(0)
 
   const content = useMemo(() => {
     if (!resolvedCourses.length) {
@@ -181,6 +186,71 @@ const LandingPage = () => {
         })),
     }
   }, [categoriesFromApi, language, resolvedCourses])
+  const maxCategoryIndex = Math.max(content.categories.length - 1, 0)
+
+  useEffect(() => {
+    setActiveCategoryIndex((current) => Math.min(current, maxCategoryIndex))
+  }, [maxCategoryIndex])
+
+  const animateCategoryRailToIndex = useCallback((targetIndex: number) => {
+    const categoryRail = categoryRailRef.current
+
+    if (!categoryRail) return
+
+    const targetCard = categoryRail.querySelector<HTMLElement>(`[data-category-index="${targetIndex}"]`)
+
+    if (!targetCard) return
+
+    const targetLeft = targetCard.offsetLeft - categoryRail.offsetLeft
+    const startLeft = categoryRail.scrollLeft
+    const distance = targetLeft - startLeft
+
+    if (Math.abs(distance) < 2) {
+      categoryRail.scrollLeft = targetLeft
+      return
+    }
+
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      categoryRail.scrollLeft = targetLeft
+      return
+    }
+
+    if (categoryAnimationFrameRef.current !== null) {
+      cancelAnimationFrame(categoryAnimationFrameRef.current)
+    }
+
+    const duration = 460
+    const startTime = performance.now()
+    const easeInOutCubic = (progress: number) => (progress < 0.5
+      ? 4 * progress * progress * progress
+      : 1 - ((-2 * progress + 2) ** 3) / 2)
+
+    const animate = (timestamp: number) => {
+      const elapsed = timestamp - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = easeInOutCubic(progress)
+      categoryRail.scrollLeft = startLeft + (distance * eased)
+
+      if (progress < 1) {
+        categoryAnimationFrameRef.current = requestAnimationFrame(animate)
+        return
+      }
+
+      categoryAnimationFrameRef.current = null
+    }
+
+    categoryAnimationFrameRef.current = requestAnimationFrame(animate)
+  }, [])
+
+  useEffect(() => {
+    animateCategoryRailToIndex(activeCategoryIndex)
+  }, [activeCategoryIndex, animateCategoryRailToIndex])
+
+  useEffect(() => () => {
+    if (categoryAnimationFrameRef.current !== null) {
+      cancelAnimationFrame(categoryAnimationFrameRef.current)
+    }
+  }, [])
 
   const handleAnchorClick = (id: string) => {
     const section = document.getElementById(id)
@@ -377,22 +447,51 @@ const LandingPage = () => {
             </Link>
           </div>
 
-          <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {content.categories.map((category) => (
-              <Link className="group" key={category.key} to={buildCatalogPath({ category: category.key })}>
-                <article className="public-section-card h-full rounded-[var(--radius-cards)] p-6">
-                  <span className="theme-subtle text-xs font-semibold uppercase tracking-[0.14em]">
-                    {category.count} {copy.categoryCourses}
-                  </span>
-                  <h3 className="theme-heading mt-4 text-2xl font-semibold tracking-[-0.02em]">{category.label}</h3>
-                  <p className="theme-muted mt-3 text-sm leading-7">{category.highlight}</p>
-                  <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--primary)] transition-colors group-hover:text-[color:var(--primary-strong)]">
-                    {copy.primaryCta}
-                    <ArrowRight className="h-4 w-4" />
-                  </span>
-                </article>
-              </Link>
-            ))}
+          <div className="relative mt-8">
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-14 bg-gradient-to-r from-[color:var(--bg)] to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-14 bg-gradient-to-l from-[color:var(--bg)] to-transparent" />
+
+            <button
+              aria-label={language === 'tr' ? 'Onceki kategori' : 'Previous category'}
+              className="absolute left-1 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center text-[color:var(--text-muted)] transition-all duration-300 hover:scale-110 hover:text-[color:var(--text-heading)] disabled:cursor-not-allowed disabled:opacity-30"
+              disabled={activeCategoryIndex <= 0}
+              onClick={() => setActiveCategoryIndex((current) => Math.max(current - 1, 0))}
+              type="button"
+            >
+              <ChevronLeft className="h-7 w-7 drop-shadow-[0_2px_8px_rgba(0,0,0,0.28)]" />
+            </button>
+            <button
+              aria-label={language === 'tr' ? 'Sonraki kategori' : 'Next category'}
+              className="absolute right-1 top-1/2 z-20 inline-flex h-10 w-10 -translate-y-1/2 items-center justify-center text-[color:var(--text-muted)] transition-all duration-300 hover:scale-110 hover:text-[color:var(--text-heading)] disabled:cursor-not-allowed disabled:opacity-30"
+              disabled={activeCategoryIndex >= maxCategoryIndex}
+              onClick={() => setActiveCategoryIndex((current) => Math.min(current + 1, maxCategoryIndex))}
+              type="button"
+            >
+              <ChevronRight className="h-7 w-7 drop-shadow-[0_2px_8px_rgba(0,0,0,0.28)]" />
+            </button>
+
+            <div className="flex snap-x snap-mandatory gap-5 overflow-x-auto px-8 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" ref={categoryRailRef}>
+              {content.categories.map((category, index) => (
+                <Link
+                  className={`group block min-w-[280px] shrink-0 snap-start transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] sm:min-w-[320px] lg:min-w-[360px] ${activeCategoryIndex === index ? 'scale-[1.01] opacity-100' : 'opacity-85 hover:opacity-100'}`}
+                  data-category-index={index}
+                  key={category.key}
+                  to={buildCatalogPath({ category: category.key })}
+                >
+                  <article className="public-section-card h-full rounded-[var(--radius-cards)] p-6 transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 group-hover:border-[color:var(--border-strong)]">
+                    <span className="theme-subtle text-xs font-semibold uppercase tracking-[0.14em]">
+                      {category.count} {copy.categoryCourses}
+                    </span>
+                    <h3 className="theme-heading mt-4 text-2xl font-semibold tracking-[-0.02em]">{category.label}</h3>
+                    <p className="theme-muted mt-3 text-sm leading-7">{category.highlight}</p>
+                    <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[color:var(--primary)] transition-colors group-hover:text-[color:var(--primary-strong)]">
+                      {copy.primaryCta}
+                      <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </span>
+                  </article>
+                </Link>
+              ))}
+            </div>
           </div>
         </section>
 

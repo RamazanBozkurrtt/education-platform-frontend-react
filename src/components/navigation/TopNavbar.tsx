@@ -6,6 +6,7 @@ import { ROUTES } from '../../utils/constants'
 import type { User } from '../../utils/types'
 import Button from '../ui/Button'
 import LanguageSwitcher from '../ui/LanguageSwitcher'
+import ThemeToggle from '../ui/ThemeToggle'
 
 interface TopNavbarProps {
   onOpenMobileMenu: () => void
@@ -45,6 +46,7 @@ const TopNavbar = ({ onOpenMobileMenu, title, user }: TopNavbarProps) => {
         <div className="hidden xl:block">
           <LanguageSwitcher compact />
         </div>
+        <ThemeToggle compact />
         <Link
           className="hidden items-center gap-2 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-4 py-2.5 text-sm text-[color:var(--text)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] sm:flex"
           to={ROUTES.cart}

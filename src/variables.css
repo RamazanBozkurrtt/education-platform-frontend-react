@@ -1,41 +1,41 @@
-﻿:root {
-  /* Refero core colors */
-  --color-canvas-porcelain: #fff5ee;
-  --color-white: #ffffff;
-  --color-midnight-ink: #0f161e;
-  --color-harbor-mist: #333942;
-  --color-forest-canopy: #012620;
-  --color-deep-teal: #004038;
-  --color-fresh-teal: #00f5dc;
-  --color-soft-peach: #fde8ce;
-  --color-muted-mandarin: #ffdcbf;
-  --color-sky-haze: #bee9f4;
-  --color-muted-sage: #00544c;
-  --color-lime-glow: #d5ff4d;
-  --color-spring-bud: #7edcaf;
-  --gradient-fresh-teal: linear-gradient(90deg, rgb(0, 245, 220), rgb(213, 255, 77) 48.5%, rgb(183, 115, 255));
+:root {
+  /* Colors */
+  --color-stormcloud-ink: #282e3f;
+  --color-quizlet-violet: #4255ff;
+  --color-sky-study: #98e3ff;
+  --color-flashcard-pink: #eeaaff;
+  --color-night-violet: #423ed8;
+  --color-practice-orange: #ffc38c;
+  --color-slate-text: #586380;
+  --color-light-slate: #939bb4;
+  --color-deep-slate: #2e3856;
+  --color-page-background: #f6f7fb;
+  --color-pure-white: #ffffff;
+  --color-ash-border: #d9dde8;
 
-  /* Type */
-  --font-proxima-nova: 'Proxima Nova', 'Open Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-source-serif-pro: 'Source Serif Pro', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
-  --font-weight-regular: 400;
-  --font-weight-semibold: 600;
-  --font-weight-bold: 700;
+  /* Typography — Font Families */
+  --font-hurmeno2-webfont: 'hurme_no2-webfont', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
-  --text-body-sm: 16px;
-  --leading-body-sm: 1.5;
-  --text-body: 18px;
+  /* Typography — Scale */
+  --text-caption: 12px;
+  --leading-caption: 1.5;
+  --text-body-sm: 14px;
+  --leading-body-sm: 1.43;
+  --text-body: 16px;
   --leading-body: 1.5;
   --text-subheading: 20px;
   --leading-subheading: 1.25;
-  --text-heading-sm: 24px;
-  --leading-heading-sm: 1.22;
-  --text-heading: 32px;
-  --leading-heading: 1.17;
-  --text-heading-lg: 56px;
-  --leading-heading-lg: 1.13;
-  --text-display: 72px;
-  --leading-display: 1;
+  --text-heading: 24px;
+  --leading-heading: 1.33;
+  --text-heading-lg: 32px;
+  --leading-heading-lg: 1.27;
+  --text-display: 44px;
+  --leading-display: 1.25;
+
+  /* Typography — Weights */
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
 
   /* Spacing */
   --spacing-unit: 8px;
@@ -44,60 +44,117 @@
   --spacing-24: 24px;
   --spacing-32: 32px;
   --spacing-40: 40px;
+  --spacing-48: 48px;
   --spacing-64: 64px;
-  --spacing-88: 88px;
-  --spacing-104: 104px;
 
-  /* Layout rhythm */
-  --section-gap: 32px;
-  --card-padding: 32px;
+  /* Layout */
+  --section-gap: 48px;
   --element-gap: 8px;
 
-  /* Radius */
+  /* Border Radius */
+  --radius-md: 4px;
   --radius-lg: 8px;
-  --radius-2xl: 16px;
-  --radius-3xl: 25px;
-  --radius-cards: 16px;
-  --radius-badges: 25px;
-  --radius-buttons: 16px;
-  --radius-navigation: 8px;
+  --radius-3xl: 24px;
+  --radius-full: 200px;
 
-  /* Surface tokens */
-  --surface-canvas-porcelain: #fff5ee;
+  /* Named Radii */
+  --radius-cards: 8px;
+  --radius-inputs: 4px;
+  --radius-buttons: 200px;
+  --radius-general: 4px;
+
+  /* Shadows */
+  --shadow-md: rgba(40, 46, 62, 0.1) 0px 4px 16px 0px;
+  --shadow-subtle: rgba(0, 0, 0, 0.3) 0px 0px 1px 0px inset;
+  --shadow-sm: rgba(40, 46, 62, 0.1) 0px 2px 4px 0px;
+
+  /* Semantic theme foundation (light) */
+  --font-proxima-nova: 'Open Sans', var(--font-hurmeno2-webfont);
+  --bg: #f4f6fb;
+  --foreground: #1f2a44;
+  --text: #1f2a44;
+  --text-heading: #141c32;
+  --text-muted: #586380;
+  --text-subtle: #7b849a;
+  --muted: #eef2fb;
+  --muted-foreground: #586380;
+  --primary: #4f5dff;
+  --primary-strong: #3f4fe8;
+  --primary-foreground: #ffffff;
+  --accent: #f2b44b;
+  --accent-soft: rgba(79, 93, 255, 0.22);
+  --surface: #ffffff;
   --surface-white: #ffffff;
-  --surface-soft-peach: #fde8ce;
-  --surface-muted-mandarin: #ffdcbf;
-  --surface-sky-haze: #bee9f4;
+  --surface-soft: #f7f9ff;
+  --surface-strong: #ffffff;
+  --surface-muted: #edf1ff;
+  --surface-hover: #e4ebff;
+  --surface-soft-peach: #fff1ed;
+  --surface-sky-haze: #eaf6ff;
+  --surface-muted-mandarin: #fff3dc;
+  --border: rgba(20, 28, 50, 0.12);
+  --border-strong: rgba(20, 28, 50, 0.24);
+  --danger: #b4233d;
+  --success: #1f8f63;
+  --warning: #b9770e;
+  --overlay: rgba(11, 19, 35, 0.45);
+  --panel-inset-highlight: rgba(255, 255, 255, 0.75);
+  --panel-shadow: 0 10px 24px rgba(20, 28, 50, 0.12);
+  --brand-shadow: 0 14px 30px rgba(20, 28, 50, 0.14);
+  --grid-line: rgba(44, 57, 84, 0.08);
+  --page-glow-a: rgba(79, 93, 255, 0.08);
+  --page-glow-b: rgba(152, 227, 255, 0.22);
+  --focus-ring: rgba(79, 93, 255, 0.3);
+  --card-padding: clamp(1rem, 1vw + 0.8rem, 1.5rem);
+  --radius-navigation: 14px;
+  --radius-badges: 999px;
+  --leading-heading-sm: 1.2;
+  --color-forest-canopy: #1f344a;
+  --color-muted-sage: #3f9b86;
+  --shadow-soft: 0 6px 18px rgba(20, 28, 50, 0.1);
+  --shadow-card: 0 10px 22px rgba(20, 28, 50, 0.12);
+  --shadow-sm: 0 4px 12px rgba(20, 28, 50, 0.1);
+}
 
-  /* Semantic aliases used by existing app styles */
-  --bg: var(--surface-canvas-porcelain);
-  --surface: var(--surface-white);
-  --surface-soft: #fffaf5;
-  --surface-strong: var(--surface-white);
-  --surface-muted: #fdf0e2;
-  --surface-hover: #f9e4cd;
-  --border: rgba(15, 22, 30, 0.14);
-  --border-strong: rgba(15, 22, 30, 0.26);
-  --text: var(--color-midnight-ink);
-  --text-heading: var(--color-midnight-ink);
-  --text-muted: var(--color-harbor-mist);
-  --text-subtle: #4a5059;
-  --primary: var(--color-deep-teal);
-  --primary-strong: #00352e;
-  --accent: var(--color-fresh-teal);
-  --accent-soft: rgba(0, 245, 220, 0.2);
-  --success: var(--color-sky-haze);
-  --warning: var(--color-muted-mandarin);
-  --danger: #8a2f3f;
-  --overlay: rgba(15, 22, 30, 0.16);
-  --panel-inset-highlight: rgba(255, 255, 255, 0.9);
-  --panel-shadow: 0 2px 8px rgba(15, 22, 30, 0.06);
-  --brand-shadow: 0 8px 18px rgba(0, 64, 56, 0.1);
-  --grid-line: rgba(15, 22, 30, 0.03);
-  --page-glow-a: rgba(253, 232, 206, 0.45);
-  --page-glow-b: rgba(255, 220, 191, 0.25);
-
-  /* Primitive helpers */
-  --focus-ring: rgba(0, 64, 56, 0.24);
-  --shadow-sm: 0 2px 8px rgba(15, 22, 30, 0.06);
+html[data-theme='dark'] {
+  --bg: #0f161e;
+  --foreground: #eaf0f4;
+  --text: #eaf0f4;
+  --text-heading: #f7fafc;
+  --text-muted: #c2ced8;
+  --text-subtle: #97a8b7;
+  --muted: #1a2a38;
+  --muted-foreground: #c2ced8;
+  --primary: #7b88ff;
+  --primary-strong: #939dff;
+  --primary-foreground: #0f161e;
+  --accent: #ffd166;
+  --accent-soft: rgba(123, 136, 255, 0.35);
+  --surface: #111b26;
+  --surface-white: #13202d;
+  --surface-soft: #162432;
+  --surface-strong: #0f1b27;
+  --surface-muted: #1a2a38;
+  --surface-hover: #223548;
+  --surface-soft-peach: #3a2330;
+  --surface-sky-haze: #1a3144;
+  --surface-muted-mandarin: #3b3020;
+  --border: rgba(255, 255, 255, 0.16);
+  --border-strong: rgba(255, 255, 255, 0.28);
+  --danger: #ff8ca2;
+  --success: #57d6a5;
+  --warning: #f0c26a;
+  --overlay: rgba(1, 38, 32, 0.56);
+  --panel-inset-highlight: rgba(255, 255, 255, 0.05);
+  --panel-shadow: 0 4px 12px rgba(0, 0, 0, 0.28);
+  --brand-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+  --grid-line: rgba(255, 255, 255, 0.06);
+  --page-glow-a: rgba(0, 245, 220, 0.08);
+  --page-glow-b: rgba(190, 233, 244, 0.08);
+  --focus-ring: rgba(0, 245, 220, 0.28);
+  --color-forest-canopy: #132432;
+  --color-muted-sage: #73cdb5;
+  --shadow-soft: 0 6px 16px rgba(0, 0, 0, 0.24);
+  --shadow-card: 0 10px 24px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.24);
 }

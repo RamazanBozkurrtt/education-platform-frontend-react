@@ -1,63 +1,54 @@
-# Workable — Style Reference
-> Clean canvas, purposeful accents
+# Quizlet — Style Reference
+> Academic Playground on Soft Gray. Like a well-organized desk scattered with colorful learning tools.
 
 **Theme:** light
 
-Workable employs a direct and dynamic visual language, built on a clean canvas with a distinctive teal and dark forest green palette. Components are designed to be lightweight, with rounded corners that soften the strong typographic choices. Color is used purposefully for clear accents, interactive states, and to differentiate content blocks, while maintaining an overall sense of order and professionalism. The system balances functional clarity with subtle visual interest, avoiding heavy ornamentation.
+This design system feels like a friendly, structured learning environment, prioritizing clarity and interactive engagement. The dominant near-gray background (#F6F7FB) provides a clean canvas, while a palette of vivid and moderate hues—primarily a bold violet (#4255FF) and accent colors like light blue (#98E3FF) and vibrant pink (#EEAAFF)—define interactive elements and illustrate content categories. The consistent use of `hurme_no2-webfont` with varying weights creates a cohesive textual experience, balancing readability with a distinctive, approachable character.
 
 ## Tokens — Colors
 
 | Name | Value | Token | Role |
 |------|-------|-------|------|
-| Canvas Porcelain | `#fff5ee` | `--color-canvas-porcelain` | Page background, primary light surface |
-| White | `#ffffff` | `--color-white` | Card backgrounds, elevated UI elements |
-| Midnight Ink | `#0f161e` | `--color-midnight-ink` | Primary text, strong headings, dark UI elements |
-| Harbor Mist | `#333942` | `--color-harbor-mist` | Subtle text, muted links, secondary information |
-| Forest Canopy | `#012620` | `--color-forest-canopy` | Dark section backgrounds, hero background, decorative fills |
-| Deep Teal | `#004038` | `--color-deep-teal` | Primary text color for navigation and headings, outlined button borders, active states |
-| Fresh Teal | `linear-gradient(90deg, rgb(0, 245, 220), rgb(213, 255, 77) 48.5%, rgb(183, 115, 255))` | `--color-fresh-teal` | Card backgrounds, tag backgrounds, vibrant accents; Key product graphic fills, vibrant UI elements |
-| Muted Sage | `#00544c` | `--color-muted-sage` | Secondary text, sub-brand accents, borders |
-| Soft Peach | `#fde8ce` | `--color-soft-peach` | Informational card backgrounds, subtle highlight surfaces |
-| Muted Mandarin | `#ffdcbf` | `--color-muted-mandarin` | Accent card backgrounds |
-| Sky Haze | `#bee9f4` | `--color-sky-haze` | Accent card backgrounds |
-| Lime Glow | `#d5ff4d` | `--color-lime-glow` | Decorative stroke, vibrant highlighting in illustrations |
-| Spring Bud | `#7edcaf` | `--color-spring-bud` | Highlight text, decorative fills and borders |
+| Stormcloud Ink | `#282e3` | `--color-stormcloud-ink` | Primary text, deep context elements, input text, prominent icons. |
+| Quizlet Violet | `#4255ff` | `--color-quizlet-violet` | Primary interactive elements, main CTA buttons, active links, important icons, defining Quizlet's brand identity. |
+| Sky Study | `#98e3ff` | `--color-sky-study` | Decorative background for 'Learn' card, adding a moderate, fresh accent. |
+| Flashcard Pink | `#eeaaff` | `--color-flashcard-pink` | Decorative background for 'Study Guides' card, adding a playful, vivid accent. |
+| Night Violet | `#423ed8` | `--color-night-violet` | Decorative background for 'Flashcards' card, a darker, more intense variant of the brand violet. |
+| Practice Orange | `#ffc38c` | `--color-practice-orange` | Decorative background for 'Practice Tests' card, a moderate, warm accent. |
+| Slate Text | `#586380` | `--color-slate-text` | Secondary text, less prominent icons, button outlines, subtle informational text. |
+| Light Slate | `#939bb4` | `--color-light-slate` | Subtle borders, inactive states, lighter text elements for hierarchical distinction. |
+| Deep Slate | `#2e3856` | `--color-deep-slate` | Detailed body text, specific informational blocks, providing a muted contrast. |
+| Page Background | `#f6f7fb` | `--color-page-background` | Dominant background color for the entire application, serving as a bright, clean foundation. |
+| Pure White | `#ffffff` | `--color-pure-white` | Card backgrounds, section separators, text on dark buttons, establishing a crisp, elevated surface. |
+| Ash Border | `#d9dde8` | `--color-ash-border` | Dividers, subtle input borders, defining content boundaries without harshness. |
 
 ## Tokens — Typography
 
-### Proxima Nova — Primary UI typeface for all content including navigation, body text, headings, and buttons. Its clean, sans-serif structure provides clarity and a modern feel. · `--font-proxima-nova`
-- **Substitute:** Open Sans
-- **Weights:** 400, 700
-- **Sizes:** 16px, 18px, 20px, 24px, 32px, 56px, 72px
-- **Line height:** 1.00, 1.13, 1.14, 1.17, 1.20, 1.22, 1.25, 1.38, 1.50, 1.56, 1.75
+### hurme_no2-webfont — Primary typeface for all textual content from headlines to body text, buttons, and navigation. Its consistent application across all sizes and weights establishes a direct, legible tone. · `--font-hurmeno2-webfont`
+- **Substitute:** system-ui, sans-serif
+- **Weights:** 400, 600, 700
+- **Sizes:** 12px, 14px, 16px, 20px, 21px, 24px, 32px, 44px
+- **Line height:** 1.25, 1.27, 1.33, 1.40, 1.43, 1.50, 1.63
 - **Letter spacing:** normal
-- **Role:** Primary UI typeface for all content including navigation, body text, headings, and buttons. Its clean, sans-serif structure provides clarity and a modern feel.
-
-### Source Serif Pro — Used sparingly for specific body copy elements, offering a contrasting serif touch. · `--font-source-serif-pro`
-- **Substitute:** Merriweather
-- **Weights:** 400
-- **Sizes:** 24px
-- **Line height:** 1.50
-- **Letter spacing:** normal
-- **Role:** Used sparingly for specific body copy elements, offering a contrasting serif touch.
+- **Role:** Primary typeface for all textual content from headlines to body text, buttons, and navigation. Its consistent application across all sizes and weights establishes a direct, legible tone.
 
 ### Type Scale
 
 | Role | Size | Line Height | Letter Spacing | Token |
 |------|------|-------------|----------------|-------|
-| body-sm | 16px | 1.5 | — | `--text-body-sm` |
-| body | 18px | 1.5 | — | `--text-body` |
+| caption | 12px | 1.5 | — | `--text-caption` |
+| body-sm | 14px | 1.43 | — | `--text-body-sm` |
+| body | 16px | 1.5 | — | `--text-body` |
 | subheading | 20px | 1.25 | — | `--text-subheading` |
-| heading-sm | 24px | 1.22 | — | `--text-heading-sm` |
-| heading | 32px | 1.17 | — | `--text-heading` |
-| heading-lg | 56px | 1.13 | — | `--text-heading-lg` |
-| display | 72px | 1 | — | `--text-display` |
+| heading | 24px | 1.33 | — | `--text-heading` |
+| heading-lg | 32px | 1.27 | — | `--text-heading-lg` |
+| display | 44px | 1.25 | — | `--text-display` |
 
 ## Tokens — Spacing & Shapes
 
 **Base unit:** 8px
 
-**Density:** comfortable
+**Density:** compact
 
 ### Spacing Scale
 
@@ -68,131 +59,118 @@ Workable employs a direct and dynamic visual language, built on a clean canvas w
 | 24 | 24px | `--spacing-24` |
 | 32 | 32px | `--spacing-32` |
 | 40 | 40px | `--spacing-40` |
+| 48 | 48px | `--spacing-48` |
 | 64 | 64px | `--spacing-64` |
-| 88 | 88px | `--spacing-88` |
-| 104 | 104px | `--spacing-104` |
 
 ### Border Radius
 
 | Element | Value |
 |---------|-------|
-| cards | 16px |
-| badges | 25px |
-| buttons | 16px |
-| navigation | 8px |
+| cards | 8px |
+| inputs | 4px |
+| buttons | 200px |
+| general | 4px |
+
+### Shadows
+
+| Name | Value | Token |
+|------|-------|-------|
+| md | `rgba(40, 46, 62, 0.1) 0px 4px 16px 0px` | `--shadow-md` |
+| subtle | `rgba(0, 0, 0, 0.3) 0px 0px 1px 0px inset` | `--shadow-subtle` |
+| sm | `rgba(40, 46, 62, 0.1) 0px 2px 4px 0px` | `--shadow-sm` |
 
 ### Layout
 
-- **Section gap:** 32px
-- **Card padding:** 32px
+- **Section gap:** 48px
 - **Element gap:** 8px
 
 ## Components
 
-### Primary Ghost Button
-**Role:** Call to action with minimal visual weight
+### Secondary Button (Ghost)
+**Role:** Action
 
-Background transparent, text color #0f161, 0px border-radius, no padding defined. Best for inline actions or secondary CTA when a filled button is elsewhere.
+Transparent background (`rgba(0, 0, 0, 0)`), text 'Quizlet Violet' (`#4255ff`), `hurme_no2-webfont` weight 400 at 16px, padding `0px`, `4px` border-radius.
 
-### Secondary Ghost Button
-**Role:** Outlined action with rounded corners
+### Icon Button (Circular)
+**Role:** Navigation/Action
 
-Background transparent, text color #0f161, 16px border-radius. Often used for navigation CTAs.
-
-### Default Card
-**Role:** Content container for features or information blocks
-
-Background #ffffff, 16px border-radius, 32px padding on all sides. No shadow.
-
-### Highlight Card - Soft Peach
-**Role:** Emphasized content container with a warm background tint
-
-Background #fde8ce, 16px border-radius, 32px padding on all sides. No shadow.
-
-### Highlight Card - Fresh Teal
-**Role:** Emphasized content container with a vivid background tint
-
-Background #00f5dc, 16px border-radius, 32px padding on all sides. No shadow.
-
-### Highlight Card - Muted Mandarin
-**Role:** Emphasized content container with a warm orange background tint
-
-Background #ffdcbf, 16px border-radius, 32px padding on all sides. No shadow.
-
-### Ghost Badge
-**Role:** Informational tag or label
-
-Background transparent, text color #0f161, 0px border-radius, no padding defined. Used for meta-information.
+Transparent background (`rgba(0, 0, 0, 0)`), text 'Ash Border' (`#d9dde8`) (likely for inactive state), `50%` border-radius resulting in a circle, `0px` padding.
 
 ### Navigation Link Button
-**Role:** Actionable link within navigation
+**Role:** Navigation
 
-Text color #0f161, 16px border-radius, 0px padding. Used for 'Log in' and 'Request a demo'.
+Transparent background (`rgba(0, 0, 0, 0)`), text 'Stormcloud Ink' (`#282e3e`), `0px` border-radius, `0px` padding, typically for internal navigation.
 
-### Contained Navigation Button
-**Role:** The primary call to action in the navigation bar
+### Category Card (Learn)
+**Role:** Content Display
 
-Background #004038, text color white, 16px border-radius. This is a filled button, contrasting with the ghost type.
+Background 'Pure White' (`#ffffff`), `8px` border-radius, `Stormcloud Ink` (`rgba(40, 46, 62, 0.1) 0px 4px 16px 0px`) shadow, `Sky Study` (`#98e3ff`) background accent for content block.
+
+### Category Card (Flashcards)
+**Role:** Content Display
+
+Background 'Pure White' (`#ffffff`), `8px` border-radius, `Stormcloud Ink` (`rgba(40, 46, 62, 0.1) 0px 4px 16px 0px`) shadow, `Night Violet` (`#423ed8`) background accent for content block.
+
+### Category Card (Practice Tests)
+**Role:** Content Display
+
+Background 'Pure White' (`#ffffff`), `8px` border-radius, `Stormcloud Ink` (`rgba(40, 46, 62, 0.1) 0px 4px 16px 0px`) shadow, `Practice Orange` (`#ffc38c`) background accent for content block.
 
 ## Do's and Don'ts
 
 ### Do
-- Use Proxima Nova for all text elements to maintain typographic consistency.
-- Apply 16px border-radius to all cards and buttons for a unified, soft edge.
-- Utilize Forest Canopy (#012620) for dark section backgrounds and Deep Teal (#004038) for primary action outlines or filled navigation buttons.
-- Employ 32px padding for internal card content and around main section elements.
-- Maintain an 8px elementGap between smaller UI components for comfortable dense layouts.
-- Prioritize Canvas Porcelain (#fff5ee) as the primary page background to create a clean, light base.
-- Use Fresh Teal (#00f5dc) and Soft Peach (#fde8ce) as background tints for cards to visually group or highlight content.
+- Use 'Page Background' (`#f6f7fb`) as the foundational canvas for all pages.
+- Apply 'Quizlet Violet' (`#4255ff`) exclusively for primary call-to-action buttons and key interactive elements to maintain focus.
+- Utilize `hurme_no2-webfont` weight 700 for headlines and primary CTA button text to ensure clear hierarchy and impact.
+- Maintain `8px` border-radius for all content cards and larger container elements, and `4px` for input fields and smaller interactive items.
+- Employ the `Stormcloud Ink` shadow (`rgba(40, 46, 62, 0.1) 0px 4px 16px 0px`) for elevated components like cards and navigation to create subtle depth.
+- Employ `16px` padding for internal spacing within content blocks and `48px` for vertical separation between major sections.
+- Use `Stormcloud Ink` (`#282e3e`) for main body text and prominent informational text, and `Slate Text` (`#586380`) for secondary text details.
 
 ### Don't
-- Avoid arbitrary color usage; reserve brand and accent colors for functional roles or distinct highlights, not general decoration.
-- Do not introduce complex shadows or extreme elevation; the design favors flat surfaces and subtle distinctions.
-- Refrain from using overly decorative fonts; stick to Proxima Nova and Source Serif Pro for a clear, modern appearance.
-- Do not deviate from the established 16px and 8px border-radii; random smaller or larger radii will break visual cohesion.
-- Avoid dense, unbroken blocks of text; break content with headings, lists, and visual components.
-- Do not use dark backgrounds for general page content; restrict them to hero sections or distinct visual breaks.
-- Refrain from using system default link colors; ensure all links use either Midnight Ink (#0f161e) or Harbor Mist (#333942) unless an explicit accent link style is defined.
+- Do not introduce new highly saturated colors outside of the defined accent palette, as they will clash with the established brand hues.
+- Avoid using `200px` border-radius on any element other than primary buttons to preserve their distinctive pill shape.
+- Do not use generic system fonts; only `hurme_no2-webfont` should be used for all text content.
+- Refrain from heavy, dark shadows; the subtle `Stormcloud Ink` shadow is sufficient for elevation.
+- Do not use `0px` border-radius on any visible component unless it's a specific, text-only navigation link, to preserve a soft, approachable aesthetic.
+- Do not cluster too much vibrant imagery; allow the core UI colors and clean layout to guide user attention.
+- Avoid using `Pure White` (#ffffff) for any primary text color; it's reserved for backgrounds and text on dark buttons.
 
-## Surfaces
+## Elevation
 
-| Level | Name | Value | Purpose |
-|-------|------|-------|---------|
-| 0 | Canvas Porcelain | `#fff5ee` | Base page background |
-| 1 | White | `#ffffff` | Primary card and elevated component background |
-| 2 | Soft Peach | `#fde8ce` | Accentuated card backgrounds for differentiation |
-| 3 | Muted Mandarin | `#ffdcbf` | Secondary accent card background |
-| 4 | Sky Haze | `#bee9f4` | Tertiary accent card background |
+- **Card / Elevated Panel:** `rgba(40, 46, 62, 0.1) 0px 4px 16px 0px`
+- **Button Focus:** `rgba(40, 46, 62, 0.1) 0px 2px 4px 0px`
+- **Icon Outline / Inner Shadow:** `rgba(0, 0, 0, 0.3) 0px 0px 1px 0px inset`
 
 ## Imagery
 
-This system primarily uses photography for human elements (diverse faces in cards) and abstract, colorful gradients for product-focused graphics. Photography is typically tightly cropped to faces, conveying a relatable human connection. Illustrations are characterized by abstract shapes and bold gradients, often resembling fluid organic forms rather than hard-edged geometry. Icons (when visible) are typically outlined with a moderate stroke weight, emphasizing clarity and lightness. Imagery serves both decorative atmosphere, product showcase, and providing human context within the UI. The density of imagery is moderate, used to break up text and add visual interest, rather than overwhelming the layout.
+Imagery features a mix of product screenshots demonstrating the app's interface (contained in stylized device mockups), flat, geometric illustrations that are brand-colored and serve as decorative accents on cards, and abstract graphics. Photography is largely absent. The icons are minimalistic, usually filled, with a medium stroke weight where outlines are present, consistent with the brand colors. Imagery plays a role in both explanatory content (product screenshots) and decorative atmosphere (card illustrations), balancing visual interest with clean UI. Density shows imagery playing a significant role in breaking up text and making sections more engaging, especially in the hero area and feature descriptions.
 
 ## Layout
 
-The page primarily uses a full-bleed structure, with content sections extending across the viewport width, though a clear implicit max-width ensures readability. Hero sections often feature a full-bleed background (e.g., Forest Canopy) with centered headings. Content typically alternates between two-column layouts (text left, image right) and centered stacks. Feature sections use a 3-column card grid. Vertical spacing between sections is consistent at 32px, creating a comfortable yet information-dense rhythm. The navigation is a persistent top bar featuring a logo, product/pricing links, and two call-to-action buttons, maintaining a fixed presence.
+The page primarily uses a max-width contained layout, approximately 1200px wide, centered within the browser. The hero section features a centered headline and subtext over a `Page Background` (`#f6f7fb`), followed by a row of distinct, accent-colored category cards. Sections generally follow a consistent `48px` vertical spacing. Content is often arranged in alternate text-left/image-right compositions for features, and a flexible grid for content cards (visible as a 3-column grid in some sections). The navigation is a fixed top bar (`64px` height) with a clear search input and primary CTA button. The footer is dense with links, organized into column lists.
 
 ## Agent Prompt Guide
 
 ### Quick Color Reference
-text: #0f161e
-background: #fff5ee
-border: #0f161e
-accent: #00f5dc
-primary action: #004038 (outlined action border)
+- Text: `#282e3e` (Stormcloud Ink)
+- Page Background: `#f6f7fb` (Page Background)
+- CTA Button: `#4255ff` (Quizlet Violet)
+- Border/Divider: `#d9dde8` (Ash Border)
+- Accent (Learn Card): `#98e3ff` (Sky Study)
 
 ### 3-5 Example Component Prompts
-1. Create a hero section with a Forest Canopy (#012620) background. Headline 'The future-ready HR platform' using Proxima Nova, size 56px, weight 700, color white, lineHeight 1.13. Subtext 'Redefining HR...' using Proxima Nova, size 18px, weight 400, color white, lineHeight 1.5. Include a ghost button 'Request a demo' (background transparent, text #0f161e, 0px radius) and a contrasting filled button 'Start a free trial' (background #004038, text white, 16px radius, padding 11px 24px).
-2. Design a feature card: Default Card (background #ffffff, 16px radius, 32px padding). Heading 'Talent CRM database' using Proxima Nova, size 24px, weight 700, color #0f161e. Body text 'Manage your talent pool...' using Proxima Nova, size 16px, weight 400, color #333942.
-3. Implement a navigation bar: Background transparent. Logo in Deep Teal (#004038). Navigation links ('Product', 'Pricing') text in Midnight Ink (#0f161e), Proxima Nova, size 16px, weight 400. 'Log in' button as a secondary ghost button (background transparent, text #0f161e, 16px radius, padding 12px 24px). 'Request a demo' button as a secondary ghost button (background transparent, text #0f161e, 16px radius, padding 12px 24px). 'Start a free trial' button as a contained navigation button (background #004038, text white, 16px radius, padding 12px 24px).
-4. Create a highlight card showing an applicant: Highlight Card - Soft Peach (background #fde8ce, 16px radius, 32px padding). Text 'Applicant tracking system' using Proxima Nova, size 16px, weight 700, color #0f161e. Use an image of a person (16px radius).
+1. **Create a hero section:** Background `Page Background` (`#f6f7fb`). Headline 'How do you want to study?' `hurme_no2-webfont` weight 700 at 44px, color `Stormcloud Ink` (`#282e3e`). Subtext 'Master whatever you're learning with Quizlet’s interactive flashcards, practice tests, and study activities.' `hurme_no2-webfont` weight 400 at 20px, color `Stormcloud Ink` (`#282e3e`). Primary CTA button 'Sign up for free' with background `Quizlet Violet` (`#4255ff`), text `Pure White` (`#ffffff`), `hurme_no2-webfont` weight 700 at 16px, `10px 16px` padding, and `200px` border-radius.
+2. **Create a card for 'Flashcards':** Background `Pure White` (`#ffffff`), `8px` border-radius, `rgba(40, 46, 62, 0.1) 0px 4px 16px 0px` shadow. Inside the card, display an accent content block with background `Night Violet` (`#423ed8`) and a headline 'Flashcards' `hurme_no2-webfont` weight 700 at 24px, color `Pure White` (`#ffffff`).
+3. **Create a secondary ghost button:** Text 'I’m a teacher' `hurme_no2-webfont` weight 400 at 16px, color `Quizlet Violet` (`#4255ff`), transparent background (`rgba(0, 0, 0, 0)`), and `0px` padding with `4px` border-radius.
+4. **Generate a search input field:** Color `Stormcloud Ink` (`#282e3e`), transparent background (`rgba(0, 0, 0, 0)`), placeholder text `Stormcloud Ink` (`#282e3e`) (e.g., 'Search for study guides'), `4px` border-radius, with an implied `Ash Border` (`#d9dde8`) border on focus.
 
 ## Similar Brands
 
-- **Rippling** — Clean SaaS UI with strong typography and a clear accent color, often featuring human elements in product context.
-- **Gusto** — Similar light, approachable aesthetic for HR/payroll, utilizing distinct, soft background colors within content blocks.
-- **BambooHR** — Employs a clean layout, clear hierarchy, and uses color strategically for accents and calls to action against a predominantly light background.
-- **Greenhouse** — Focus on clean, functional interfaces with distinct branded colors for interactive elements and clear content segmentation.
+- **Canva** — Similar approach to using a light background canvas (#F6F7FB) with vibrant, distinct accent colors for feature differentiation and interactive elements.
+- **Duolingo** — Employs an educational focus with playful, colorful illustrations and clear, approachable typography for learning modules.
+- **Notion** — Clean, predominantly gray/white interface with minimal, subtle shadows and focused use of brand colors for interactive elements, favoring clarity over visual clutter.
+- **Headspace** — Uses soft, rounded shapes and a limited, vibrant color palette effectively for a calming yet engaging user experience within a learning context.
 
 ## Quick Start
 
@@ -201,43 +179,41 @@ primary action: #004038 (outlined action border)
 ```css
 :root {
   /* Colors */
-  --color-canvas-porcelain: #fff5ee;
-  --color-white: #ffffff;
-  --color-midnight-ink: #0f161e;
-  --color-harbor-mist: #333942;
-  --color-forest-canopy: #012620;
-  --color-deep-teal: #004038;
-  --color-fresh-teal: #00f5dc;
-  --gradient-fresh-teal: linear-gradient(90deg, rgb(0, 245, 220), rgb(213, 255, 77) 48.5%, rgb(183, 115, 255));
-  --color-muted-sage: #00544c;
-  --color-soft-peach: #fde8ce;
-  --color-muted-mandarin: #ffdcbf;
-  --color-sky-haze: #bee9f4;
-  --color-lime-glow: #d5ff4d;
-  --color-spring-bud: #7edcaf;
+  --color-stormcloud-ink: #282e3;
+  --color-quizlet-violet: #4255ff;
+  --color-sky-study: #98e3ff;
+  --color-flashcard-pink: #eeaaff;
+  --color-night-violet: #423ed8;
+  --color-practice-orange: #ffc38c;
+  --color-slate-text: #586380;
+  --color-light-slate: #939bb4;
+  --color-deep-slate: #2e3856;
+  --color-page-background: #f6f7fb;
+  --color-pure-white: #ffffff;
+  --color-ash-border: #d9dde8;
 
   /* Typography — Font Families */
-  --font-proxima-nova: 'Proxima Nova', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-source-serif-pro: 'Source Serif Pro', ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-hurmeno2-webfont: 'hurme_no2-webfont', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Typography — Scale */
-  --text-body-sm: 16px;
-  --leading-body-sm: 1.5;
-  --text-body: 18px;
+  --text-caption: 12px;
+  --leading-caption: 1.5;
+  --text-body-sm: 14px;
+  --leading-body-sm: 1.43;
+  --text-body: 16px;
   --leading-body: 1.5;
   --text-subheading: 20px;
   --leading-subheading: 1.25;
-  --text-heading-sm: 24px;
-  --leading-heading-sm: 1.22;
-  --text-heading: 32px;
-  --leading-heading: 1.17;
-  --text-heading-lg: 56px;
-  --leading-heading-lg: 1.13;
-  --text-display: 72px;
-  --leading-display: 1;
+  --text-heading: 24px;
+  --leading-heading: 1.33;
+  --text-heading-lg: 32px;
+  --leading-heading-lg: 1.27;
+  --text-display: 44px;
+  --leading-display: 1.25;
 
   /* Typography — Weights */
   --font-weight-regular: 400;
+  --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
   /* Spacing */
@@ -247,32 +223,29 @@ primary action: #004038 (outlined action border)
   --spacing-24: 24px;
   --spacing-32: 32px;
   --spacing-40: 40px;
+  --spacing-48: 48px;
   --spacing-64: 64px;
-  --spacing-88: 88px;
-  --spacing-104: 104px;
 
   /* Layout */
-  --section-gap: 32px;
-  --card-padding: 32px;
+  --section-gap: 48px;
   --element-gap: 8px;
 
   /* Border Radius */
+  --radius-md: 4px;
   --radius-lg: 8px;
-  --radius-2xl: 16px;
-  --radius-3xl: 25px;
+  --radius-3xl: 24px;
+  --radius-full: 200px;
 
   /* Named Radii */
-  --radius-cards: 16px;
-  --radius-badges: 25px;
-  --radius-buttons: 16px;
-  --radius-navigation: 8px;
+  --radius-cards: 8px;
+  --radius-inputs: 4px;
+  --radius-buttons: 200px;
+  --radius-general: 4px;
 
-  /* Surfaces */
-  --surface-canvas-porcelain: #fff5ee;
-  --surface-white: #ffffff;
-  --surface-soft-peach: #fde8ce;
-  --surface-muted-mandarin: #ffdcbf;
-  --surface-sky-haze: #bee9f4;
+  /* Shadows */
+  --shadow-md: rgba(40, 46, 62, 0.1) 0px 4px 16px 0px;
+  --shadow-subtle: rgba(0, 0, 0, 0.3) 0px 0px 1px 0px inset;
+  --shadow-sm: rgba(40, 46, 62, 0.1) 0px 2px 4px 0px;
 }
 ```
 
@@ -281,39 +254,37 @@ primary action: #004038 (outlined action border)
 ```css
 @theme {
   /* Colors */
-  --color-canvas-porcelain: #fff5ee;
-  --color-white: #ffffff;
-  --color-midnight-ink: #0f161e;
-  --color-harbor-mist: #333942;
-  --color-forest-canopy: #012620;
-  --color-deep-teal: #004038;
-  --color-fresh-teal: #00f5dc;
-  --color-muted-sage: #00544c;
-  --color-soft-peach: #fde8ce;
-  --color-muted-mandarin: #ffdcbf;
-  --color-sky-haze: #bee9f4;
-  --color-lime-glow: #d5ff4d;
-  --color-spring-bud: #7edcaf;
+  --color-stormcloud-ink: #282e3;
+  --color-quizlet-violet: #4255ff;
+  --color-sky-study: #98e3ff;
+  --color-flashcard-pink: #eeaaff;
+  --color-night-violet: #423ed8;
+  --color-practice-orange: #ffc38c;
+  --color-slate-text: #586380;
+  --color-light-slate: #939bb4;
+  --color-deep-slate: #2e3856;
+  --color-page-background: #f6f7fb;
+  --color-pure-white: #ffffff;
+  --color-ash-border: #d9dde8;
 
   /* Typography */
-  --font-proxima-nova: 'Proxima Nova', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-source-serif-pro: 'Source Serif Pro', ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-hurmeno2-webfont: 'hurme_no2-webfont', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Typography — Scale */
-  --text-body-sm: 16px;
-  --leading-body-sm: 1.5;
-  --text-body: 18px;
+  --text-caption: 12px;
+  --leading-caption: 1.5;
+  --text-body-sm: 14px;
+  --leading-body-sm: 1.43;
+  --text-body: 16px;
   --leading-body: 1.5;
   --text-subheading: 20px;
   --leading-subheading: 1.25;
-  --text-heading-sm: 24px;
-  --leading-heading-sm: 1.22;
-  --text-heading: 32px;
-  --leading-heading: 1.17;
-  --text-heading-lg: 56px;
-  --leading-heading-lg: 1.13;
-  --text-display: 72px;
-  --leading-display: 1;
+  --text-heading: 24px;
+  --leading-heading: 1.33;
+  --text-heading-lg: 32px;
+  --leading-heading-lg: 1.27;
+  --text-display: 44px;
+  --leading-display: 1.25;
 
   /* Spacing */
   --spacing-8: 8px;
@@ -321,13 +292,18 @@ primary action: #004038 (outlined action border)
   --spacing-24: 24px;
   --spacing-32: 32px;
   --spacing-40: 40px;
+  --spacing-48: 48px;
   --spacing-64: 64px;
-  --spacing-88: 88px;
-  --spacing-104: 104px;
 
   /* Border Radius */
+  --radius-md: 4px;
   --radius-lg: 8px;
-  --radius-2xl: 16px;
-  --radius-3xl: 25px;
+  --radius-3xl: 24px;
+  --radius-full: 200px;
+
+  /* Shadows */
+  --shadow-md: rgba(40, 46, 62, 0.1) 0px 4px 16px 0px;
+  --shadow-subtle: rgba(0, 0, 0, 0.3) 0px 0px 1px 0px inset;
+  --shadow-sm: rgba(40, 46, 62, 0.1) 0px 2px 4px 0px;
 }
 ```
