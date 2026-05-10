@@ -37,11 +37,12 @@ const LessonVideoUploader = ({
 
       {selectedFile ? (
         <p className="theme-muted text-xs">
-          Secilen dosya: <span className="theme-heading font-medium">{selectedFile.name}</span>
+          Secilen dosya: <span className="theme-heading break-all font-medium">{selectedFile.name}</span>
         </p>
       ) : null}
 
       <Button
+        className="w-full sm:w-auto"
         disabled={isUploading || !selectedFile}
         onClick={onUpload}
         size="sm"

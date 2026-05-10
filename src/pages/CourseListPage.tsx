@@ -31,12 +31,12 @@ const CourseListPage = () => {
     ? {
       eyebrow: 'Kursları keşfet',
       title: 'Kurslar',
-      description: 'Kategoriye gore filtrele ve kurslari karsilastir.',
+      description: 'Kategoriye göre filtrele ve kursları karşılaştır.',
       programs: 'Kurs',
-      enrolledLearners: 'Ogrenci',
+      enrolledLearners: 'Öğrenci',
       averageRating: 'Ortalama puan',
       filterTitle: 'Kategori',
-      filterDescription: 'Listede gormek istedigin kategoriyi sec.',
+      filterDescription: 'Listede görmek istediğin kategoriyi seç.',
     }
     : {
       eyebrow: 'Explore courses',
@@ -174,10 +174,10 @@ const CourseListPage = () => {
       ) : (
         <Card className="text-center">
           <h2 className="theme-heading text-xl font-semibold">
-            {language === 'tr' ? 'Filtreye uygun kurs bulunamadi' : 'No courses match this filter'}
+            {language === 'tr' ? 'Filtreye uygun kurs bulunamadı' : 'No courses match this filter'}
           </h2>
           <p className="theme-muted mt-2 text-sm">
-            {language === 'tr' ? 'Kategori secimini degistirip tekrar dene.' : 'Try changing the selected category.'}
+            {language === 'tr' ? 'Kategori seçimini değiştirip tekrar dene.' : 'Try changing the selected category.'}
           </p>
         </Card>
       )}

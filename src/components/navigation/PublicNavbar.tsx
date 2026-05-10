@@ -89,14 +89,14 @@ const PublicNavbar = ({
 
   return (
     <header className="sticky top-0 z-50 border-b border-[color:var(--border)] bg-[color:var(--surface-white)]">
-      <div className="mx-auto flex max-w-[1480px] items-center justify-between gap-4 px-4 py-4 lg:px-8">
-        <Link className="flex items-center gap-3" to={ROUTES.home}>
+      <div className="mx-auto flex max-w-[1480px] items-center justify-between gap-3 px-4 py-4 lg:gap-4 lg:px-8">
+        <Link className="flex min-w-0 flex-1 items-center gap-3 lg:flex-none" to={ROUTES.home}>
           <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
             <Layers3 className="h-5 w-5" />
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="theme-subtle text-[11px] font-semibold uppercase tracking-[0.28em]">{copy.platformLabel}</p>
-            <p className="theme-heading text-lg font-semibold tracking-[-0.02em]">{APP_NAME}</p>
+            <p className="theme-heading truncate text-lg font-semibold tracking-[-0.02em]">{APP_NAME}</p>
           </div>
         </Link>
 
@@ -281,11 +281,13 @@ const PublicNavbar = ({
             </div>
 
             <div className="flex flex-col gap-3 border-t border-[color:var(--border)] pt-3">
-              <div className="flex items-center gap-2">
-                <LanguageSwitcher compact />
+              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
+                <div className="min-w-0 flex-1">
+                  <LanguageSwitcher compact />
+                </div>
                 <ThemeToggle compact />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Link className="flex-1" to={ROUTES.login}>
                   <span className="public-outline-button h-10 w-full px-4 text-sm font-semibold">{copy.signIn}</span>
                 </Link>

@@ -1205,9 +1205,10 @@ const InstructorCourseVideoUploadPage = () => {
                     <p className="theme-subtle text-xs uppercase tracking-[0.12em]">Ders #{lesson.orderIndex}</p>
                     <p className="theme-heading truncate text-sm font-semibold">{lesson.title}</p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
                     <InfoBadge tone={hasVideo ? 'success' : 'warning'}>{statusText}</InfoBadge>
                     <Button
+                      className="w-full sm:w-auto"
                       onClick={() => setExpandedLessonId((current) => (current === lesson.id ? null : lesson.id))}
                       size="sm"
                       type="button"
@@ -1274,6 +1275,7 @@ const InstructorCourseVideoUploadPage = () => {
 
                       <div className="flex flex-wrap justify-end gap-3 border-t border-[color:var(--border)] pt-4">
                         <Button
+                          className="w-full sm:w-auto"
                           disabled={isDeletingLesson}
                           onClick={() => void handleDeleteLesson(lesson)}
                           type="button"
@@ -1282,6 +1284,7 @@ const InstructorCourseVideoUploadPage = () => {
                           {isDeletingLesson ? 'Ders siliniyor...' : 'Dersi sil'}
                         </Button>
                         <Button
+                          className="w-full sm:w-auto"
                           disabled={isUpdating}
                           onClick={() => void handleUpdateLesson(lesson)}
                           type="button"

@@ -363,23 +363,23 @@ const CourseDetailPage = () => {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             {purchased ? (
-              <Link to={ROUTES.coursePlayer(data.slug)}>
-                <Button asChild>
+              <Link className="w-full sm:w-auto" to={ROUTES.coursePlayer(data.slug)}>
+                <Button asChild className="w-full justify-center">
                   <PlayCircle className="h-4 w-4" />
                   {t('common.watchCourse')}
                 </Button>
               </Link>
             ) : isInCart(data.id) ? (
-              <Link to={ROUTES.cart}>
-                <Button asChild variant="secondary">
+              <Link className="w-full sm:w-auto" to={ROUTES.cart}>
+                <Button asChild className="w-full justify-center" variant="secondary">
                   <CheckCircle2 className="h-4 w-4" />
                   {t('common.goToCart')}
                 </Button>
               </Link>
             ) : (
-              <Button onClick={() => addCourse(data.id)}>
+              <Button className="w-full justify-center sm:w-auto" onClick={() => addCourse(data.id)}>
                 <ShoppingCart className="h-4 w-4" />
                 {t('common.addToCart')}
               </Button>
@@ -420,7 +420,7 @@ const CourseDetailPage = () => {
               <div className="mt-4 space-y-3">
                 {data.modules.map((module, index) => (
                   <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4 transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]" key={module.id}>
-                    <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-xs font-semibold theme-heading">
                           {String(index + 1).padStart(2, '0')}

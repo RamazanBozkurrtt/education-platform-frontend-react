@@ -188,7 +188,7 @@ const CoursePlayerPage = () => {
       <div className="space-y-7">
         <Card>
           <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{getCourseCategoryLabel(data)}</p>
-          <h1 className="theme-heading mt-2 text-3xl font-semibold tracking-tight">{t('player.lockedTitle')}</h1>
+          <h1 className="theme-heading mt-2 break-words text-3xl font-semibold tracking-tight">{t('player.lockedTitle')}</h1>
           <p className="theme-muted mt-3 text-sm leading-7">{t('player.lockedDescription')}</p>
         </Card>
 
@@ -217,22 +217,22 @@ const CoursePlayerPage = () => {
             <TagList hideWhenEmpty label={language === 'tr' ? 'Etiketler' : 'Tags'} tags={data.tags} />
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-3">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             {isInCart(data.id) ? (
-              <Link className="block" to={ROUTES.cart}>
-                <Button asChild variant="secondary">
+              <Link className="block w-full sm:w-auto" to={ROUTES.cart}>
+                <Button asChild className="w-full justify-center sm:w-auto" variant="secondary">
                   <CheckCircle2 className="h-4 w-4" />
                   {t('common.goToCart')}
                 </Button>
               </Link>
             ) : (
-              <Button onClick={() => addCourse(data.id)}>
+              <Button className="w-full justify-center sm:w-auto" onClick={() => addCourse(data.id)}>
                 <ShoppingCart className="h-4 w-4" />
                 {t('common.addToCart')}
               </Button>
             )}
-            <Link className="block" to={ROUTES.courseDetail(data.slug)}>
-              <Button asChild variant="ghost">
+            <Link className="block w-full sm:w-auto" to={ROUTES.courseDetail(data.slug)}>
+              <Button asChild className="w-full justify-center sm:w-auto" variant="ghost">
                 {t('common.backToCourse')}
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -252,8 +252,8 @@ const CoursePlayerPage = () => {
             <h1 className="theme-heading mt-2 break-words text-3xl font-semibold tracking-tight md:text-4xl">{data.title}</h1>
             <p className="theme-muted mt-3 text-sm leading-7">{t('player.description')}</p>
           </div>
-          <Link to={ROUTES.courseDetail(data.slug)}>
-            <Button asChild variant="secondary">
+          <Link className="w-full sm:w-auto" to={ROUTES.courseDetail(data.slug)}>
+            <Button asChild className="w-full justify-center sm:w-auto" variant="secondary">
               {t('common.backToCourse')}
             </Button>
           </Link>

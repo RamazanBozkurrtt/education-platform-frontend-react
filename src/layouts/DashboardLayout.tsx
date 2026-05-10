@@ -26,12 +26,12 @@ const DashboardLayout = () => {
 
   const customTitles = language === 'tr'
     ? {
-      becomeInstructor: 'Egitmen Ol',
-      unauthorized: 'Yetkisiz Erisim',
-      instructorDashboard: 'Egitmen Paneli',
-      instructorProfile: 'Egitmen Profilim',
-      instructorNewCourse: 'Yeni Kurs Olustur',
-      instructorVideo: 'Video Yukle',
+      becomeInstructor: 'Eğitmen Ol',
+      unauthorized: 'Yetkisiz Erişim',
+      instructorDashboard: 'Eğitmen Paneli',
+      instructorProfile: 'Eğitmen Profilim',
+      instructorNewCourse: 'Yeni Kurs Oluştur',
+      instructorVideo: 'Video Yükle',
     }
     : {
       becomeInstructor: 'Become Instructor',

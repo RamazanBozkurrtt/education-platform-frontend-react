@@ -38,8 +38,8 @@ const Sidebar = ({
   const { user, claims } = useAuth()
   const { language } = useLanguage()
   const isCurrentUserInstructor = isInstructor(user, claims)
-  const instructorMenuLabel = language === 'tr' ? 'Egitmen Paneli' : 'Instructor Panel'
-  const becomeInstructorLabel = language === 'tr' ? 'Egitmen Ol' : 'Become Instructor'
+  const instructorMenuLabel = language === 'tr' ? 'Eğitmen Paneli' : 'Instructor Panel'
+  const becomeInstructorLabel = language === 'tr' ? 'Eğitmen Ol' : 'Become Instructor'
 
   const navigationItems = [
     { label: t('nav.dashboard'), to: ROUTES.dashboard, icon: LayoutDashboard },

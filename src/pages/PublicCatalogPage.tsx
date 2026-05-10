@@ -30,30 +30,30 @@ const PublicCatalogPage = () => {
 
   const copy = language === 'tr'
     ? {
-      eyebrow: 'KurslarÄ± keÅŸfet',
-      title: 'Kurs kataloÄŸu',
-      description: 'Kurslari arama, kategori ve seviye filtreleriyle incele.',
+      eyebrow: 'Kursları keşfet',
+      title: 'Kurs kataloğu',
+      description: 'Kursları arama, kategori ve seviye filtreleriyle incele.',
       searchLabel: 'Kurs ara',
-      searchPlaceholder: 'Kurs adi, beceri, egitmen veya etiket',
+      searchPlaceholder: 'Kurs adı, beceri, eğitmen veya etiket',
       filterLabel: 'Filtreler',
-      all: 'TÃ¼mÃ¼',
+      all: 'Tümü',
       categories: 'Kategoriler',
       levels: 'Seviyeler',
-      featured: 'One cikanlar',
+      featured: 'Öne çıkanlar',
       clear: 'Filtreleri temizle',
-      results: 'SonuÃ§lar',
+      results: 'Sonuçlar',
       resultsTitle: 'kurs bulundu',
       resultsDescription: 'Filtrelerine uyan kurslar listeleniyor.',
-      emptyTitle: 'SonuÃ§ bulunamadÄ±',
-      emptyDescription: 'AramayÄ± deÄŸiÅŸtir veya filtreleri temizleyip yeniden dene.',
+      emptyTitle: 'Sonuç bulunamadı',
+      emptyDescription: 'Aramayı değiştir veya filtreleri temizleyip yeniden dene.',
       stats: [
         { label: 'Kategori', getValue: (count: number) => String(count) },
         { label: 'Kurs', getValue: (count: number) => String(count) },
         { label: 'Seviye', getValue: (count: number) => String(count) },
       ],
       chips: {
-        all: 'TÃ¼m kurslar',
-        beginner: 'Baslangic seviyesi',
+        all: 'Tüm kurslar',
+        beginner: 'Başlangıç seviyesi',
         categoryPrefix: 'Kategori',
       },
       navSections: [{ id: 'course-results', label: 'Kurslar' }],
@@ -110,7 +110,7 @@ const PublicCatalogPage = () => {
       label: category.categoryName,
       count: resolvedCourses.filter((course) => getCourseCategoryFilterKey(course) === category.id).length,
       highlight: resolvedCourses.find((course) => getCourseCategoryFilterKey(course) === category.id)?.tags.slice(0, 2).join(' / ')
-        ?? (language === 'tr' ? 'Kurslari incele' : 'Explore courses'),
+        ?? (language === 'tr' ? 'Kursları incele' : 'Explore courses'),
     })).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
   }, [categoriesFromApi, language, resolvedCourses])
   const levels = useMemo(() => getCatalogLevels(resolvedCourses), [resolvedCourses])
