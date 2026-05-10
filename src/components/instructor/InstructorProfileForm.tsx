@@ -249,7 +249,7 @@ const InstructorProfileForm = ({
   const biographyLength = form.biography.trim().length
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form className="space-y-5" onSubmit={handleSubmit}>
       <Input
         error={errors.displayName}
         icon={<UserRound className="h-4 w-4" />}
@@ -273,7 +273,7 @@ const InstructorProfileForm = ({
           />
         </span>
         {errors.biography ? (
-          <span className="text-xs text-rose-300">{errors.biography}</span>
+          <span className="text-xs text-[color:var(--danger)]">{errors.biography}</span>
         ) : (
           <span className="theme-subtle text-xs">
             {copy.biographyHelper} ({biographyLength}/{BIOGRAPHY_MAX_LENGTH})

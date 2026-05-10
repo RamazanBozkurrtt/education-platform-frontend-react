@@ -14,7 +14,7 @@ const CartPage = () => {
   const { clearCart, itemCount, items, removeCourse, subtotal, tax, total } = useCart()
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <PageHeader
         actions={
           itemCount > 0 ? (
@@ -62,7 +62,7 @@ const CartPage = () => {
           ) : (
             <div className="mt-6 space-y-4">
               {items.map((item) => (
-                <div key={item.courseId} className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+                <div key={item.courseId} className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
@@ -92,7 +92,7 @@ const CartPage = () => {
           )}
         </Card>
 
-        <Card className="h-fit">
+        <Card className="h-fit xl:sticky xl:top-24">
           <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{t('cart.orderSummary')}</p>
           <div className="theme-muted mt-6 space-y-4 text-sm">
             <div className="flex items-center justify-between">

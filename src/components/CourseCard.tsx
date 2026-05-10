@@ -40,7 +40,7 @@ const CourseCard = ({ course }: CourseCardProps) => {
   }
 
   return (
-    <Card className="flex h-full flex-col">
+    <Card className="flex h-full flex-col overflow-hidden">
       <div className="flex items-start justify-between gap-4">
         <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1 text-xs font-medium theme-muted">
           {getCourseCategoryLabel(course)}
@@ -53,14 +53,14 @@ const CourseCard = ({ course }: CourseCardProps) => {
       <div className="mt-4 overflow-hidden rounded-[var(--radius-navigation)] border border-[color:var(--border)]">
         <img
           alt={course.title}
-          className="h-44 w-full object-cover"
+          className="h-44 w-full object-cover transition-transform duration-300 hover:scale-[1.01]"
           loading="lazy"
           onError={handleImageError}
           src={courseImageUrl}
         />
       </div>
 
-      <div className="mt-4 min-h-[7rem]">
+      <div className="mt-4 min-h-[7.25rem]">
         <h3 className="text-clamp-2 theme-heading text-xl font-semibold leading-7">{course.title}</h3>
         <p className="theme-muted mt-2 flex items-center gap-2 text-sm">
           <UserRound className="h-4 w-4 text-[color:var(--text-muted)]" />
@@ -91,23 +91,23 @@ const CourseCard = ({ course }: CourseCardProps) => {
           <p className="theme-muted text-sm">{course.instructor.role}</p>
         </div>
 
-        <div className="mt-4 flex flex-col gap-2.5">
+        <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
           {purchased ? (
-            <Link className="w-full" to={ROUTES.coursePlayer(course.slug)}>
+            <Link className="w-full sm:col-span-2" to={ROUTES.coursePlayer(course.slug)}>
               <Button asChild className="group/cta w-full justify-center">
                 <PlayCircle className="h-4 w-4" />
                 {t('common.watchCourse')}
               </Button>
             </Link>
           ) : inCart ? (
-            <Link className="w-full" to={ROUTES.cart}>
+            <Link className="w-full sm:col-span-2" to={ROUTES.cart}>
               <Button asChild className="group/cta w-full justify-center" variant="secondary">
                 <CheckCircle2 className="h-4 w-4 text-[color:var(--text-muted)]" />
                 {t('common.goToCart')}
               </Button>
             </Link>
           ) : (
-            <Button className="w-full justify-center" onClick={() => addCourse(course.id)} variant="secondary">
+            <Button className="w-full justify-center sm:col-span-2" onClick={() => addCourse(course.id)} variant="secondary">
               <ShoppingCart className="h-4 w-4" />
               {t('common.addToCart')}
             </Button>

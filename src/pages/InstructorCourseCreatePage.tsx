@@ -285,7 +285,7 @@ const InstructorCourseCreatePage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <PageHeader
         description={copy.description}
         eyebrow={copy.eyebrow}
@@ -293,7 +293,7 @@ const InstructorCourseCreatePage = () => {
       />
 
       <Card>
-        <form className="space-y-4" onSubmit={handleSubmit}>
+        <form className="space-y-5" onSubmit={handleSubmit}>
           <Input
             error={errors.title}
             id="course-title"
@@ -389,7 +389,7 @@ const InstructorCourseCreatePage = () => {
             {errors.learningOutcomes ? <span className="text-xs text-[color:var(--danger)]">{errors.learningOutcomes}</span> : null}
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3 rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
             <span className="theme-text text-sm font-medium">{copy.tagsLabel}</span>
             <div className="grid gap-3 sm:grid-cols-2">
               {tags.map((item, index) => (

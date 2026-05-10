@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Filter, GraduationCap, Star, UsersRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import PageHeader from '../components/PageHeader'
 import CourseCard from '../components/CourseCard'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -93,21 +94,21 @@ const CourseListPage = () => {
   const averageRating = (data.reduce((sum, course) => sum + course.rating, 0) / data.length).toFixed(1)
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-2xl">
-            <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{copy.eyebrow}</p>
-            <h1 className="theme-heading mt-2 text-3xl font-semibold tracking-tight">{copy.title}</h1>
-            <p className="theme-muted mt-3 text-sm leading-7">{copy.description}</p>
-          </div>
+    <div className="space-y-7">
+      <PageHeader
+        actions={(
           <Button variant="secondary">
             <Filter className="h-4 w-4" />
             {t('common.advancedFilters')}
           </Button>
-        </div>
+        )}
+        description={copy.description}
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+      />
 
-        <div className="mt-6 grid gap-3 md:grid-cols-3">
+      <Card>
+        <div className="grid gap-3 md:grid-cols-3">
           <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
             <div className="flex h-9 w-9 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
               <GraduationCap className="h-4 w-4" />
@@ -164,11 +165,22 @@ const CourseListPage = () => {
         </div>
       </Card>
 
-      <section className="grid auto-rows-fr gap-6 xl:grid-cols-3">
-        {filteredCourses.map((course) => (
-          <CourseCard course={course} key={course.id} />
-        ))}
-      </section>
+      {filteredCourses.length > 0 ? (
+        <section className="grid auto-rows-fr gap-6 xl:grid-cols-3">
+          {filteredCourses.map((course) => (
+            <CourseCard course={course} key={course.id} />
+          ))}
+        </section>
+      ) : (
+        <Card className="text-center">
+          <h2 className="theme-heading text-xl font-semibold">
+            {language === 'tr' ? 'Filtreye uygun kurs bulunamadi' : 'No courses match this filter'}
+          </h2>
+          <p className="theme-muted mt-2 text-sm">
+            {language === 'tr' ? 'Kategori secimini degistirip tekrar dene.' : 'Try changing the selected category.'}
+          </p>
+        </Card>
+      )}
     </div>
   )
 }

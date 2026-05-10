@@ -932,7 +932,7 @@ const InstructorCourseVideoUploadPage = () => {
   const isPublished = courseDetail.status === 'PUBLISHED'
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <PageHeader
         description="Dersleri ekle, videolari yukle veya gerekirse sil."
         eyebrow="Ders ve video yonetimi"
@@ -951,7 +951,7 @@ const InstructorCourseVideoUploadPage = () => {
             </InfoBadge>
             <p className="theme-muted text-sm">Toplam ders: {courseDetail.lessons.length}</p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             {isPublished ? (
               <Button
                 disabled={unpublishingCourse}
@@ -999,7 +999,7 @@ const InstructorCourseVideoUploadPage = () => {
         </div>
 
         {isCourseEditOpen ? (
-          <div className="mt-4 space-y-3 border-t border-[color:var(--border)] pt-4">
+          <div className="mt-4 space-y-4 border-t border-[color:var(--border)] pt-4">
             <label className="flex flex-col gap-1">
               <span className="theme-subtle text-xs">Kurs basligi</span>
               <input
@@ -1129,7 +1129,7 @@ const InstructorCourseVideoUploadPage = () => {
 
       <Card>
         <SectionHeader description="Baslik, sira ve aciklama bilgileriyle yeni ders olustur." title="Ders ekle" />
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-4">
           <div className="grid gap-3 md:grid-cols-3">
             <label className="flex flex-col gap-1 md:col-span-2">
               <span className="theme-subtle text-xs">Ders basligi</span>
@@ -1178,7 +1178,7 @@ const InstructorCourseVideoUploadPage = () => {
           description="Ders kartindan islem acarak guncelleme veya video yukleme yapabilirsin."
           title="Dersler"
         />
-        <div className="mt-4 space-y-3">
+        <div className="mt-4 space-y-4">
           {courseDetail.lessons.length === 0 ? (
             <p className="theme-muted text-sm">Bu kurs icin henuz ders eklenmemis.</p>
           ) : courseDetail.lessons.map((lesson) => {
@@ -1197,7 +1197,7 @@ const InstructorCourseVideoUploadPage = () => {
 
             return (
               <div
-                className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)]"
+                className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] transition hover:border-[color:var(--border-strong)]"
                 key={lesson.id}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">

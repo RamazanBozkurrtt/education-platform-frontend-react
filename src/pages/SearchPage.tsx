@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import CourseCard from '../components/CourseCard'
+import PageHeader from '../components/PageHeader'
 import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
 import Loader from '../components/ui/Loader'
@@ -45,15 +46,15 @@ const SearchPage = () => {
   const hasFilters = Boolean(query.trim() || category || level)
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{t('searchPage.eyebrow')}</p>
-        <h1 className="theme-heading mt-2 text-3xl font-semibold tracking-tight">{t('searchPage.title')}</h1>
-        <p className="theme-muted mt-3 text-sm leading-7">{t('searchPage.description')}</p>
-      </Card>
+    <div className="space-y-7">
+      <PageHeader
+        description={t('searchPage.description')}
+        eyebrow={t('searchPage.eyebrow')}
+        title={t('searchPage.title')}
+      />
 
       <section className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <Card className="h-fit min-w-0">
+        <Card className="h-fit min-w-0 xl:sticky xl:top-24">
           <Input
             icon={<Search className="h-4 w-4" />}
             label={t('searchPage.search')}
@@ -154,7 +155,7 @@ const SearchPage = () => {
               ))}
             </div>
           ) : (
-            <Card>
+            <Card className="text-center">
               <h3 className="theme-heading text-xl font-semibold">
                 {hasFilters
                   ? language === 'tr' ? 'Sonu\u00e7 bulunamad\u0131' : 'No results found'

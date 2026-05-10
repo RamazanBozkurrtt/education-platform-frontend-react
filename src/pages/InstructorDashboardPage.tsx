@@ -87,7 +87,7 @@ const InstructorDashboardPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <PageHeader
         actions={
           <>
@@ -133,7 +133,7 @@ const InstructorDashboardPage = () => {
         ) : (
           <div className="mt-4 space-y-3">
             {courses.slice(0, 6).map((course) => (
-              <div key={course.id} className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4">
+              <div key={course.id} className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4 transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <p className="theme-heading font-medium">{course.title}</p>

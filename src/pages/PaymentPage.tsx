@@ -172,7 +172,7 @@ const PaymentPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <PageHeader
         actions={
           <Link to={hasItems ? ROUTES.cart : ROUTES.courses}>
@@ -197,7 +197,7 @@ const PaymentPage = () => {
                 ].map((option) => (
                   <button
                     key={option.id}
-                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm font-medium transition ${
+                    className={`flex items-center gap-3 rounded-[var(--radius-navigation)] border px-4 py-3 text-sm font-medium transition ${
                       method === option.id
                         ? 'border-[color:var(--border-strong)] bg-[color:var(--surface-sky-haze)] theme-heading'
                         : 'border-[color:var(--border)] bg-[color:var(--surface-strong)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
@@ -377,7 +377,7 @@ const PaymentPage = () => {
           )}
         </Card>
 
-        <div className="space-y-6">
+        <div className="space-y-6 xl:sticky xl:top-24 xl:self-start">
           <Card className="border-[color:var(--border)] bg-[color:var(--surface-soft)]">
             <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{t('payment.orderSummary')}</p>
             <h2 className="theme-heading mt-3 text-2xl font-semibold">{t('cart.courseCount', { count: itemCount })}</h2>
@@ -418,7 +418,7 @@ const PaymentPage = () => {
             {hasItems ? (
               <div className="mt-4 space-y-3">
                 {items.map((item) => (
-                  <div key={item.courseId} className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+                  <div key={item.courseId} className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">

@@ -185,7 +185,7 @@ const CoursePlayerPage = () => {
 
   if (!purchased) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-7">
         <Card>
           <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{getCourseCategoryLabel(data)}</p>
           <h1 className="theme-heading mt-2 text-3xl font-semibold tracking-tight">{t('player.lockedTitle')}</h1>
@@ -244,7 +244,7 @@ const CoursePlayerPage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <Card>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
@@ -306,7 +306,7 @@ const CoursePlayerPage = () => {
           </div>
         </Card>
 
-        <div className="space-y-4">
+        <div className="space-y-4 xl:sticky xl:top-24 xl:self-start">
           <Card>
             <SectionHeader
               description={t('player.chooseLesson')}

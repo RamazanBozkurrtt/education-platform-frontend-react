@@ -338,7 +338,7 @@ const CourseDetailPage = () => {
   const purchased = isPurchased(data.id)
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <Card>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
@@ -389,7 +389,7 @@ const CourseDetailPage = () => {
       </Card>
 
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           <Card>
             <SectionHeader
               description={copy.detailsDescription}
@@ -399,7 +399,7 @@ const CourseDetailPage = () => {
             {data.outcomes.length > 0 ? (
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 {data.outcomes.map((outcome) => (
-                  <div className="flex gap-3 rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4" key={outcome}>
+                  <div className="flex gap-3 rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]" key={outcome}>
                     <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--primary)]" />
                     <p className="theme-text text-sm leading-6">{outcome}</p>
                   </div>
@@ -419,7 +419,7 @@ const CourseDetailPage = () => {
             {data.modules.length > 0 ? (
               <div className="mt-4 space-y-3">
                 {data.modules.map((module, index) => (
-                  <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4" key={module.id}>
+                  <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4 transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]" key={module.id}>
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex min-w-0 items-center gap-3">
                         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-xs font-semibold theme-heading">
@@ -520,7 +520,7 @@ const CourseDetailPage = () => {
           </section>
         </div>
 
-        <aside className="space-y-4">
+        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
           <Card>
             <SectionHeader
               description={copy.statusDescription}
@@ -541,30 +541,30 @@ const CourseDetailPage = () => {
               </InfoBadge>
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {purchased ? (
-                <Link to={ROUTES.coursePlayer(data.slug)}>
-                  <Button asChild>
+                <Link className="sm:col-span-2" to={ROUTES.coursePlayer(data.slug)}>
+                  <Button asChild className="w-full justify-center">
                     <PlayCircle className="h-4 w-4" />
                     {t('common.watchCourse')}
                   </Button>
                 </Link>
               ) : isInCart(data.id) ? (
-                <Link to={ROUTES.cart}>
-                  <Button asChild variant="secondary">
+                <Link className="sm:col-span-2" to={ROUTES.cart}>
+                  <Button asChild className="w-full justify-center" variant="secondary">
                     <CheckCircle2 className="h-4 w-4" />
                     {t('common.goToCart')}
                   </Button>
                 </Link>
               ) : (
-                <Button onClick={() => addCourse(data.id)}>
+                <Button className="w-full justify-center sm:col-span-2" onClick={() => addCourse(data.id)}>
                   <ShoppingCart className="h-4 w-4" />
                   {t('common.addToCart')}
                 </Button>
               )}
               {!purchased ? (
-                <Link to={ROUTES.payment}>
-                  <Button asChild variant="ghost">
+                <Link className="sm:col-span-2" to={ROUTES.payment}>
+                  <Button asChild className="w-full justify-center" variant="ghost">
                     {t('common.continueToPayment')}
                     <ArrowRight className="h-4 w-4" />
                   </Button>

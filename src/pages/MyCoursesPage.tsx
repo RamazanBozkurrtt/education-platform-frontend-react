@@ -23,7 +23,7 @@ const MyCoursesPage = () => {
   const categoryCount = new Set(purchasedCourses.map((course) => getCourseCategoryFilterKey(course))).size
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <PageHeader
         actions={
           <Link to={ROUTES.courses}>
@@ -75,7 +75,7 @@ const MyCoursesPage = () => {
       {hasCourses ? (
         <section className="grid gap-4 xl:grid-cols-2">
           {purchasedCourses.map((course) => (
-            <Card key={course.id}>
+            <Card className="h-full" key={course.id}>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="theme-muted rounded-full border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs font-medium">
                   {getCourseCategoryLabel(course)}
@@ -132,7 +132,7 @@ const MyCoursesPage = () => {
           ))}
         </section>
       ) : (
-        <Card className="px-6 py-10 text-center">
+        <Card className="px-6 py-12 text-center">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-[color:var(--surface-sky-haze)] text-[color:var(--primary)]">
             <BookOpenCheck className="h-6 w-6" />
           </div>

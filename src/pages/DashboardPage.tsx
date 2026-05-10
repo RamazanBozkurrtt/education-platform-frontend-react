@@ -93,7 +93,7 @@ const DashboardPage = () => {
         title={t('dashboard.title')}
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {data.metrics.map((metric) => (
           <StatCard key={metric.label} {...metric} />
         ))}
@@ -126,7 +126,7 @@ const DashboardPage = () => {
             {data.focusCourse.modules.map((module, index) => (
               <div
                 key={module.id}
-                className="flex items-center justify-between gap-4 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4"
+                className="flex items-center justify-between gap-4 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4 transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]"
               >
                 <div className="flex items-center gap-4">
                   <div className="theme-heading flex h-9 w-9 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-xs font-semibold">
@@ -145,12 +145,12 @@ const DashboardPage = () => {
           </div>
         </Card>
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           <Card>
             <SectionHeader title={t('dashboard.upcomingMilestones')} />
             <div className="mt-4 space-y-3">
               {data.upcomingMilestones.map((milestone) => (
-                <div key={milestone.id} className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+                <div key={milestone.id} className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]">
                   <div className="flex items-center justify-between gap-3">
                     <p className="theme-heading text-sm font-medium">{milestone.label}</p>
                     <InfoBadge>{milestone.status}</InfoBadge>
@@ -168,7 +168,7 @@ const DashboardPage = () => {
             />
             <div className="mt-4 space-y-3">
               {data.recentActivity.map((activity) => (
-                <div key={activity.id} className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+                <div key={activity.id} className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]">
                   <div className="flex items-center justify-between gap-3">
                     <p className="theme-heading text-sm font-medium">{activity.title}</p>
                     <InfoBadge>{activity.tag}</InfoBadge>

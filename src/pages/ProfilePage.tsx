@@ -459,14 +459,14 @@ const ProfilePage = () => {
   const displayAvatarUrl = isEditing ? (avatarUrl || user.avatarUrl) : user.avatarUrl
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <PageHeader
         description={t('profile.description')}
         eyebrow={t('profile.eyebrow')}
         title={t('profile.title')}
       />
 
-      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Card>
           <div className="flex flex-col gap-6 border-b border-[color:var(--border)] pb-6 sm:flex-row sm:items-center">
             <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-[color:var(--primary)] text-2xl font-semibold text-white">
@@ -685,7 +685,7 @@ const ProfilePage = () => {
                   socialEntries.map(([label, url]) => (
                     <a
                       key={label}
-                      className="theme-muted flex items-center gap-3 rounded-[18px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm transition hover:border-[color:var(--border-strong)]"
+                      className="theme-muted flex items-center gap-3 rounded-[18px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]"
                       href={url}
                       rel="noreferrer"
                       target="_blank"
