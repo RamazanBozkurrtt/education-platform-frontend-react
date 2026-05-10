@@ -169,6 +169,25 @@ input:-webkit-autofill:focus {
   background-color: var(--overlay);
 }
 
+.dashboard-shell {
+  position: relative;
+  isolation: isolate;
+}
+
+.dashboard-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: calc(var(--radius-cards) * 1.35);
+  background: linear-gradient(180deg, var(--page-glow-a), transparent 26%);
+}
+
+.dashboard-content {
+  overflow-x: clip;
+}
+
 .theme-placeholder::placeholder {
   color: var(--text-subtle);
 }
