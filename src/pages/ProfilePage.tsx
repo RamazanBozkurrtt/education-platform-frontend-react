@@ -343,13 +343,13 @@ const ProfilePage = () => {
     setIsChangingPassword(true)
 
     try {
-      const message = await changePassword({
+      await changePassword({
         oldPassword: oldPassword.trim(),
         newPassword: newPassword.trim(),
       })
 
       resetPasswordForm()
-      setPasswordFeedback({ message: message || t('profile.password.updateSuccess'), tone: 'success' })
+      setPasswordFeedback({ message: t('profile.password.updateSuccess'), tone: 'success' })
     } catch (error) {
       const appError = normalizeApiError(error)
       const apiFieldErrors = mapApiFieldErrorsToPasswordForm(appError.fieldErrors)

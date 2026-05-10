@@ -22,6 +22,7 @@ import { courseService } from '../services/courseService'
 import { reviewService } from '../services/reviewService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { ROUTES } from '../utils/constants'
+import { getCourseCategoryLabel } from '../utils/courseCategory'
 import { formatCurrency } from '../utils/helpers'
 import { isAdmin } from '../utils/roles'
 import type { CreateReviewRequest, Review, UpdateReviewRequest } from '../utils/types'
@@ -341,7 +342,7 @@ const CourseDetailPage = () => {
       <Card>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-3xl">
-            <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{data.category}</p>
+            <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{getCourseCategoryLabel(data)}</p>
             <h1 className="theme-heading mt-2 break-words text-3xl font-semibold leading-tight md:text-4xl">{data.title}</h1>
             <p className="theme-muted mt-3 text-sm leading-7">{data.description}</p>
 

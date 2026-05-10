@@ -1,4 +1,4 @@
-import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+﻿import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Filter, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -11,6 +11,7 @@ import QueryErrorState from '../components/ui/QueryErrorState'
 import { useLanguage } from '../hooks/useLanguage'
 import { courseService } from '../services/courseService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
+import { getCourseCategoryFilterKey } from '../utils/courseCategory'
 import {
   buildCatalogPath,
   filterCatalogCourses,
@@ -29,32 +30,32 @@ const PublicCatalogPage = () => {
 
   const copy = language === 'tr'
     ? {
-      eyebrow: 'Kursları keşfet',
-      title: 'Kurs kataloğu',
+      eyebrow: 'KurslarÄ± keÅŸfet',
+      title: 'Kurs kataloÄŸu',
       description: 'Kurslari arama, kategori ve seviye filtreleriyle incele.',
       searchLabel: 'Kurs ara',
       searchPlaceholder: 'Kurs adi, beceri, egitmen veya etiket',
       filterLabel: 'Filtreler',
-      all: 'Tümü',
+      all: 'TÃ¼mÃ¼',
       categories: 'Kategoriler',
       levels: 'Seviyeler',
       featured: 'One cikanlar',
       clear: 'Filtreleri temizle',
-      results: 'Sonuçlar',
+      results: 'SonuÃ§lar',
       resultsTitle: 'kurs bulundu',
       resultsDescription: 'Filtrelerine uyan kurslar listeleniyor.',
-      emptyTitle: 'Sonuç bulunamadı',
-      emptyDescription: 'Aramayı değiştir veya filtreleri temizleyip yeniden dene.',
+      emptyTitle: 'SonuÃ§ bulunamadÄ±',
+      emptyDescription: 'AramayÄ± deÄŸiÅŸtir veya filtreleri temizleyip yeniden dene.',
       stats: [
         { label: 'Kategori', getValue: (count: number) => String(count) },
         { label: 'Kurs', getValue: (count: number) => String(count) },
         { label: 'Seviye', getValue: (count: number) => String(count) },
       ],
-      chips: [
-        { label: 'Tüm kurslar', value: {} },
-        { label: 'Baslangic seviyesi', value: { level: 'beginner' } },
-        { label: 'Tasarim', value: { category: 'design' } },
-      ],
+      chips: {
+        all: 'TÃ¼m kurslar',
+        beginner: 'Baslangic seviyesi',
+        categoryPrefix: 'Kategori',
+      },
       navSections: [{ id: 'course-results', label: 'Kurslar' }],
     }
     : {
@@ -79,11 +80,11 @@ const PublicCatalogPage = () => {
         { label: 'Courses', getValue: (count: number) => String(count) },
         { label: 'Levels', getValue: (count: number) => String(count) },
       ],
-      chips: [
-        { label: 'All courses', value: {} },
-        { label: 'Beginner level', value: { level: 'beginner' } },
-        { label: 'Design', value: { category: 'design' } },
-      ],
+      chips: {
+        all: 'All courses',
+        beginner: 'Beginner level',
+        categoryPrefix: 'Category',
+      },
       navSections: [{ id: 'course-results', label: 'Courses' }],
     }
 
@@ -91,13 +92,45 @@ const PublicCatalogPage = () => {
     queryKey: ['public-catalog', language],
     queryFn: () => courseService.getCourses(language),
   })
+  const { data: categoriesFromApi = [] } = useQuery({
+    queryKey: ['public-catalog-categories'],
+    queryFn: () => courseService.getPublicCategories(),
+  })
   const appError = error ? normalizeApiError(error) : null
   const hasRecoverablePublicError = appError?.kind === 'auth' || appError?.kind === 'forbidden'
   const resolvedCourses = courses ?? []
 
-  const categories = useMemo(() => getCatalogCategories(resolvedCourses), [resolvedCourses])
+  const categories = useMemo(() => {
+    if (categoriesFromApi.length === 0) {
+      return getCatalogCategories(resolvedCourses)
+    }
+
+    return categoriesFromApi.map((category) => ({
+      key: category.id,
+      label: category.categoryName,
+      count: resolvedCourses.filter((course) => getCourseCategoryFilterKey(course) === category.id).length,
+      highlight: resolvedCourses.find((course) => getCourseCategoryFilterKey(course) === category.id)?.tags.slice(0, 2).join(' / ')
+        ?? (language === 'tr' ? 'Kurslari incele' : 'Explore courses'),
+    })).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
+  }, [categoriesFromApi, language, resolvedCourses])
   const levels = useMemo(() => getCatalogLevels(resolvedCourses), [resolvedCourses])
   const featuredCourses = useMemo(() => [...resolvedCourses].sort((left, right) => right.rating - left.rating).slice(0, 3), [resolvedCourses])
+  const chips = useMemo(() => {
+    const firstCategory = categories[0]
+    const nextChips: Array<{ label: string; value: { category?: string; level?: string } }> = [
+      { label: copy.chips.all, value: {} },
+      { label: copy.chips.beginner, value: { level: 'beginner' } },
+    ]
+
+    if (firstCategory) {
+      nextChips.push({
+        label: `${copy.chips.categoryPrefix}: ${firstCategory.label}`,
+        value: { category: firstCategory.key },
+      })
+    }
+
+    return nextChips
+  }, [categories, copy.chips.all, copy.chips.beginner, copy.chips.categoryPrefix])
 
   const filteredCourses = useMemo(
     () => filterCatalogCourses(resolvedCourses, { query: deferredQuery, category: categoryKey, level: levelKey }, language),
@@ -178,7 +211,7 @@ const PublicCatalogPage = () => {
             <p className="theme-muted mt-5 max-w-2xl text-sm leading-8 md:text-base">{copy.description}</p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              {copy.chips.map((chip) => (
+              {chips.map((chip) => (
                 <Link className="public-outline-button h-11 px-4 text-sm font-semibold" key={chip.label} to={buildCatalogPath(chip.value)}>
                   {chip.label}
                 </Link>
@@ -348,3 +381,5 @@ const PublicCatalogPage = () => {
 }
 
 export default PublicCatalogPage
+
+

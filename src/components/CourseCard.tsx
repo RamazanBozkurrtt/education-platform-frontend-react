@@ -1,9 +1,13 @@
 import { ArrowRight, CheckCircle2, Clock3, PlayCircle, ShoppingCart, Star, UserRound } from 'lucide-react'
+import type { SyntheticEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useCart } from '../hooks/useCart'
 import { useLibrary } from '../hooks/useLibrary'
+import { resolveServiceUrl } from '../config/api'
+import { API_ENDPOINTS } from '../services/endpoints'
 import { ROUTES } from '../utils/constants'
+import { getCourseCategoryLabel } from '../utils/courseCategory'
 import { formatCurrency } from '../utils/helpers'
 import type { Course } from '../utils/types'
 import Button from './ui/Button'
@@ -21,16 +25,39 @@ const CourseCard = ({ course }: CourseCardProps) => {
   const { isPurchased } = useLibrary()
   const inCart = isInCart(course.id)
   const purchased = isPurchased(course.id)
+  const fallbackImageUrl = resolveServiceUrl(API_ENDPOINTS.courses.image.public(course.id))
+  const courseImageUrl = course.imageUrl || fallbackImageUrl
+
+  const handleImageError = (event: SyntheticEvent<HTMLImageElement>) => {
+    const target = event.currentTarget
+
+    if (target.dataset.fallbackApplied === 'true') {
+      return
+    }
+
+    target.dataset.fallbackApplied = 'true'
+    target.src = fallbackImageUrl
+  }
 
   return (
     <Card className="flex h-full flex-col">
       <div className="flex items-start justify-between gap-4">
         <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1 text-xs font-medium theme-muted">
-          {course.category}
+          {getCourseCategoryLabel(course)}
         </span>
         <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1 text-xs theme-muted">
           {course.level}
         </span>
+      </div>
+
+      <div className="mt-4 overflow-hidden rounded-[var(--radius-navigation)] border border-[color:var(--border)]">
+        <img
+          alt={course.title}
+          className="h-44 w-full object-cover"
+          loading="lazy"
+          onError={handleImageError}
+          src={courseImageUrl}
+        />
       </div>
 
       <div className="mt-4 min-h-[7rem]">

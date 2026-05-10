@@ -12,6 +12,7 @@ import SectionHeader from '../components/ui/SectionHeader'
 import { useLanguage } from '../hooks/useLanguage'
 import { courseService } from '../services/courseService'
 import { ROUTES } from '../utils/constants'
+import { getCourseCategoryLabel } from '../utils/courseCategory'
 
 const InstructorDashboardPage = () => {
   const { language } = useLanguage()
@@ -30,7 +31,7 @@ const InstructorDashboardPage = () => {
       noCourse: 'Henuz kurs olusturmadin.',
       noCourseHint: 'Ilk kursunu olusturarak egitmen panelini kullanmaya baslayabilirsin.',
       goToCourseCreate: 'Ilk kursunu olustur',
-      addVideo: 'Video yükle',
+      addVideo: 'Yonet',
     }
     : {
       eyebrow: 'Instructor panel',
@@ -45,7 +46,7 @@ const InstructorDashboardPage = () => {
       totalStudents: 'Learners',
       noCourse: 'You have not created any courses yet.',
       goToCourseCreate: 'Create first course',
-      addVideo: 'Upload video',
+      addVideo: 'Manage',
     }
 
   const { data: courses, error, isLoading } = useQuery({
@@ -137,7 +138,7 @@ const InstructorDashboardPage = () => {
                   <div>
                     <p className="theme-heading font-medium">{course.title}</p>
                     <div className="mt-1 flex items-center gap-2">
-                      <InfoBadge>{course.category}</InfoBadge>
+                      <InfoBadge>{getCourseCategoryLabel(course)}</InfoBadge>
                       <InfoBadge>{course.level}</InfoBadge>
                     </div>
                   </div>

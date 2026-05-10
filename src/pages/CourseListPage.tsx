@@ -9,6 +9,7 @@ import Loader from '../components/ui/Loader'
 import QueryErrorState from '../components/ui/QueryErrorState'
 import { useLanguage } from '../hooks/useLanguage'
 import { courseService } from '../services/courseService'
+import { getCourseCategoryFilterKey, getCourseCategoryLabel } from '../utils/courseCategory'
 
 const parseStudentCount = (value: string) => {
   const normalized = value.trim().toLowerCase()
@@ -56,10 +57,26 @@ const CourseListPage = () => {
     setActiveCategory('')
   }, [language])
 
-  const categories = useMemo(
-    () => [...new Set((data ?? []).map((course) => course.category))],
-    [data],
-  )
+  const categories = useMemo(() => {
+    if (!data) {
+      return []
+    }
+
+    return Array.from(
+      data.reduce<Map<string, { key: string; label: string }>>((map, course) => {
+        const key = getCourseCategoryFilterKey(course)
+
+        if (!map.has(key)) {
+          map.set(key, {
+            key,
+            label: getCourseCategoryLabel(course),
+          })
+        }
+
+        return map
+      }, new Map()).values(),
+    )
+  }, [data])
 
   if (error) {
     return <QueryErrorState error={error} />
@@ -71,7 +88,7 @@ const CourseListPage = () => {
 
   const filteredCourses = activeCategory === ''
     ? data
-    : data.filter((course) => course.category === activeCategory)
+    : data.filter((course) => getCourseCategoryFilterKey(course) === activeCategory)
   const totalStudents = data.reduce((sum, course) => sum + parseStudentCount(course.students), 0)
   const averageRating = (data.reduce((sum, course) => sum + course.rating, 0) / data.length).toFixed(1)
 
@@ -133,15 +150,15 @@ const CourseListPage = () => {
           {categories.map((category) => (
             <button
               className={`rounded-[var(--radius-badges)] border px-4 py-2 text-sm font-medium transition ${
-                activeCategory === category
+                activeCategory === category.key
                   ? 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]'
                   : 'border-[color:var(--border)] bg-[color:var(--surface-strong)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
               }`}
-              key={category}
-              onClick={() => setActiveCategory(category)}
+              key={category.key}
+              onClick={() => setActiveCategory(category.key)}
               type="button"
             >
-              {category}
+              {category.label}
             </button>
           ))}
         </div>

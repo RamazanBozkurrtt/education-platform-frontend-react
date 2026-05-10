@@ -39,7 +39,16 @@ const LessonVideoPreview = ({
             <p className="text-sm text-[color:var(--surface-muted-mandarin)]">{errorMessage}</p>
           ) : null}
           {videoSrc && !isLoading ? (
-            <video aria-label="Ders video onizlemesi" className="aspect-video w-full rounded-md bg-black" controls preload="metadata" src={videoSrc} />
+            <video
+              aria-label="Ders video onizlemesi"
+              className="aspect-video w-full rounded-md bg-black"
+              controls
+              controlsList="nodownload noremoteplayback"
+              disablePictureInPicture
+              onContextMenu={(event) => event.preventDefault()}
+              preload="metadata"
+              src={videoSrc}
+            />
           ) : null}
         </div>
       ) : null}

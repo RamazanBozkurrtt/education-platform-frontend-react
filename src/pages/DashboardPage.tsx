@@ -18,6 +18,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../hooks/useLanguage'
 import { courseService } from '../services/courseService'
 import { ROUTES } from '../utils/constants'
+import { getCourseCategoryLabel } from '../utils/courseCategory'
 import { extractAuthRoles, isAdmin, isInstructor } from '../utils/roles'
 
 const DashboardPage = () => {
@@ -113,7 +114,7 @@ const DashboardPage = () => {
               { key: 'progress', label: t('dashboard.progress'), value: `${data.focusCourse.progress}%` },
               { key: 'lessons', label: t('courseDetail.lessons'), value: String(data.focusCourse.lessons) },
               { key: 'duration', label: t('courseDetail.duration'), value: data.focusCourse.duration },
-              { key: 'category', label: language === 'tr' ? 'Kategori' : 'Category', value: data.focusCourse.category },
+              { key: 'category', label: language === 'tr' ? 'Kategori' : 'Category', value: getCourseCategoryLabel(data.focusCourse) },
             ]}
           />
 

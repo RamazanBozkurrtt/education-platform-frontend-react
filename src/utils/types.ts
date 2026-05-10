@@ -144,11 +144,17 @@ export interface CourseModule {
   videoUrl?: string
 }
 
+export interface CourseCategoryOption {
+  id: string
+  categoryName: string
+}
+
 export interface Course {
   id: string
   slug: string
   title: string
   imageUrl: string
+  categoryId?: string
   category: string
   categoryKey: string
   level: string

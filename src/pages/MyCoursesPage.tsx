@@ -8,6 +8,7 @@ import MetaRow from '../components/ui/MetaRow'
 import TagList from '../components/ui/TagList'
 import { useLibrary } from '../hooks/useLibrary'
 import { ROUTES } from '../utils/constants'
+import { getCourseCategoryFilterKey, getCourseCategoryLabel } from '../utils/courseCategory'
 
 const MyCoursesPage = () => {
   const { t } = useTranslation()
@@ -19,7 +20,7 @@ const MyCoursesPage = () => {
       purchasedCourses.reduce((sum, course) => sum + course.progress, 0) / purchasedCourses.length,
     )
     : 0
-  const categoryCount = new Set(purchasedCourses.map((course) => course.category)).size
+  const categoryCount = new Set(purchasedCourses.map((course) => getCourseCategoryFilterKey(course))).size
 
   return (
     <div className="space-y-6">
@@ -77,7 +78,7 @@ const MyCoursesPage = () => {
             <Card key={course.id}>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="theme-muted rounded-full border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs font-medium">
-                  {course.category}
+                  {getCourseCategoryLabel(course)}
                 </span>
                 <span className="theme-muted rounded-full border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs">
                   {course.level}

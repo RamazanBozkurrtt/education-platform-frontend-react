@@ -23,6 +23,7 @@ import { courseService } from '../services/courseService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { buildCatalogPath, getCatalogCategories } from '../utils/catalogFilters'
 import { ROUTES } from '../utils/constants'
+import { getCourseCategoryFilterKey, getCourseCategoryLabel } from '../utils/courseCategory'
 
 const parseStudentCount = (value: string) => {
   if (value.trim().toLowerCase().endsWith('k')) {
@@ -137,6 +138,10 @@ const LandingPage = () => {
     queryKey: ['landing-courses', language],
     queryFn: () => courseService.getCourses(language),
   })
+  const { data: categoriesFromApi = [] } = useQuery({
+    queryKey: ['landing-categories'],
+    queryFn: () => courseService.getPublicCategories(),
+  })
   const appError = error ? normalizeApiError(error) : null
   const hasRecoverablePublicError = appError?.kind === 'auth' || appError?.kind === 'forbidden'
   const resolvedCourses = courses ?? []
@@ -159,9 +164,23 @@ const LandingPage = () => {
       totalLearners,
       averageRating,
       featuredCourses: sortedCourses.slice(0, 3),
-      categories: getCatalogCategories(resolvedCourses),
+      categories: categoriesFromApi.length > 0
+        ? categoriesFromApi.map((category) => ({
+          key: category.id,
+          label: category.categoryName,
+          count: resolvedCourses.filter((course) => getCourseCategoryFilterKey(course) === category.id).length,
+          highlight: resolvedCourses.find((course) => getCourseCategoryFilterKey(course) === category.id)?.tags.slice(0, 2).join(' / ')
+            ?? (language === 'tr' ? 'Kurslari incele' : 'Explore courses'),
+        })).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
+        : getCatalogCategories(resolvedCourses).map((category) => ({
+          ...category,
+          label: getCourseCategoryLabel({
+            category: category.label,
+            categoryId: category.key,
+          }),
+        })),
     }
-  }, [resolvedCourses])
+  }, [categoriesFromApi, language, resolvedCourses])
 
   const handleAnchorClick = (id: string) => {
     const section = document.getElementById(id)

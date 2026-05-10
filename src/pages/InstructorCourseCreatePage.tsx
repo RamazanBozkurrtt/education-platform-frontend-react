@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import Card from '../components/ui/Card'
@@ -7,12 +8,24 @@ import Button from '../components/ui/Button'
 import { useLanguage } from '../hooks/useLanguage'
 import { instructorCourseService } from '../services/instructorCourseService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
+import { emitAppToast } from '../shared/notifications/appToast'
 import { ROUTES } from '../utils/constants'
 
-type FormErrors = Partial<Record<'title' | 'description' | 'price' | 'learningOutcomes' | 'tags', string>>
+type FormErrors = Partial<Record<'title' | 'description' | 'price' | 'categoryId' | 'learningOutcomes' | 'tags' | 'image', string>>
 const LEARNING_OUTCOME_COUNT = 4
 const DEFAULT_TAG_FIELD_COUNT = 3
 const MAX_TAG_COUNT = 6
+const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpg', 'image/jpeg', 'image/webp', 'image/svg+xml'])
+const ALLOWED_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.svg']
+
+const isAllowedImageFile = (file: File) => {
+  if (ALLOWED_IMAGE_TYPES.has(file.type)) {
+    return true
+  }
+
+  const normalizedName = file.name.toLocaleLowerCase('en-US')
+  return ALLOWED_IMAGE_EXTENSIONS.some((extension) => normalizedName.endsWith(extension))
+}
 
 const InstructorCourseCreatePage = () => {
   const navigate = useNavigate()
@@ -21,6 +34,7 @@ const InstructorCourseCreatePage = () => {
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
   const [categoryId, setCategoryId] = useState('')
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>(
     Array.from({ length: LEARNING_OUTCOME_COUNT }, () => ''),
   )
@@ -30,6 +44,15 @@ const InstructorCourseCreatePage = () => {
   const [errors, setErrors] = useState<FormErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const {
+    data: categories = [],
+    isLoading: categoriesLoading,
+    error: categoriesError,
+    refetch: refetchCategories,
+  } = useQuery({
+    queryKey: ['course-public-categories'],
+    queryFn: () => instructorCourseService.getPublicCategories(),
+  })
   const copy = language === 'tr'
     ? {
       eyebrow: 'Egitmen kurs yonetimi',
@@ -38,10 +61,15 @@ const InstructorCourseCreatePage = () => {
       titleLabel: 'Kurs basligi',
       descriptionLabel: 'Kurs aciklamasi',
       priceLabel: 'Fiyat',
-      categoryLabel: 'Kategori (opsiyonel)',
+      categoryLabel: 'Kategori',
+      categoryPlaceholder: 'Kategori secin',
+      categoryReload: 'Kategorileri tekrar yukle',
+      categoryLoadFailed: 'Kategori listesi su anda alinamadi.',
       outcomesLabel: 'Ogrenim ciktisi',
       outcomesHelper: 'Tam olarak 4 ogrenim ciktisi girmen gerekiyor.',
       outcomePlaceholder: (index: number) => `Ogrenim ciktisi ${index + 1}`,
+      imageLabel: 'Kurs gorseli (opsiyonel)',
+      imageHelper: 'Gorsel secmezsen backend varsayilan kurs gorselini kullanir.',
       tagsLabel: 'Etiketler',
       tagsHelper: `Etiketleri ayri kutulara gir. Bos kutular gonderilmez. (Maks ${MAX_TAG_COUNT})`,
       tagPlaceholder: (index: number) => `Etiket ${index + 1}`,
@@ -52,9 +80,13 @@ const InstructorCourseCreatePage = () => {
       validationTitle: 'Kurs basligi zorunludur.',
       validationDescription: 'Kurs aciklamasi zorunludur.',
       validationPrice: 'Fiyat 0 veya daha buyuk bir sayi olmalidir.',
+      validationCategoryId: 'Kategori secimi zorunludur.',
       validationOutcomes: 'Tam olarak 4 ogrenim ciktisi doldurulmalidir.',
       validationTags: 'Ayni etiket birden fazla kez kullanilamaz.',
       validationTagsMax: `En fazla ${MAX_TAG_COUNT} etiket girilebilir.`,
+      validationImage: 'Kurs gorseli PNG, JPG, JPEG, WEBP veya SVG formatinda olmalidir.',
+      invalidCategory: 'Secilen kategori gecersiz. Lutfen tekrar secin.',
+      imageUploadFailed: 'Kurs olusturuldu fakat gorsel yuklenemedi. Varsayilan gorsel kullanilacak.',
     }
     : {
       eyebrow: 'Course creation',
@@ -63,10 +95,15 @@ const InstructorCourseCreatePage = () => {
       titleLabel: 'Course title',
       descriptionLabel: 'Course description',
       priceLabel: 'Price',
-      categoryLabel: 'Category ID (optional)',
+      categoryLabel: 'Category',
+      categoryPlaceholder: 'Select a category',
+      categoryReload: 'Reload categories',
+      categoryLoadFailed: 'Category list could not be loaded right now.',
       outcomesLabel: 'Learning outcomes',
       outcomesHelper: 'You must fill exactly 4 learning outcomes.',
       outcomePlaceholder: (index: number) => `Learning outcome ${index + 1}`,
+      imageLabel: 'Course image (optional)',
+      imageHelper: 'If no image is selected, the backend default image will be used.',
       tagsLabel: 'Tags',
       tagsHelper: `Use separate fields for each tag. Empty fields are ignored. (Max ${MAX_TAG_COUNT})`,
       tagPlaceholder: (index: number) => `Tag ${index + 1}`,
@@ -77,10 +114,20 @@ const InstructorCourseCreatePage = () => {
       validationTitle: 'Course title is required.',
       validationDescription: 'Course description is required.',
       validationPrice: 'Price must be a number greater than or equal to 0.',
+      validationCategoryId: 'Category selection is required.',
       validationOutcomes: 'All 4 learning outcomes must be filled.',
       validationTags: 'Duplicate tags are not allowed.',
       validationTagsMax: `You can add at most ${MAX_TAG_COUNT} tags.`,
+      validationImage: 'Course image must be PNG, JPG, JPEG, WEBP, or SVG.',
+      invalidCategory: 'The selected category is invalid. Please choose again.',
+      imageUploadFailed: 'Course was created, but image upload failed. Backend default image will be used.',
     }
+
+  const isCategoryNotFoundError = (error: ReturnType<typeof normalizeApiError>) =>
+    error.httpStatus === 404 && (
+      error.code === 'COURSE_CATEGORY_NOT_FOUND' ||
+      error.message.toLocaleLowerCase('en-US').includes('category')
+    )
 
   const updateLearningOutcome = (index: number, value: string) => {
     setLearningOutcomes((current) => current.map((item, itemIndex) => itemIndex === index ? value : item))
@@ -131,6 +178,9 @@ const InstructorCourseCreatePage = () => {
     if (!price.trim() || Number.isNaN(parsedPrice) || parsedPrice < 0) {
       nextErrors.price = copy.validationPrice
     }
+    if (!categoryId.trim()) {
+      nextErrors.categoryId = copy.validationCategoryId
+    }
 
     if (normalizedOutcomes.some((item) => !item) || normalizedOutcomes.length !== LEARNING_OUTCOME_COUNT) {
       nextErrors.learningOutcomes = copy.validationOutcomes
@@ -142,8 +192,24 @@ const InstructorCourseCreatePage = () => {
     if (normalizedTags.length > MAX_TAG_COUNT) {
       nextErrors.tags = copy.validationTagsMax
     }
+    if (selectedImageFile && !isAllowedImageFile(selectedImageFile)) {
+      nextErrors.image = copy.validationImage
+    }
 
     return nextErrors
+  }
+
+  const handleCategoryChange = (value: string) => {
+    setCategoryId(value)
+    setErrors((current) => {
+      if (!current.categoryId) {
+        return current
+      }
+
+      const next = { ...current }
+      delete next.categoryId
+      return next
+    })
   }
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -169,14 +235,49 @@ const InstructorCourseCreatePage = () => {
         title: title.trim(),
         description: description.trim(),
         price: Number(price),
-        categoryId: categoryId.trim() || undefined,
+        categoryId: categoryId.trim(),
         learningOutcomes: normalizedLearningOutcomes,
         tags: normalizedTags,
       })
 
+      if (selectedImageFile) {
+        try {
+          await instructorCourseService.uploadCourseImage(createdCourse.id, selectedImageFile)
+        } catch {
+          emitAppToast({
+            tone: 'info',
+            message: copy.imageUploadFailed,
+          })
+        }
+      }
+
       navigate(ROUTES.instructorNewCourseVideo(createdCourse.id), { replace: true })
     } catch (error) {
       const appError = normalizeApiError(error)
+      const nextErrors: FormErrors = {}
+      nextErrors.title = appError.fieldErrors?.title?.[0] ?? nextErrors.title
+      nextErrors.description = appError.fieldErrors?.description?.[0] ?? nextErrors.description
+      nextErrors.price = appError.fieldErrors?.price?.[0] ?? nextErrors.price
+      nextErrors.categoryId = appError.fieldErrors?.categoryId?.[0]
+        ?? appError.fieldErrors?.category?.[0]
+        ?? appError.fieldErrors?.['category.id']?.[0]
+        ?? nextErrors.categoryId
+      nextErrors.learningOutcomes = appError.fieldErrors?.learningOutcomes?.[0]
+        ?? appError.fieldErrors?.outcomes?.[0]
+        ?? nextErrors.learningOutcomes
+      nextErrors.tags = appError.fieldErrors?.tags?.[0] ?? nextErrors.tags
+
+      if (isCategoryNotFoundError(appError)) {
+        nextErrors.categoryId = copy.invalidCategory
+        void refetchCategories()
+      }
+
+      if (Object.keys(nextErrors).length > 0) {
+        setErrors((current) => ({ ...current, ...nextErrors }))
+        setFormError(null)
+        return
+      }
+
       setFormError(appError.message)
     } finally {
       setSubmitting(false)
@@ -226,12 +327,49 @@ const InstructorCourseCreatePage = () => {
               type="number"
               value={price}
             />
-            <Input
-              id="course-category-id"
-              label={copy.categoryLabel}
-              onChange={(event) => setCategoryId(event.target.value)}
-              value={categoryId}
+            <label className="flex w-full flex-col gap-2" htmlFor="course-category-id">
+              <span className="theme-text text-sm font-medium">{copy.categoryLabel}</span>
+              <span className="flex rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
+                <select
+                  aria-invalid={Boolean(errors.categoryId)}
+                  className="theme-text w-full bg-transparent text-sm outline-none"
+                  disabled={categoriesLoading}
+                  id="course-category-id"
+                  onChange={(event) => handleCategoryChange(event.target.value)}
+                  value={categoryId}
+                >
+                  <option value="">
+                    {categoriesLoading ? `${copy.categoryPlaceholder}...` : copy.categoryPlaceholder}
+                  </option>
+                  {categories.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.categoryName}
+                    </option>
+                  ))}
+                </select>
+              </span>
+              {errors.categoryId ? <span className="text-xs text-[color:var(--danger)]">{errors.categoryId}</span> : null}
+              {categoriesError ? (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-xs text-[color:var(--danger)]">{copy.categoryLoadFailed}</span>
+                  <Button onClick={() => void refetchCategories()} type="button" variant="ghost">
+                    {copy.categoryReload}
+                  </Button>
+                </div>
+              ) : null}
+            </label>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <span className="theme-text text-sm font-medium">{copy.imageLabel}</span>
+            <input
+              accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml"
+              className="theme-text file:theme-text h-12 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-2 text-sm file:mr-3 file:cursor-pointer file:rounded-[var(--radius-badges)] file:border file:border-[color:var(--border)] file:bg-[color:var(--surface-soft)] file:px-3 file:py-1.5 file:text-xs file:font-medium file:hover:bg-[color:var(--surface-hover)]"
+              onChange={(event) => setSelectedImageFile(event.target.files?.[0] ?? null)}
+              type="file"
             />
+            <span className="theme-subtle text-xs">{copy.imageHelper}</span>
+            {errors.image ? <span className="text-xs text-[color:var(--danger)]">{errors.image}</span> : null}
           </div>
 
           <div className="flex w-full flex-col gap-2">

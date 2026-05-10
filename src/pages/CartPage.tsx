@@ -6,6 +6,7 @@ import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import { useCart } from '../hooks/useCart'
 import { ROUTES } from '../utils/constants'
+import { getCourseCategoryLabel } from '../utils/courseCategory'
 import { formatCurrency } from '../utils/helpers'
 
 const CartPage = () => {
@@ -66,7 +67,7 @@ const CartPage = () => {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="theme-muted rounded-full border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs font-semibold">
-                          {item.course.category}
+                          {getCourseCategoryLabel(item.course)}
                         </span>
                         <span className="theme-subtle text-xs">{item.course.level}</span>
                       </div>

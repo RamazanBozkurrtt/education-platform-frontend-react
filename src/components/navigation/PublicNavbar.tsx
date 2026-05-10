@@ -4,6 +4,7 @@ import { Link, useLocation } from 'react-router-dom'
 import LanguageSwitcher from '../ui/LanguageSwitcher'
 import { useLanguage } from '../../hooks/useLanguage'
 import { APP_NAME, ROUTES } from '../../utils/constants'
+import { getCourseCategoryLabel } from '../../utils/courseCategory'
 import { buildCatalogPath } from '../../utils/catalogFilters'
 import { cn } from '../../utils/helpers'
 import type { CatalogCategorySummary } from '../../utils/catalogFilters'
@@ -147,7 +148,7 @@ const PublicNavbar = ({
                     >
                       <div>
                         <span className="theme-heading block text-sm font-semibold">{course.title}</span>
-                        <span className="theme-muted mt-1 block text-sm">{course.category}</span>
+                        <span className="theme-muted mt-1 block text-sm">{getCourseCategoryLabel(course)}</span>
                       </div>
                       <ArrowRight className="h-4 w-4 text-[color:var(--primary)]" />
                     </Link>

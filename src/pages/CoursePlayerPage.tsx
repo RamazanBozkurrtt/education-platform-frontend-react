@@ -18,6 +18,7 @@ import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { courseMediaService } from '../services/courseMediaService'
 import { courseService } from '../services/courseService'
 import { ROUTES } from '../utils/constants'
+import { getCourseCategoryLabel } from '../utils/courseCategory'
 
 const PLAYBACK_URL_REFRESH_BUFFER_MS = 3_000
 
@@ -186,7 +187,7 @@ const CoursePlayerPage = () => {
     return (
       <div className="space-y-6">
         <Card>
-          <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{data.category}</p>
+          <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{getCourseCategoryLabel(data)}</p>
           <h1 className="theme-heading mt-2 text-3xl font-semibold tracking-tight">{t('player.lockedTitle')}</h1>
           <p className="theme-muted mt-3 text-sm leading-7">{t('player.lockedDescription')}</p>
         </Card>

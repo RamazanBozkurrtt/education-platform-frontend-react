@@ -5,6 +5,7 @@ import Button from '../ui/Button'
 import { useLanguage } from '../../hooks/useLanguage'
 import type { InstructorProfilePayload } from '../../utils/types'
 import { normalizeApiError } from '../../shared/errors/normalizeApiError'
+import { emitAppToast } from '../../shared/notifications/appToast'
 
 interface InstructorProfileFormProps {
   initialValues?: Partial<InstructorProfilePayload>
@@ -144,8 +145,6 @@ const InstructorProfileForm = ({
     profileImageUrl: toInitialValue(forcedProfileImageUrl ?? initialValues?.profileImageUrl),
   })
   const [errors, setErrors] = useState<FormErrors>({})
-  const [formError, setFormError] = useState<string | null>(null)
-  const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -213,8 +212,6 @@ const InstructorProfileForm = ({
     event.preventDefault()
     const validationErrors = validate()
     setErrors(validationErrors)
-    setFormError(null)
-    setSuccessMessage(null)
 
     if (Object.keys(validationErrors).length > 0) {
       return
@@ -232,12 +229,18 @@ const InstructorProfileForm = ({
         githubUrl: form.githubUrl?.trim() || undefined,
         profileImageUrl: forcedProfileImageUrl?.trim() || form.profileImageUrl?.trim() || undefined,
       })
-      setSuccessMessage(language === 'tr'
-        ? 'Eğitmen profili başvurun başarıyla gönderildi.'
-        : 'Your instructor profile application was submitted successfully.')
+      emitAppToast({
+        tone: 'success',
+        message: language === 'tr'
+          ? 'Eğitmen profili başvurun başarıyla gönderildi.'
+          : 'Your instructor profile application was submitted successfully.',
+      })
     } catch (error) {
       const appError = normalizeApiError(error)
-      setFormError(appError.message)
+      emitAppToast({
+        tone: 'error',
+        message: appError.message,
+      })
     } finally {
       setSubmitting(false)
     }
@@ -342,18 +345,6 @@ const InstructorProfileForm = ({
       <Button className="w-full" disabled={submitting} type="submit">
         {submitting ? (submittingLabel ?? copy.submittingLabel) : (submitLabel ?? copy.submitLabel)}
       </Button>
-
-      {formError ? (
-        <div className="rounded-[var(--radius-buttons)] border border-[color:var(--danger)] bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
-          {formError}
-        </div>
-      ) : null}
-
-      {successMessage ? (
-        <div className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] px-4 py-3 text-sm theme-text">
-          {successMessage}
-        </div>
-      ) : null}
     </form>
   )
 }

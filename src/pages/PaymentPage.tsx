@@ -13,6 +13,7 @@ import { useAuth } from '../hooks/useAuth'
 import { enrollmentService } from '../services/enrollmentService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { ROUTES } from '../utils/constants'
+import { getCourseCategoryLabel } from '../utils/courseCategory'
 import { formatCurrency } from '../utils/helpers'
 import type { CartItem } from '../utils/types'
 
@@ -422,7 +423,7 @@ const PaymentPage = () => {
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="theme-muted rounded-full border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs font-semibold">
-                            {item.course.category}
+                            {getCourseCategoryLabel(item.course)}
                           </span>
                           <span className="theme-subtle text-xs">{item.course.level}</span>
                         </div>
