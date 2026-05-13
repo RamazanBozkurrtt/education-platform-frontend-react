@@ -1,4 +1,5 @@
-﻿import { ArrowRight, Star, Users2 } from 'lucide-react'
+﻿import type { CSSProperties } from 'react'
+import { ArrowRight, BookOpenText, ChartLine, ShieldCheck, Star, Users2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 interface LandingHeroCard {
@@ -6,7 +7,6 @@ interface LandingHeroCard {
   title: string
   summary: string
   href: string
-  tone: 'violet' | 'sky' | 'peach' | 'slate'
 }
 
 interface LandingHeroProps {
@@ -23,6 +23,15 @@ interface LandingHeroProps {
   learnersValue: string
   ratingLabel: string
   ratingValue: string
+  coursesLabel: string
+  coursesValue: string
+  visualTitle: string
+  visualDescription: string
+  proofPoints: string[]
+  trackActionLabel: string
+  securityLabel: string
+  structureLabel: string
+  analyticsLabel: string
 }
 
 const LandingHero = ({
@@ -39,6 +48,15 @@ const LandingHero = ({
   learnersValue,
   ratingLabel,
   ratingValue,
+  coursesLabel,
+  coursesValue,
+  visualTitle,
+  visualDescription,
+  proofPoints,
+  trackActionLabel,
+  securityLabel,
+  structureLabel,
+  analyticsLabel,
 }: LandingHeroProps) => (
   <section className="landing-section landing-hero" id="hero">
     <div className="landing-hero-grid">
@@ -61,6 +79,46 @@ const LandingHero = ({
           </Link>
         </div>
 
+        <div className="landing-hero-proof">
+          <span><ShieldCheck className="h-4 w-4" /> {securityLabel}</span>
+          {proofPoints.slice(0, 2).map((point) => <span key={point}>{point}</span>)}
+        </div>
+      </div>
+
+      <aside aria-label={quickCardsTitle} className="landing-hero-visual">
+        <div className="landing-hero-visual-head">
+          <p>{quickCardsTitle}</p>
+          <h2>{visualTitle}</h2>
+          <p>{visualDescription}</p>
+        </div>
+
+        <div className="landing-hero-visual-toolbar">
+          <span><BookOpenText className="h-4 w-4" /> {structureLabel}</span>
+          <span><ChartLine className="h-4 w-4" /> {analyticsLabel}</span>
+        </div>
+
+        <div className="landing-hero-track-list">
+          {quickCards.slice(0, 3).map((card, index) => {
+            const progressStyle = { '--track-progress': `${82 - (index * 14)}%` } as CSSProperties
+
+            return (
+              <Link className="landing-hero-track-row" key={card.id} to={card.href}>
+                <div>
+                  <p className="landing-hero-track-title">{card.title}</p>
+                  <p className="landing-hero-track-summary">{card.summary}</p>
+                </div>
+                <div className="landing-hero-track-progress" style={progressStyle}>
+                  <span />
+                </div>
+                <span className="landing-hero-track-link">
+                  {trackActionLabel}
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+
         <div className="landing-hero-metrics">
           <div className="landing-metric-chip">
             <Users2 className="h-4 w-4" />
@@ -76,24 +134,13 @@ const LandingHero = ({
               <p className="landing-metric-value">{ratingValue}</p>
             </div>
           </div>
-        </div>
-      </div>
-
-      <aside className="landing-hero-panel" aria-label={quickCardsTitle}>
-        <div className="landing-hero-panel-head">
-          <h2>{quickCardsTitle}</h2>
-        </div>
-        <div className="landing-hero-topics">
-          {quickCards.map((card) => (
-            <Link className={`landing-topic-card landing-topic-card-${card.tone}`} key={card.id} to={card.href}>
-              <p className="landing-topic-title">{card.title}</p>
-              <p className="landing-topic-summary">{card.summary}</p>
-              <span className="landing-topic-link">
-                {secondaryCta}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </span>
-            </Link>
-          ))}
+          <div className="landing-metric-chip">
+            <BookOpenText className="h-4 w-4" />
+            <div>
+              <p className="landing-metric-label">{coursesLabel}</p>
+              <p className="landing-metric-value">{coursesValue}</p>
+            </div>
+          </div>
         </div>
       </aside>
     </div>

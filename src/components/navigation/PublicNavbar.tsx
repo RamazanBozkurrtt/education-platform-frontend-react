@@ -88,10 +88,10 @@ const PublicNavbar = ({
   }
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[color:var(--border)] bg-[color:var(--surface-white)]">
-      <div className="mx-auto flex max-w-[1480px] items-center justify-between gap-3 px-4 py-4 lg:gap-4 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-[color:var(--border)] bg-[color:var(--surface-white)] backdrop-blur">
+      <div className="mx-auto flex max-w-[1480px] items-center justify-between gap-3 px-4 py-3 lg:gap-4 lg:px-8">
         <Link className="flex min-w-0 flex-1 items-center gap-3 lg:flex-none" to={ROUTES.home}>
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[color:var(--border)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
             <Layers3 className="h-5 w-5" />
           </div>
           <div className="min-w-0">

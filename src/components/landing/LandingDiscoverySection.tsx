@@ -1,4 +1,4 @@
-﻿import { ArrowRight } from 'lucide-react'
+﻿import { ArrowRight, Search, SlidersHorizontal } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 interface LandingCategoryItem {
@@ -7,7 +7,6 @@ interface LandingCategoryItem {
   countLabel: string
   highlight: string
   href: string
-  tone: 'violet' | 'sky' | 'peach' | 'slate'
 }
 
 interface LandingCourseItem {
@@ -27,6 +26,7 @@ interface LandingDiscoverySectionProps {
   courses: LandingCourseItem[]
   catalogCta: string
   catalogHref: string
+  steps: string[]
 }
 
 const LandingDiscoverySection = ({
@@ -38,49 +38,62 @@ const LandingDiscoverySection = ({
   courses,
   catalogCta,
   catalogHref,
+  steps,
 }: LandingDiscoverySectionProps) => (
-  <section className="landing-section" id="categories">
-    <div className="landing-section-header landing-section-header-row">
+  <section className="landing-section" id="discovery">
+    <div className="landing-discovery-layout">
       <div>
-        <h2 className="landing-section-title">{title}</h2>
-        <p className="landing-section-description">{description}</p>
-      </div>
-      <Link to={catalogHref}>
-        <span className="public-outline-button h-11 px-4 text-sm font-semibold">
-          {catalogCta}
-          <ArrowRight className="h-4 w-4" />
-        </span>
-      </Link>
-    </div>
-
-    <div className="landing-discovery-grid">
-      <div className="landing-surface">
-        <h3 className="landing-subtitle">{categoriesTitle}</h3>
-        <div className="landing-category-grid">
-          {categories.map((category) => (
-            <Link className={`landing-category-card landing-topic-card-${category.tone}`} key={category.id} to={category.href}>
-              <p className="landing-category-count">{category.countLabel}</p>
-              <p className="landing-category-title">{category.label}</p>
-              <p className="landing-category-highlight">{category.highlight}</p>
-            </Link>
-          ))}
+        <div className="landing-section-header">
+          <h2 className="landing-section-title">{title}</h2>
+          <p className="landing-section-description">{description}</p>
         </div>
+
+        <ol className="landing-discovery-steps">
+          {steps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
+        </ol>
+
+        <Link to={catalogHref}>
+          <span className="public-primary-button h-11 px-5 text-sm font-semibold">
+            {catalogCta}
+            <ArrowRight className="h-4 w-4" />
+          </span>
+        </Link>
       </div>
 
-      <div className="landing-surface">
-        <h3 className="landing-subtitle">{coursesTitle}</h3>
-        <div className="landing-course-list">
-          {courses.map((course) => (
-            <Link className="landing-course-item" key={course.id} to={course.href}>
-              <p className="landing-course-meta">{course.meta}</p>
-              <h4>{course.title}</h4>
-              <p>{course.summary}</p>
-              <span>
-                {catalogCta}
-                <ArrowRight className="h-3.5 w-3.5" />
-              </span>
-            </Link>
-          ))}
+      <div className="landing-discovery-surface">
+        <div className="landing-discovery-pane">
+          <h3>{categoriesTitle}</h3>
+          <div className="landing-discovery-tags">
+            {categories.slice(0, 6).map((category) => (
+              <Link key={category.id} to={category.href}>
+                <span>{category.label}</span>
+                <small>{category.countLabel}</small>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="landing-discovery-pane">
+          <h3>{coursesTitle}</h3>
+          <div className="landing-discovery-course-list">
+            {courses.slice(0, 4).map((course, index) => (
+              <Link className="landing-discovery-course" key={course.id} to={course.href}>
+                <span className="landing-discovery-course-index">0{index + 1}</span>
+                <div>
+                  <p>{course.meta}</p>
+                  <h4>{course.title}</h4>
+                  <p>{course.summary}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        <div className="landing-discovery-hints" role="list">
+          <span role="listitem"><Search className="h-4 w-4" /> Anahtar kelime aramasi</span>
+          <span role="listitem"><SlidersHorizontal className="h-4 w-4" /> Kategori ve seviye filtreleri</span>
         </div>
       </div>
     </div>

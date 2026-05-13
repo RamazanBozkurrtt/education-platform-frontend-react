@@ -237,6 +237,30 @@ input:-webkit-autofill:focus {
   background: linear-gradient(180deg, var(--page-glow-b), transparent 55%);
 }
 
+.auth-shell-bg {
+  filter: saturate(0.98) contrast(1.02);
+}
+
+.auth-shell-overlay {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-soft) 58%, transparent) 0%,
+    color-mix(in srgb, var(--surface-soft) 74%, transparent) 100%
+  );
+}
+
+html[data-theme='dark'] .auth-shell-bg {
+  filter: saturate(0.82) brightness(0.72) contrast(1.08);
+}
+
+html[data-theme='dark'] .auth-shell-overlay {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg) 42%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 64%, transparent) 100%
+  );
+}
+
 .public-section-card {
   position: relative;
   background: var(--surface-strong);
@@ -326,8 +350,8 @@ input:-webkit-autofill:focus {
 
 .public-nav-link:hover,
 .public-nav-link-active {
-  border-color: var(--border);
-  background: var(--surface-muted);
+  border-color: color-mix(in srgb, var(--border) 70%, transparent);
+  background: color-mix(in srgb, var(--surface-muted) 58%, var(--surface-strong));
   color: var(--text-heading);
 }
 
@@ -346,16 +370,16 @@ input:-webkit-autofill:focus {
   position: absolute;
   top: 100%;
   z-index: 60;
-  padding-top: 0.65rem;
+  padding-top: 0.55rem;
   transition: opacity 0.18s ease;
 }
 
 .public-nav-panel > div {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-cards);
-  background: var(--surface-white);
-  box-shadow: var(--shadow-sm);
-  padding: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-white) 90%, var(--surface-soft));
+  box-shadow: 0 16px 36px color-mix(in srgb, var(--text-heading) 12%, transparent);
+  padding: 1rem;
 }
 
 .public-dropdown-link,
@@ -364,10 +388,10 @@ input:-webkit-autofill:focus {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border: 1px solid var(--border);
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   border-radius: var(--radius-navigation);
-  background: var(--surface-white);
-  padding: 1rem;
+  background: color-mix(in srgb, var(--surface-white) 88%, var(--surface-soft));
+  padding: 0.9rem;
 }
 
 .public-dropdown-feature {
@@ -378,8 +402,8 @@ input:-webkit-autofill:focus {
 
 .public-dropdown-link:hover,
 .public-dropdown-feature:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
+  border-color: color-mix(in srgb, var(--primary) 32%, var(--border-strong));
+  background: color-mix(in srgb, var(--surface-hover) 70%, var(--surface-soft));
 }
 
 .public-mobile-link,

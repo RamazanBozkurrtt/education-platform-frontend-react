@@ -4,20 +4,24 @@ interface LandingBenefitsSectionProps {
   sectionId: string
   title: string
   description: string
-  studentTitle: string
+  institutionTitle: string
+  institutionDescription: string
   instructorTitle: string
-  studentBenefits: string[]
-  instructorBenefits: string[]
+  instructorDescription: string
+  highlights: string[]
+  capabilities: string[]
 }
 
 const LandingBenefitsSection = ({
   sectionId,
   title,
   description,
-  studentTitle,
+  institutionTitle,
+  institutionDescription,
   instructorTitle,
-  studentBenefits,
-  instructorBenefits,
+  instructorDescription,
+  highlights,
+  capabilities,
 }: LandingBenefitsSectionProps) => (
   <section className="landing-section" id={sectionId}>
     <div className="landing-section-header">
@@ -25,30 +29,30 @@ const LandingBenefitsSection = ({
       <p className="landing-section-description">{description}</p>
     </div>
 
-    <div className="landing-benefit-grid">
-      <article className="landing-surface landing-benefit-card">
-        <h3>{studentTitle}</h3>
+    <div className="landing-institution-layout">
+      <article className="landing-institution-block">
+        <p className="landing-institution-eyebrow">Kurumlar Icin</p>
+        <h3>{institutionTitle}</h3>
+        <p>{institutionDescription}</p>
         <ul>
-          {studentBenefits.map((benefit) => (
-            <li key={benefit}>
-              <span>
-                <Check className="h-3.5 w-3.5" />
-              </span>
-              {benefit}
+          {highlights.map((item) => (
+            <li key={item}>
+              <span><Check className="h-3.5 w-3.5" /></span>
+              {item}
             </li>
           ))}
         </ul>
       </article>
 
-      <article className="landing-surface landing-benefit-card">
+      <article className="landing-institution-block landing-institution-block-soft">
+        <p className="landing-institution-eyebrow">Egitmen Akisi</p>
         <h3>{instructorTitle}</h3>
+        <p>{instructorDescription}</p>
         <ul>
-          {instructorBenefits.map((benefit) => (
-            <li key={benefit}>
-              <span>
-                <Check className="h-3.5 w-3.5" />
-              </span>
-              {benefit}
+          {capabilities.map((item) => (
+            <li key={item}>
+              <span><Check className="h-3.5 w-3.5" /></span>
+              {item}
             </li>
           ))}
         </ul>

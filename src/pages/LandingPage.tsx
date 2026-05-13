@@ -1,13 +1,14 @@
 ﻿import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
-import QueryErrorState from '../components/ui/QueryErrorState'
 import LandingBenefitsSection from '../components/landing/LandingBenefitsSection'
 import LandingDiscoverySection from '../components/landing/LandingDiscoverySection'
+import LandingFeatureSection from '../components/landing/LandingFeatureSection'
 import LandingFinalCta from '../components/landing/LandingFinalCta'
 import LandingHero from '../components/landing/LandingHero'
 import LandingValueSection from '../components/landing/LandingValueSection'
 import PublicNavbar from '../components/navigation/PublicNavbar'
+import QueryErrorState from '../components/ui/QueryErrorState'
 import '../components/landing/landing.css'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../hooks/useLanguage'
@@ -29,8 +30,6 @@ const parseStudentCount = (value: string) => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-const heroCardTones = ['violet', 'sky', 'peach', 'slate'] as const
-
 const LandingPage = () => {
   const { t } = useTranslation()
   const { language } = useLanguage()
@@ -39,127 +38,227 @@ const LandingPage = () => {
   const copy = language === 'tr'
     ? {
       navSections: [
-        { id: 'overview', label: 'Platform' },
-        { id: 'benefits', label: 'Faydalar' },
+        { id: 'discovery', label: 'Kurs Kesfi' },
+        { id: 'institutions', label: 'Kurumlar' },
+        { id: 'features', label: 'Ozellikler' },
       ],
-      heroEyebrow: 'EduBase ogrenme platformu',
-      heroTitle: 'Bugun ne ogrenmek istiyorsun?',
-      heroDescription: 'EduBase ile kurslari kesfet, ders iceriklerini takip et ve ogrenme surecini sade bir platform uzerinden yonet.',
-      heroPrimaryCta: 'Ucretsiz basla',
-      heroSecondaryCta: 'Kurslari kesfet',
-      heroQuickCardsTitle: 'One cikan kategoriler',
-      heroLearnersLabel: 'Toplam ogrenci',
-      heroRatingLabel: 'Ortalama puan',
-      overviewTitle: 'Online ogrenmeyi daha duzenli ve erisilebilir hale getir.',
-      overviewDescription: 'Kurs kesfi, ders takibi ve egitmen icerik yonetimi ayni akista birlesir.',
-      overviewItems: [
+      heroEyebrow: 'EduBase | Kurumsal Dijital Egitim Altyapisi',
+      heroTitle: 'Kurs operasyonlarini ve ogrenme surecini tek platformda yonetin.',
+      heroDescription: 'EduBase; ogrenci, egitmen ve kurum ekipleri icin kurs kesfi, ders yapisi ve ilerleme takibini net bir urun deneyiminde birlestirir.',
+      heroPrimaryCta: 'Hesap Olustur',
+      heroSecondaryCta: 'Kurslari Incele',
+      heroQuickCardsTitle: 'Platform Gorunumu',
+      heroVisualTitle: 'Programlar, kategoriler ve ogrenme akislari ayni merkezde',
+      heroVisualDescription: 'Kurs seciminden ders ilerlemesine kadar her adim izlenebilir ve raporlanabilir bir duzende ilerler.',
+      heroTrackActionLabel: 'Detaya Git',
+      heroSecurityLabel: 'Guvenli Altyapi',
+      heroStructureLabel: 'Program Yapisi',
+      heroAnalyticsLabel: 'Ilerleme Analizi',
+      heroProofPoints: ['Duzenli ders yapisi', 'Olculebilir ogrenci ilerlemesi'],
+      heroLearnersLabel: 'Toplam Ogrenci',
+      heroRatingLabel: 'Ortalama Puan',
+      heroCoursesLabel: 'Aktif Kurs',
+      trustTitle: 'Kurumsal ogrenme icin net ve guvenilir bir temel',
+      trustDescription: 'Platform, gunluk operasyonlarda hiz kadar tutarlilik ve denetlenebilirlik ihtiyacini da gozetir.',
+      trustItems: [
         {
           id: 'discover',
-          title: 'Kurs kesfini hizlandir',
-          description: 'Kategori, seviye ve etiket bilgileriyle uygun kursu hizli bul.',
+          title: 'Yapisal kurs kesfi',
+          description: 'Ogrenciler kurslari konu, seviye ve kapsam bilgisiyle karsilastirir.',
           icon: 'discover' as const,
         },
         {
           id: 'track',
-          title: 'Ders surecini takip et',
-          description: 'Icerik yapisini, dersleri ve ilerleme durumunu tek sayfada gor.',
+          title: 'Ilerleme takibi',
+          description: 'Ders bazli durum gorunur, ogrenme sureci kesintisiz izlenir.',
           icon: 'track' as const,
         },
         {
           id: 'instructor',
-          title: 'Egitmen akisini netlestir',
-          description: 'Egitmenlerin kurs icerigi yonetimini sade bir panelde tut.',
+          title: 'Egitmen verimliligi',
+          description: 'Icerik planlama, ders duzeni ve ogrenci yonlendirmesi tek panelde ilerler.',
           icon: 'instructor' as const,
         },
+        {
+          id: 'secure',
+          title: 'Guvenli platform deneyimi',
+          description: 'Tutarli erisim akislariyla kurumsal kullanima uygun bir deneyim sunulur.',
+          icon: 'secure' as const,
+        },
       ],
-      discoveryTitle: 'Kategorilere gore kurs kesfi',
-      discoveryDescription: 'Ilgilendigin alana dogrudan git ve kurs secimini kolaylastir.',
-      discoveryCategoriesTitle: 'Kategori alanlari',
-      discoveryCoursesTitle: 'Kurs onerileri',
-      discoveryCatalogCta: 'Katalogu ac',
-      benefitsTitle: 'Ogrenci ve egitmenler icin net bir deneyim',
-      benefitsDescription: 'Platformun temel akislarini gereksiz karmasiklik olmadan sunar.',
-      studentTitle: 'Ogrenciler icin',
-      instructorTitle: 'Egitmenler icin',
-      studentBenefits: [
-        'Kurslari kategoriye gore karsilastirma',
-        'Ders iceriklerini ve ilerlemeyi duzenli takip',
-        'Tek platformda daha sakin bir ogrenme deneyimi',
+      discoveryTitle: 'Kurs kesfi sade, karar sureci hizli',
+      discoveryDescription: 'Katalog deneyimi; arama, filtreleme ve karsilastirma adimlarini tek bir akista birlestirir.',
+      discoverySteps: [
+        'Konuya gore ara, seviyeye gore daralt, hedefe gore sec.',
+        'Kurs ozetlerini ve ders kapsamlarini tek ekranda degerlendir.',
+        'Uygun kursu belirle ve detay sayfasina tek adimda gec.',
       ],
-      instructorBenefits: [
-        'Kurs ve ders icerigini tutarli yapida yonetme',
-        'Ogrenci ilerlemesini daha kolay izleme',
-        'Icerik operasyonunu daginik araclar olmadan surdurme',
+      discoveryCategoriesTitle: 'One Cikan Kategoriler',
+      discoveryCoursesTitle: 'Degerlendirme Listesi',
+      discoveryCatalogCta: 'Tum Kataloga Git',
+      institutionTitle: 'Kurum ve egitmen ekipleri icin operasyonel netlik',
+      institutionDescription: 'EduBase, egitim ekiplerinin kurs yasam dongusunu standart bir yapida yonetmesine yardimci olur.',
+      institutionMainTitle: 'Kurum Olceginde Yonetim',
+      institutionMainDescription: 'Kurs acma, icerik duzeni ve ogrenci izleme surecleri daginik araclar yerine tek platformda toplanir.',
+      instructorTitle: 'Egitmen Yonetim Paneli',
+      instructorDescription: 'Egitmenler ders akislarini, icerik seviyelerini ve ogrenci ilerlemesini odakli bir duzende yonetir.',
+      institutionHighlights: [
+        'Program bazli kurs organizasyonu',
+        'Tutarli ders yapisi ve icerik standartlari',
+        'Kurum ici raporlama ve izlenebilirlik',
       ],
-      finalTitle: 'Ogrenmeye hemen basla',
-      finalDescription: 'Ucretsiz hesapla platforma giris yap ve sana uygun kursu sec.',
-      finalPrimaryCta: 'Ucretsiz basla',
-      finalSecondaryCta: 'Kurslari kesfet',
+      instructorCapabilities: [
+        'Kurs ve ders icerigini merkezi yonetme',
+        'Ogrenci ilerlemesini ders bazinda izleme',
+        'Yayin surecini sade adimlarla surdurme',
+      ],
+      featureTitle: 'Uretimde kullanima hazir ozellik seti',
+      featureDescription: 'Gereksiz gorsel kalabalik yerine islevsel, olgun ve kurumsal bir urun dili sunar.',
+      featureItems: [
+        {
+          id: 'workflow',
+          title: 'Akis odakli arayuz',
+          description: 'Kesiften kayda kadar kullaniciyi dogal bir adim sirasinda ilerletir.',
+          icon: 'workflow' as const,
+        },
+        {
+          id: 'insight',
+          title: 'Karar destekleyen gorunurluk',
+          description: 'Kurs ozetleri ve ilerleme bilgileri karar aninda erisilebilir durumdadir.',
+          icon: 'insight' as const,
+        },
+        {
+          id: 'quality',
+          title: 'Akademik ciddiyet',
+          description: 'Kurs ve ders sunumu, profesyonel egitim ortamina uygun bicimde kurgulanir.',
+          icon: 'quality' as const,
+        },
+        {
+          id: 'security',
+          title: 'Guvenilir deneyim',
+          description: 'Platform geneli tutarli etkilesim dili, guven ve sureklilik hissini destekler.',
+          icon: 'security' as const,
+        },
+      ],
+      finalTitle: 'EduBase ile ogrenme operasyonlarini bugun baslatin',
+      finalDescription: 'Kurslari inceleyin, platform akisini gorun ve ekibinize uygun dijital egitim altyapisini degerlendirin.',
+      finalPrimaryCta: 'Hesap Olustur',
+      finalSecondaryCta: 'Kurslari Incele',
       coursesLabel: 'kurs',
       lessonsLabel: 'ders',
-      emptyCategoryHighlight: 'Kurslari incele',
+      emptyCategoryHighlight: 'Kurs kapsamlarini goruntule',
     }
     : {
       navSections: [
-        { id: 'overview', label: 'Platform' },
-        { id: 'benefits', label: 'Benefits' },
+        { id: 'discovery', label: 'Discovery' },
+        { id: 'institutions', label: 'Institutions' },
+        { id: 'features', label: 'Features' },
       ],
-      heroEyebrow: 'EduBase learning platform',
-      heroTitle: 'What do you want to learn today?',
-      heroDescription: 'Discover courses, follow lesson content, and manage your learning flow through a focused platform.',
-      heroPrimaryCta: 'Start free',
-      heroSecondaryCta: 'Explore courses',
-      heroQuickCardsTitle: 'Featured categories',
-      heroLearnersLabel: 'Total learners',
-      heroRatingLabel: 'Average rating',
-      overviewTitle: 'Make online learning more organized and accessible.',
-      overviewDescription: 'Course discovery, lesson tracking, and instructor operations are aligned in one flow.',
-      overviewItems: [
+      heroEyebrow: 'EduBase | Enterprise Digital Learning Platform',
+      heroTitle: 'Manage course operations and learning progress in one product.',
+      heroDescription: 'EduBase brings course discovery, lesson structure, and learner progress into a focused experience for learners, instructors, and institutions.',
+      heroPrimaryCta: 'Create Account',
+      heroSecondaryCta: 'Browse Courses',
+      heroQuickCardsTitle: 'Platform View',
+      heroVisualTitle: 'Programs, categories, and learning flows in one center',
+      heroVisualDescription: 'From course selection to lesson progress, every step stays visible and measurable.',
+      heroTrackActionLabel: 'View Details',
+      heroSecurityLabel: 'Secure Foundation',
+      heroStructureLabel: 'Program Structure',
+      heroAnalyticsLabel: 'Progress Analytics',
+      heroProofPoints: ['Structured learning paths', 'Measurable learner progress'],
+      heroLearnersLabel: 'Total Learners',
+      heroRatingLabel: 'Average Rating',
+      heroCoursesLabel: 'Active Courses',
+      trustTitle: 'A reliable foundation for structured online education',
+      trustDescription: 'The product supports day-to-day speed while preserving consistency and accountability.',
+      trustItems: [
         {
           id: 'discover',
-          title: 'Speed up course discovery',
-          description: 'Use category, level, and tag context to find the right course quickly.',
+          title: 'Structured discovery',
+          description: 'Learners compare courses with clear topic, level, and scope context.',
           icon: 'discover' as const,
         },
         {
           id: 'track',
-          title: 'Track lesson progress',
-          description: 'Review content structure, lessons, and progress details in one place.',
+          title: 'Progress visibility',
+          description: 'Lesson-level completion data keeps learning outcomes transparent.',
           icon: 'track' as const,
         },
         {
           id: 'instructor',
-          title: 'Clarify instructor workflows',
-          description: 'Keep instructor content management inside a clean and focused panel.',
+          title: 'Instructor efficiency',
+          description: 'Content planning and learner guidance stay aligned in one workspace.',
           icon: 'instructor' as const,
         },
+        {
+          id: 'secure',
+          title: 'Trusted platform experience',
+          description: 'Consistent access and interaction patterns support enterprise use.',
+          icon: 'secure' as const,
+        },
       ],
-      discoveryTitle: 'Discover by category',
-      discoveryDescription: 'Jump into your focus area and simplify the next course decision.',
-      discoveryCategoriesTitle: 'Category lanes',
-      discoveryCoursesTitle: 'Course picks',
-      discoveryCatalogCta: 'Open catalog',
-      benefitsTitle: 'A clear experience for learners and instructors',
-      benefitsDescription: 'The core product flows stay visible and easy to follow.',
-      studentTitle: 'For learners',
-      instructorTitle: 'For instructors',
-      studentBenefits: [
-        'Compare courses by category',
-        'Follow lessons and progress with less noise',
-        'Keep learning activity in one consistent place',
+      discoveryTitle: 'Simple course discovery, faster decisions',
+      discoveryDescription: 'The catalog flow combines search, filtering, and comparison in one path.',
+      discoverySteps: [
+        'Search by topic, narrow by level, and match to a clear learning goal.',
+        'Review course summaries and lesson scope in one focused view.',
+        'Move to course details in one step and continue with confidence.',
       ],
-      instructorBenefits: [
-        'Manage courses and lesson structure consistently',
-        'Review learner progress with less overhead',
-        'Run content operations without tool sprawl',
+      discoveryCategoriesTitle: 'Featured Categories',
+      discoveryCoursesTitle: 'Evaluation List',
+      discoveryCatalogCta: 'Open Full Catalog',
+      institutionTitle: 'Operational clarity for institutions and instructors',
+      institutionDescription: 'EduBase helps education teams manage the full course lifecycle with a consistent structure.',
+      institutionMainTitle: 'Institution-Scale Management',
+      institutionMainDescription: 'Course creation, content structure, and learner tracking are centralized in one platform.',
+      instructorTitle: 'Instructor Operations Panel',
+      instructorDescription: 'Instructors manage lesson flow, content depth, and learner progress with less overhead.',
+      institutionHighlights: [
+        'Program-level course organization',
+        'Consistent lesson structure and standards',
+        'Internal reporting and traceability',
       ],
-      finalTitle: 'Start learning now',
-      finalDescription: 'Create your free account and pick a course that matches your goals.',
-      finalPrimaryCta: 'Start free',
-      finalSecondaryCta: 'Explore courses',
+      instructorCapabilities: [
+        'Manage courses and lessons from one center',
+        'Track learner progress at lesson level',
+        'Publish and maintain content with a clean workflow',
+      ],
+      featureTitle: 'A production-ready enterprise feature set',
+      featureDescription: 'A mature interface language focused on clarity, control, and operational confidence.',
+      featureItems: [
+        {
+          id: 'workflow',
+          title: 'Flow-driven interface',
+          description: 'Guides users naturally from discovery to enrollment actions.',
+          icon: 'workflow' as const,
+        },
+        {
+          id: 'insight',
+          title: 'Decision-ready visibility',
+          description: 'Course summaries and progress context remain accessible at key moments.',
+          icon: 'insight' as const,
+        },
+        {
+          id: 'quality',
+          title: 'Academic seriousness',
+          description: 'Course and lesson presentation is aligned with professional education standards.',
+          icon: 'quality' as const,
+        },
+        {
+          id: 'security',
+          title: 'Trusted consistency',
+          description: 'Platform-wide interaction patterns reinforce trust and continuity.',
+          icon: 'security' as const,
+        },
+      ],
+      finalTitle: 'Start evaluating EduBase today',
+      finalDescription: 'Browse courses, review the platform flow, and assess a digital education foundation for your team.',
+      finalPrimaryCta: 'Create Account',
+      finalSecondaryCta: 'Browse Courses',
       coursesLabel: 'courses',
       lessonsLabel: 'lessons',
-      emptyCategoryHighlight: 'Explore courses',
+      emptyCategoryHighlight: 'View course scope',
     }
 
   const { data: courses, error, isLoading } = useQuery({
@@ -170,6 +269,7 @@ const LandingPage = () => {
     queryKey: ['landing-categories'],
     queryFn: () => courseService.getPublicCategories(),
   })
+
   const appError = error ? normalizeApiError(error) : null
   const hasRecoverablePublicError = appError?.kind === 'auth' || appError?.kind === 'forbidden'
   const resolvedCourses = courses ?? []
@@ -220,29 +320,28 @@ const LandingPage = () => {
   const categories = content.categories.length ? content.categories : fallbackCategories
   const learnersValue = content.totalLearners.toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')
   const ratingValue = content.averageRating ? content.averageRating.toFixed(1) : '0.0'
+  const coursesValue = resolvedCourses.length.toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')
 
-  const heroCards = categories.slice(0, 4).map((category, index) => ({
+  const heroCards = categories.slice(0, 4).map((category) => ({
     id: category.key,
     title: category.label,
     summary: category.highlight,
     href: buildCatalogPath({ category: category.key }),
-    tone: heroCardTones[index % heroCardTones.length],
   }))
 
-  const discoveryCategories = categories.slice(0, 6).map((category, index) => ({
+  const discoveryCategories = categories.slice(0, 6).map((category) => ({
     id: category.key,
     label: category.label,
     countLabel: `${category.count} ${copy.coursesLabel}`,
     highlight: category.highlight,
     href: buildCatalogPath({ category: category.key }),
-    tone: heroCardTones[index % heroCardTones.length],
   }))
 
   const discoveryCourses = content.featuredCourses.slice(0, 4).map((course) => ({
     id: course.id,
     title: course.title,
     summary: course.summary,
-    meta: `${course.level} - ${course.lessons} ${copy.lessonsLabel}`,
+    meta: `${course.level} | ${course.lessons} ${copy.lessonsLabel}`,
     href: buildCatalogPath({ query: course.title }),
   }))
 
@@ -280,26 +379,35 @@ const LandingPage = () => {
 
       <main className="landing-main">
         <LandingHero
+          analyticsLabel={copy.heroAnalyticsLabel}
+          coursesLabel={copy.heroCoursesLabel}
+          coursesValue={coursesValue}
           description={copy.heroDescription}
           eyebrow={copy.heroEyebrow}
           learnersLabel={copy.heroLearnersLabel}
           learnersValue={learnersValue}
           primaryCta={copy.heroPrimaryCta}
           primaryHref={ROUTES.register}
+          proofPoints={copy.heroProofPoints}
           quickCards={heroCards}
           quickCardsTitle={copy.heroQuickCardsTitle}
           ratingLabel={copy.heroRatingLabel}
           ratingValue={ratingValue}
           secondaryCta={copy.heroSecondaryCta}
           secondaryHref={ROUTES.catalog}
+          securityLabel={copy.heroSecurityLabel}
+          structureLabel={copy.heroStructureLabel}
           title={copy.heroTitle}
+          trackActionLabel={copy.heroTrackActionLabel}
+          visualDescription={copy.heroVisualDescription}
+          visualTitle={copy.heroVisualTitle}
         />
 
         <LandingValueSection
-          description={copy.overviewDescription}
-          items={copy.overviewItems}
+          description={copy.trustDescription}
+          items={copy.trustItems}
           sectionId="overview"
-          title={copy.overviewTitle}
+          title={copy.trustTitle}
         />
 
         <LandingDiscoverySection
@@ -310,17 +418,27 @@ const LandingPage = () => {
           courses={discoveryCourses}
           coursesTitle={copy.discoveryCoursesTitle}
           description={copy.discoveryDescription}
+          steps={copy.discoverySteps}
           title={copy.discoveryTitle}
         />
 
         <LandingBenefitsSection
-          description={copy.benefitsDescription}
-          instructorBenefits={copy.instructorBenefits}
+          capabilities={copy.instructorCapabilities}
+          description={copy.institutionDescription}
+          highlights={copy.institutionHighlights}
+          institutionDescription={copy.institutionMainDescription}
+          institutionTitle={copy.institutionMainTitle}
+          instructorDescription={copy.instructorDescription}
           instructorTitle={copy.instructorTitle}
-          sectionId="benefits"
-          studentBenefits={copy.studentBenefits}
-          studentTitle={copy.studentTitle}
-          title={copy.benefitsTitle}
+          sectionId="institutions"
+          title={copy.institutionTitle}
+        />
+
+        <LandingFeatureSection
+          description={copy.featureDescription}
+          items={copy.featureItems}
+          sectionId="features"
+          title={copy.featureTitle}
         />
 
         <LandingFinalCta

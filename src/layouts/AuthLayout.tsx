@@ -1,21 +1,23 @@
 import { Link, Outlet } from 'react-router-dom'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
+import ThemeToggle from '../components/ui/ThemeToggle'
 import { APP_NAME, ROUTES } from '../utils/constants'
 import { cn } from '../utils/helpers'
 import authBackground from '../assets/AuthPages/auth_background.png'
 
 const AuthLayout = () => {
   return (
-    <main className="page-shell relative h-[100dvh] overflow-hidden px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+    <main className="auth-shell page-shell relative h-[100dvh] overflow-hidden px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
       <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        className="auth-shell-bg absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${authBackground})` }}
       />
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,245,238,0.54)_0%,rgba(255,245,238,0.72)_100%)]" />
+      <div className="auth-shell-overlay absolute inset-0" />
 
       <div className="relative z-10 mx-auto flex max-w-[1480px] justify-end">
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <LanguageSwitcher />
+          <ThemeToggle compact />
         </div>
       </div>
 
@@ -38,7 +40,7 @@ const AuthLayout = () => {
               />
               <h1
                 className={cn(
-                  'theme-heading text-7xl font-semibold leading-none tracking-[-0.08em] transition-all duration-300 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5 xl:text-[7.5rem]',
+                  'theme-heading text-7xl font-semibold leading-none tracking-[-0.08em] transition-all duration-300 group-hover:-translate-y-1 group-focus-visible:-translate-y-0.5 xl:text-[7.5rem]',
                   'group-hover:text-[color:var(--text-heading)]',
                 )}
               >
