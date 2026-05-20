@@ -1,15 +1,25 @@
-import { useDeferredValue, useEffect, useState } from 'react'
+﻿import { useDeferredValue, useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import CourseCard from '../components/CourseCard'
-import PageHeader from '../components/PageHeader'
-import Card from '../components/ui/Card'
+import CourseCatalogList from '../components/dashboard/CourseCatalogList'
+import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
+import DashboardSection from '../components/dashboard/DashboardSection'
+import EmptyState from '../components/dashboard/EmptyState'
+import StatusBadge from '../components/dashboard/StatusBadge'
 import Input from '../components/ui/Input'
 import Loader from '../components/ui/Loader'
 import QueryErrorState from '../components/ui/QueryErrorState'
 import { useLanguage } from '../hooks/useLanguage'
 import { searchService } from '../services/searchService'
+
+const chipClass = (active: boolean) => {
+  if (active) {
+    return 'rounded-sm border border-[color:var(--primary)] bg-[color:var(--surface-soft)] px-3 py-1.5 text-sm font-medium text-[color:var(--primary)]'
+  }
+
+  return 'rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-1.5 text-sm font-medium theme-muted transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
+}
 
 const SearchPage = () => {
   const { t } = useTranslation()
@@ -46,15 +56,15 @@ const SearchPage = () => {
   const hasFilters = Boolean(query.trim() || category || level)
 
   return (
-    <div className="space-y-7">
-      <PageHeader
+    <div className="space-y-8">
+      <DashboardPageHeader
         description={t('searchPage.description')}
         eyebrow={t('searchPage.eyebrow')}
         title={t('searchPage.title')}
       />
 
       <section className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <Card className="h-fit min-w-0 xl:sticky xl:top-24">
+        <aside className="h-fit min-w-0 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-4 xl:sticky xl:top-24">
           <Input
             icon={<Search className="h-4 w-4" />}
             label={t('searchPage.search')}
@@ -63,16 +73,12 @@ const SearchPage = () => {
             value={query}
           />
 
-          <div className="mt-6">
+          <div className="mt-5 border-t border-[color:var(--border)] pt-4">
             <p className="theme-heading text-sm font-semibold">{t('searchPage.categories')}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 aria-pressed={!category}
-                className={`rounded-[var(--radius-badges)] border px-3 py-1.5 text-sm transition ${
-                  category
-                    ? 'border-[color:var(--border)] bg-[color:var(--surface-strong)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
-                    : 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]'
-                }`}
+                className={chipClass(!category)}
                 onClick={() => setCategory('')}
                 type="button"
               >
@@ -81,12 +87,8 @@ const SearchPage = () => {
               {data.filters.categories.map((item) => (
                 <button
                   aria-pressed={category === item}
+                  className={chipClass(category === item)}
                   key={item}
-                  className={`rounded-[var(--radius-badges)] border px-3 py-1.5 text-sm transition ${
-                    category === item
-                      ? 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]'
-                      : 'border-[color:var(--border)] bg-[color:var(--surface-strong)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
-                  }`}
                   onClick={() => setCategory(item)}
                   type="button"
                 >
@@ -96,16 +98,12 @@ const SearchPage = () => {
             </div>
           </div>
 
-          <div className="mt-6">
+          <div className="mt-5 border-t border-[color:var(--border)] pt-4">
             <p className="theme-heading text-sm font-semibold">{t('searchPage.levels')}</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 aria-pressed={!level}
-                className={`rounded-[var(--radius-badges)] border px-3 py-1.5 text-sm transition ${
-                  level
-                    ? 'border-[color:var(--border)] bg-[color:var(--surface-strong)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
-                    : 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]'
-                }`}
+                className={chipClass(!level)}
                 onClick={() => setLevel('')}
                 type="button"
               >
@@ -114,12 +112,8 @@ const SearchPage = () => {
               {data.filters.levels.map((item) => (
                 <button
                   aria-pressed={level === item}
+                  className={chipClass(level === item)}
                   key={item}
-                  className={`rounded-[var(--radius-badges)] border px-3 py-1.5 text-sm transition ${
-                    level === item
-                      ? 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]'
-                      : 'border-[color:var(--border)] bg-[color:var(--surface-strong)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
-                  }`}
                   onClick={() => setLevel(item)}
                   type="button"
                 >
@@ -128,46 +122,27 @@ const SearchPage = () => {
               ))}
             </div>
           </div>
-        </Card>
+        </aside>
 
-        <div className="min-w-0 space-y-4">
-          <Card>
-            <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="theme-subtle text-xs font-medium uppercase tracking-[0.16em]">{t('searchPage.results')}</p>
-                <h2 className="theme-heading mt-1 text-2xl font-semibold">
-                  {t('searchPage.matchingCourses', { count: data.results.length })}
-                </h2>
-              </div>
-              {isFetching ? (
-                <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1 text-xs theme-muted">
-                  {t('searchPage.updating')}
-                </span>
-              ) : null}
-            </div>
-            <p className="theme-muted mt-3 text-sm leading-6">{t('searchPage.resultsDescription')}</p>
-          </Card>
-
-          {data.results.length > 0 ? (
-            <div className="grid auto-rows-fr gap-6 xl:grid-cols-2">
-              {data.results.map((course) => (
-                <CourseCard course={course} key={course.id} />
-              ))}
-            </div>
-          ) : (
-            <Card className="text-center">
-              <h3 className="theme-heading text-xl font-semibold">
-                {hasFilters
-                  ? language === 'tr' ? 'Sonu\u00e7 bulunamad\u0131' : 'No results found'
+        <div className="min-w-0 space-y-5">
+          <DashboardSection
+            action={isFetching ? <StatusBadge>{t('searchPage.updating')}</StatusBadge> : null}
+            description={t('searchPage.resultsDescription')}
+            title={t('searchPage.matchingCourses', { count: data.results.length })}
+          >
+            {data.results.length > 0 ? (
+              <CourseCatalogList courses={data.results} />
+            ) : (
+              <EmptyState
+                description={hasFilters
+                  ? language === 'tr' ? 'Filtrelerini guncelleyip yeniden dene.' : 'Adjust your filters and try again.'
+                  : language === 'tr' ? 'Kurs bulmak icin arama veya filtre kullan.' : 'Use search or filters to find courses.'}
+                title={hasFilters
+                  ? language === 'tr' ? 'Sonuc bulunamadi' : 'No results found'
                   : language === 'tr' ? 'Arama yap' : 'Start searching'}
-              </h3>
-              <p className="theme-muted mt-2 text-sm">
-                {hasFilters
-                  ? language === 'tr' ? 'Filtrelerini g\u00fcncelleyip yeniden dene.' : 'Adjust your filters and try again.'
-                  : language === 'tr' ? 'Kurs bulmak i\u00e7in arama veya filtre kullan.' : 'Use search or filters to find courses.'}
-              </p>
-            </Card>
-          )}
+              />
+            )}
+          </DashboardSection>
         </div>
       </section>
     </div>

@@ -64,16 +64,17 @@ const DashboardLayout = () => {
         {
           [ROUTES.dashboard]: t('routes.dashboard'),
           [ROUTES.myCourses]: t('routes.myCourses'),
-          '/courses': t('routes.courses'),
-          '/cart': t('routes.cart'),
-          '/payment': t('routes.payment'),
-          '/search': t('routes.search'),
+          [ROUTES.courses]: t('routes.courses'),
+          [ROUTES.cart]: t('routes.cart'),
+          [ROUTES.payment]: t('routes.payment'),
+          [ROUTES.payments]: language === 'tr' ? 'Ödemelerim' : 'My Payments',
+          [ROUTES.search]: t('routes.search'),
         }[pathname] ?? t('routes.workspace')
       )
 
   return (
     <div className="theme-app min-h-screen overflow-x-clip">
-      <div className="dashboard-shell mx-auto flex min-h-screen w-full max-w-[1680px] gap-4 px-3 py-3 sm:px-4 lg:gap-6 lg:px-6 lg:py-5">
+      <div className="dashboard-shell mx-auto flex min-h-screen w-full max-w-[1680px] gap-3 px-2 py-2 sm:px-3 lg:gap-4 lg:px-4 lg:py-4">
         <Sidebar
           collapsed={collapsed}
           mobileOpen={mobileOpen}
@@ -83,7 +84,7 @@ const DashboardLayout = () => {
 
         <div className="flex min-h-0 flex-1 flex-col pb-6 lg:pb-8">
           <TopNavbar onOpenMobileMenu={() => setMobileOpen(true)} title={pageTitle} user={user} />
-          <main className="dashboard-content min-w-0 flex-1 pt-6 lg:pt-8">
+          <main className="dashboard-content min-w-0 flex-1 pt-4 lg:pt-5">
             <div className="mx-auto w-full max-w-[1380px]">
               <Outlet />
             </div>

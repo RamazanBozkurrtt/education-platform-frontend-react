@@ -4,7 +4,7 @@ import { courseMediaService } from './courseMediaService'
 import { courseService } from './courseService'
 import { API_ENDPOINTS } from './endpoints'
 import { mapBackendCourseToCourse } from './courseMappers'
-import type { ApiEnvelope, CourseCategoryOption } from '../utils/types'
+import type { ApiEnvelope, CourseCategoryOption, CourseLevelOption } from '../utils/types'
 
 const VIDEO_UPLOAD_TIMEOUT_MS = 30 * 60_000
 
@@ -33,6 +33,11 @@ export interface InstructorCourseDetail {
   description: string
   status: string
   price: number
+  imageUrl: string
+  levelId: string
+  level: InstructorCourseLevelOption
+  categoryIds: string[]
+  categories: InstructorCourseCategoryOption[]
   categoryId: string
   learningOutcomes: string[]
   tags: string[]
@@ -40,6 +45,7 @@ export interface InstructorCourseDetail {
 }
 
 export interface InstructorCourseCategoryOption extends CourseCategoryOption {}
+export interface InstructorCourseLevelOption extends CourseLevelOption {}
 
 interface CreateLessonPayload {
   title: string
@@ -51,7 +57,8 @@ interface CreateCoursePayload {
   title: string
   description: string
   price: number
-  categoryId: string
+  levelId: string
+  categoryIds: string[]
   learningOutcomes: string[]
   tags: string[]
 }
@@ -60,7 +67,8 @@ interface UpdateCoursePayload {
   title: string
   description: string
   price: number
-  categoryId: string
+  levelId: string
+  categoryIds: string[]
   learningOutcomes: string[]
   tags: string[]
 }
@@ -176,6 +184,65 @@ const toStringArray = (value: unknown) => {
     .filter((item): item is string => Boolean(item))
 }
 
+const toIdArray = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return [...new Set(
+    value
+      .map((item) => toId(item))
+      .filter((item): item is string => Boolean(item)),
+  )]
+}
+
+const toCategoryOptionArray = (value: unknown): InstructorCourseCategoryOption[] => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  const mappedOptions = value
+    .map((item) => {
+      const category = toRecord(item)
+      const id = toId(category.id)
+      const categoryName = toText(category.categoryName ?? category.name)
+
+      if (!id || !categoryName) {
+        return null
+      }
+
+      return {
+        id,
+        categoryName,
+      } satisfies InstructorCourseCategoryOption
+    })
+    .filter((item): item is InstructorCourseCategoryOption => item !== null)
+
+  return mappedOptions.filter((item, index) => mappedOptions.findIndex((entry) => entry.id === item.id) === index)
+}
+
+const toLevelOption = (value: unknown): InstructorCourseLevelOption | null => {
+  const level = toRecord(value)
+  const id = toId(level.id ?? level.levelId)
+  const levelName = toText(level.levelName ?? level.name)
+
+  if (!id || !levelName) {
+    return null
+  }
+
+  return {
+    id,
+    levelName,
+  }
+}
+
+const normalizeCategoryIds = (categoryIds: string[]) =>
+  [...new Set(
+    categoryIds
+      .map((item) => item.trim())
+      .filter(Boolean),
+  )]
+
 const createSummaryTitle = (value: string) => value
   .trim()
   .split(/\s+/)
@@ -269,13 +336,63 @@ const toCourseDetail = (payload: unknown): InstructorCourseDetail => {
   const resolvedStatus = (resolveText(
     ...courseCandidates.map((candidate) => candidate.status),
   ) ?? 'DRAFT').toLocaleUpperCase('en-US')
-  const resolvedCategoryId = resolveText(
+  const resolvedLevelId = resolveText(
+    ...courseCandidates.map((candidate) => candidate.levelId),
+    ...courseCandidates.map((candidate) => toId(toRecord(candidate.level).id)),
+    ...courseCandidates.map((candidate) => toId(toRecord(candidate.level).levelId)),
+    mappedCourse.levelId,
+    mappedCourse.level.id,
+  ) ?? ''
+  const resolvedLevelName = resolveText(
+    ...courseCandidates.map((candidate) => toText(toRecord(candidate.level).levelName)),
+    ...courseCandidates.map((candidate) => toText(toRecord(candidate.level).name)),
+    ...courseCandidates.map((candidate) => candidate.levelName),
+    ...courseCandidates.map((candidate) => typeof candidate.level === 'string' ? candidate.level : undefined),
+    mappedCourse.level.levelName,
+  ) ?? mappedCourse.level.levelName
+  const resolvedLevelFromCandidates = courseCandidates
+    .map((candidate) => toLevelOption(candidate.level))
+    .find((item): item is InstructorCourseLevelOption => item !== null)
+  const resolvedLevel: InstructorCourseLevelOption = resolvedLevelFromCandidates ?? {
+    id: resolvedLevelId || mappedCourse.level.id,
+    levelName: resolvedLevelName,
+  }
+  const resolvedLegacyCategoryId = resolveText(
     ...courseCandidates.map((candidate) => candidate.categoryId),
     ...courseCandidates.map((candidate) => toId(toRecord(candidate.category).id)),
     ...courseCandidates.map((candidate) => candidate.category),
     mappedCourse.categoryId,
     mappedCourse.category,
   ) ?? ''
+  const resolvedCategoryIds = normalizeCategoryIds([
+    ...courseCandidates.flatMap((candidate) => toIdArray(candidate.categoryIds)),
+    ...(mappedCourse.categoryIds ?? []),
+    ...courseCandidates.flatMap((candidate) => toCategoryOptionArray(candidate.categories).map((category) => category.id)),
+    ...(mappedCourse.categories ?? []).map((category) => category.id),
+    ...(resolvedLegacyCategoryId ? [resolvedLegacyCategoryId] : []),
+  ])
+  const resolvedPrimaryCategoryId = resolvedCategoryIds[0] ?? resolvedLegacyCategoryId
+  const resolvedCategoriesMap = new Map<string, string>()
+
+  courseCandidates.forEach((candidate) => {
+    toCategoryOptionArray(candidate.categories).forEach((item) => {
+      if (!resolvedCategoriesMap.has(item.id)) {
+        resolvedCategoriesMap.set(item.id, item.categoryName)
+      }
+    })
+  })
+
+  ;(mappedCourse.categories ?? []).forEach((item) => {
+    if (!resolvedCategoriesMap.has(item.id)) {
+      resolvedCategoriesMap.set(item.id, item.categoryName)
+    }
+  })
+
+  const resolvedCategories = resolvedCategoryIds.map((categoryId, index) => ({
+    id: categoryId,
+    categoryName: resolvedCategoriesMap.get(categoryId)
+      ?? (index === 0 ? mappedCourse.category : categoryId),
+  }))
   const resolvedLearningOutcomes = resolveStringArray(
     ...courseCandidates.map((candidate) => candidate.learningOutcomes),
     ...courseCandidates.map((candidate) => candidate.outcomes),
@@ -293,7 +410,12 @@ const toCourseDetail = (payload: unknown): InstructorCourseDetail => {
       description: resolvedDescription,
       status: resolvedStatus,
       price: resolvedPrice,
-      categoryId: resolvedCategoryId,
+      imageUrl: mappedCourse.imageUrl,
+      levelId: resolvedLevel.id,
+      level: resolvedLevel,
+      categoryIds: resolvedCategoryIds,
+      categories: resolvedCategories,
+      categoryId: resolvedPrimaryCategoryId,
       learningOutcomes: resolvedLearningOutcomes,
       tags: resolvedTags,
       lessons: mappedLessons.sort((left, right) => left.orderIndex - right.orderIndex),
@@ -306,7 +428,12 @@ const toCourseDetail = (payload: unknown): InstructorCourseDetail => {
     description: resolvedDescription,
     status: resolvedStatus,
     price: resolvedPrice,
-    categoryId: resolvedCategoryId,
+    imageUrl: mappedCourse.imageUrl,
+    levelId: resolvedLevel.id,
+    level: resolvedLevel,
+    categoryIds: resolvedCategoryIds,
+    categories: resolvedCategories,
+    categoryId: resolvedPrimaryCategoryId,
     learningOutcomes: resolvedLearningOutcomes,
     tags: resolvedTags,
     lessons: mappedCourse.modules.map((module, index) => ({
@@ -327,12 +454,17 @@ export const instructorCourseService = {
     return courseService.getPublicCategories()
   },
 
+  async getPublicLevels() {
+    return courseService.getPublicLevels()
+  },
+
   async createCourse(payload: CreateCoursePayload) {
     const requestPayload = {
       title: payload.title.trim(),
       description: payload.description.trim(),
       price: Number.isFinite(payload.price) ? payload.price : 0,
-      categoryId: payload.categoryId.trim(),
+      levelId: payload.levelId.trim(),
+      categoryIds: normalizeCategoryIds(payload.categoryIds),
       learningOutcomes: payload.learningOutcomes.map((item) => item.trim()).filter(Boolean),
       tags: payload.tags.map((item) => item.trim()).filter(Boolean),
     }
@@ -411,7 +543,8 @@ export const instructorCourseService = {
       title: payload.title.trim(),
       description: payload.description.trim(),
       price: Number.isFinite(payload.price) ? payload.price : 0,
-      categoryId: payload.categoryId.trim(),
+      levelId: payload.levelId.trim(),
+      categoryIds: normalizeCategoryIds(payload.categoryIds),
       learningOutcomes: payload.learningOutcomes.map((item) => item.trim()).filter(Boolean),
       tags: payload.tags.map((item) => item.trim()).filter(Boolean),
     }

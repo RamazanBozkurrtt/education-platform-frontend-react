@@ -5,7 +5,9 @@ import type {
   ApiEnvelope,
   AuthPayload,
   ChangePasswordPayload,
+  ForgotPasswordPayload,
   LoginSuccessData,
+  ResetPasswordPayload,
   RegisteredUserData,
 } from '../utils/types'
 
@@ -54,6 +56,16 @@ export const authApi = {
     )
 
     return requireEnvelopeData(response.data, 'Refresh token response is missing authentication data.')
+  },
+
+  async forgotPassword(payload: ForgotPasswordPayload) {
+    const response = await authClient.post<ApiEnvelope<unknown>>(API_ENDPOINTS.auth.forgotPassword, payload)
+    return response.data.message || 'If an account exists with this email, we sent a password reset link.'
+  },
+
+  async resetPassword(payload: ResetPasswordPayload) {
+    const response = await authClient.post<ApiEnvelope<unknown>>(API_ENDPOINTS.auth.resetPassword, payload)
+    return response.data.message || 'Your password has been reset successfully.'
   },
 
   async logout(accessToken: string) {

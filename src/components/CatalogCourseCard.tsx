@@ -1,12 +1,13 @@
-﻿import { ArrowRight, Clock3, GraduationCap, Star, UserRound } from 'lucide-react'
+import { ArrowRight, Clock3, GraduationCap, Star, UserRound } from 'lucide-react'
 import type { SyntheticEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import { useLanguage } from '../hooks/useLanguage'
 import { resolveServiceUrl } from '../config/api'
 import { API_ENDPOINTS } from '../services/endpoints'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
-import { formatCurrency } from '../utils/helpers'
+import { formatCoursePrice } from '../utils/helpers'
 import type { Course } from '../utils/types'
 
 interface CatalogCourseCardProps {
@@ -16,8 +17,11 @@ interface CatalogCourseCardProps {
 
 const CatalogCourseCard = ({ course, compact = false }: CatalogCourseCardProps) => {
   const { t } = useTranslation()
+  const { language } = useLanguage()
   const fallbackImageUrl = resolveServiceUrl(API_ENDPOINTS.courses.image.public(course.id))
   const courseImageUrl = course.imageUrl || fallbackImageUrl
+  const locale = language === 'tr' ? 'tr-TR' : 'en-US'
+  const freeLabel = language === 'tr' ? 'Ücretsiz' : 'Free'
 
   const handleImageError = (event: SyntheticEvent<HTMLImageElement>) => {
     const target = event.currentTarget
@@ -47,7 +51,7 @@ const CatalogCourseCard = ({ course, compact = false }: CatalogCourseCardProps) 
       <div className="catalog-course-body">
         <div className="catalog-course-top">
           <span className="catalog-course-badge catalog-course-badge-strong">{getCourseCategoryLabel(course)}</span>
-          <span className="catalog-course-badge">{course.level}</span>
+          <span className="catalog-course-badge">{course.level.levelName}</span>
         </div>
 
         <h3 className="catalog-course-title">{course.title}</h3>
@@ -83,7 +87,9 @@ const CatalogCourseCard = ({ course, compact = false }: CatalogCourseCardProps) 
         <div className="catalog-course-footer">
           <div>
             <p className="catalog-course-price-label">{t('common.price')}</p>
-            <p className="catalog-course-price">{formatCurrency(course.price)}</p>
+            <p className="catalog-course-price">
+              {formatCoursePrice(course.price, course.currency, { locale, freeLabel })}
+            </p>
           </div>
 
           <div className="catalog-course-actions">
@@ -107,3 +113,4 @@ const CatalogCourseCard = ({ course, compact = false }: CatalogCourseCardProps) 
 }
 
 export default CatalogCourseCard
+

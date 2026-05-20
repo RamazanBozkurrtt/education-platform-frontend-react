@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useLanguage } from '../../hooks/useLanguage'
 import { ROUTES } from '../../utils/constants'
 import Button from '../ui/Button'
-import Card from '../ui/Card'
 
 interface InstructorCtaCardProps {
   isInstructor: boolean
@@ -35,14 +34,14 @@ const InstructorCtaCard = ({ isInstructor }: InstructorCtaCardProps) => {
   const to = isInstructor ? ROUTES.instructorDashboard : ROUTES.becomeInstructor
 
   return (
-    <Card>
+    <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4 md:px-5">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft-peach)] text-[color:var(--primary)]">
-            {isInstructor ? <PlusCircle className="h-5 w-5" /> : <GraduationCap className="h-5 w-5" />}
+          <div className="flex h-9 w-9 items-center justify-center rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--primary)]">
+            {isInstructor ? <PlusCircle className="h-4 w-4" /> : <GraduationCap className="h-4 w-4" />}
           </div>
           <div>
-            <h3 className="theme-heading text-lg font-semibold">{title}</h3>
+            <h3 className="theme-heading text-base font-semibold">{title}</h3>
             <p className="theme-muted mt-1 text-sm leading-6">{description}</p>
           </div>
         </div>
@@ -51,8 +50,9 @@ const InstructorCtaCard = ({ isInstructor }: InstructorCtaCardProps) => {
           <Button variant={isInstructor ? 'primary' : 'secondary'}>{buttonText}</Button>
         </Link>
       </div>
-    </Card>
+    </section>
   )
 }
 
 export default InstructorCtaCard
+

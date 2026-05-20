@@ -12,7 +12,7 @@ import QueryErrorState from '../components/ui/QueryErrorState'
 import { useLanguage } from '../hooks/useLanguage'
 import { courseService } from '../services/courseService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
-import { getCourseCategoryFilterKey } from '../utils/courseCategory'
+import { getCourseCategoryFilterKeys } from '../utils/courseCategory'
 import {
   buildCatalogPath,
   filterCatalogCourses,
@@ -110,8 +110,8 @@ const PublicCatalogPage = () => {
     return categoriesFromApi.map((category) => ({
       key: category.id,
       label: category.categoryName,
-      count: resolvedCourses.filter((course) => getCourseCategoryFilterKey(course) === category.id).length,
-      highlight: resolvedCourses.find((course) => getCourseCategoryFilterKey(course) === category.id)?.tags.slice(0, 2).join(' / ')
+      count: resolvedCourses.filter((course) => getCourseCategoryFilterKeys(course).includes(category.id)).length,
+      highlight: resolvedCourses.find((course) => getCourseCategoryFilterKeys(course).includes(category.id))?.tags.slice(0, 2).join(' / ')
         ?? (language === 'tr' ? 'Kurslari incele' : 'Explore courses'),
     })).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
   }, [categoriesFromApi, language, resolvedCourses])
@@ -121,9 +121,13 @@ const PublicCatalogPage = () => {
 
   const chips = useMemo(() => {
     const firstCategory = categories[0]
+    const beginnerLevel = levels.find((item) => {
+      const normalized = item.label.toLocaleLowerCase('tr-TR')
+      return normalized.includes('beginner') || normalized.includes('başlangıç') || normalized.includes('baslangic')
+    }) ?? levels[0]
     const nextChips: Array<{ label: string; value: { category?: string; level?: string } }> = [
       { label: copy.chips.all, value: {} },
-      { label: copy.chips.beginner, value: { level: 'beginner' } },
+      { label: copy.chips.beginner, value: beginnerLevel ? { level: beginnerLevel.key } : {} },
     ]
 
     if (firstCategory) {
@@ -134,7 +138,7 @@ const PublicCatalogPage = () => {
     }
 
     return nextChips
-  }, [categories, copy.chips.all, copy.chips.beginner, copy.chips.categoryPrefix])
+  }, [categories, copy.chips.all, copy.chips.beginner, copy.chips.categoryPrefix, levels])
 
   const filteredCourses = useMemo(
     () => filterCatalogCourses(resolvedCourses, { query: deferredQuery, category: categoryKey, level: levelKey }, language),

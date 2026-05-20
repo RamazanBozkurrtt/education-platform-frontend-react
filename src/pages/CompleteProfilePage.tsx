@@ -61,7 +61,7 @@ const TextAreaField = ({
   return (
     <label className="flex w-full flex-col gap-2" htmlFor={id}>
       <span className="theme-heading text-sm font-semibold">{label}</span>
-      <span className="flex rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
+      <span className="app-input-shell flex rounded-2xl border px-4 py-3 transition-[background-color,border-color,box-shadow] duration-200 focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
         <textarea
           aria-invalid={Boolean(error)}
           className="theme-text theme-placeholder min-h-[104px] w-full resize-none bg-transparent text-sm leading-6 outline-none"

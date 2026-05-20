@@ -1,179 +1,179 @@
 import { useState } from 'react'
-import { CreditCard, Landmark, ShieldCheck, ShoppingCart } from 'lucide-react'
+import { CreditCard, ShieldCheck } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import PageHeader from '../components/PageHeader'
+import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
+import EmptyState from '../components/dashboard/EmptyState'
+import StatusBadge from '../components/dashboard/StatusBadge'
+import TableShell from '../components/dashboard/TableShell'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
-import Input from '../components/ui/Input'
 import Modal from '../components/ui/Modal'
-import { useCart } from '../hooks/useCart'
-import { useLibrary } from '../hooks/useLibrary'
 import { useAuth } from '../hooks/useAuth'
+import { useCart } from '../hooks/useCart'
+import { useLanguage } from '../hooks/useLanguage'
+import { useLibrary } from '../hooks/useLibrary'
+import { useCreatePaymentMutation } from '../hooks/usePayments'
 import { enrollmentService } from '../services/enrollmentService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
-import { formatCurrency } from '../utils/helpers'
-import type { CartItem } from '../utils/types'
+import { createIdempotencyKey, formatCoursePrice, formatCurrency } from '../utils/helpers'
 
-type PaymentMethod = 'card' | 'invoice'
+const isPaymentRequiredForEnrollmentError = (error: unknown) => {
+  const appError = normalizeApiError(error)
 
-type CardForm = {
-  cardHolder: string
-  cardNumber: string
-  expiryDate: string
-  cvc: string
-}
-
-type InvoiceForm = {
-  companyName: string
-  taxId: string
-  billingEmail: string
-  billingAddress: string
-}
-
-const initialCardForm: CardForm = {
-  cardHolder: '',
-  cardNumber: '',
-  expiryDate: '',
-  cvc: '',
-}
-
-const initialInvoiceForm: InvoiceForm = {
-  companyName: '',
-  taxId: '',
-  billingEmail: '',
-  billingAddress: '',
-}
-
-const formatCardNumber = (value: string) =>
-  value
-    .replace(/\D/g, '')
-    .slice(0, 16)
-    .replace(/(\d{4})(?=\d)/g, '$1 ')
-    .trim()
-
-const formatExpiryDate = (value: string) => {
-  const digits = value.replace(/\D/g, '').slice(0, 4)
-
-  if (digits.length <= 2) {
-    return digits
+  if (appError.httpStatus === 402) {
+    return true
   }
 
-  return `${digits.slice(0, 2)} / ${digits.slice(2)}`
-}
-
-const formatCvc = (value: string) => value.replace(/\D/g, '').slice(0, 4)
-
-const formatTaxId = (value: string) =>
-  value
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
-    .slice(0, 14)
-
-const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim())
-
-const isValidExpiryDate = (value: string) => {
-  const digits = value.replace(/\D/g, '')
-
-  if (digits.length !== 4) {
-    return false
+  if (appError.code?.trim().toUpperCase() === 'PAYMENT_REQUIRED_FOR_ENROLLMENT') {
+    return true
   }
 
-  const month = Number(digits.slice(0, 2))
-  const year = Number(`20${digits.slice(2)}`)
+  const rawPayload = appError.raw && typeof appError.raw === 'object'
+    ? appError.raw as Record<string, unknown>
+    : undefined
 
-  if (month < 1 || month > 12) {
-    return false
-  }
+  const codeFromPayload = typeof rawPayload?.code === 'string'
+    ? rawPayload.code.trim().toUpperCase()
+    : typeof rawPayload?.error === 'string'
+      ? rawPayload.error.trim().toUpperCase()
+      : undefined
 
-  const now = new Date()
-  const currentYear = now.getFullYear()
-  const currentMonth = now.getMonth() + 1
-
-  return year > currentYear || (year === currentYear && month >= currentMonth)
+  return codeFromPayload === 'PAYMENT_REQUIRED_FOR_ENROLLMENT'
 }
 
 const PaymentPage = () => {
   const { t } = useTranslation()
-  const { clearCart, courseIds, itemCount, items, subtotal, tax, total } = useCart()
-  const { purchaseCourses } = useLibrary()
+  const { language } = useLanguage()
   const { isAuthenticated } = useAuth()
-  const [method, setMethod] = useState<PaymentMethod>('card')
-  const [cardForm, setCardForm] = useState<CardForm>(initialCardForm)
-  const [invoiceForm, setInvoiceForm] = useState<InvoiceForm>(initialInvoiceForm)
-  const [touched, setTouched] = useState<Record<string, boolean>>({})
-  const [submitted, setSubmitted] = useState(false)
+  const queryClient = useQueryClient()
+  const { clearCart, itemCount, items, removeCourse, subtotal, tax, total } = useCart()
+  const { purchaseCourses } = useLibrary()
+  const createPaymentMutation = useCreatePaymentMutation()
+
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [paymentError, setPaymentError] = useState<string | null>(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [recentlyPurchasedItems, setRecentlyPurchasedItems] = useState<CartItem[]>([])
+  const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null)
+  const [progressMessage, setProgressMessage] = useState<string | null>(null)
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
+  const [recentlyPurchasedCourseTitles, setRecentlyPurchasedCourseTitles] = useState<string[]>([])
 
   const hasItems = itemCount > 0
+  const locale = language === 'tr' ? 'tr-TR' : 'en-US'
+  const freeLabel = language === 'tr' ? 'Ücretsiz' : 'Free'
+  const summaryCurrency = items[0]?.course.currency ?? 'TRY'
+  const paymentRequiredMessage = language === 'tr'
+    ? 'Bu kursa kayıt olmak için önce ödeme işlemini tamamlamalısınız.'
+    : 'You need to complete payment before enrolling in this course.'
+  const paymentFailedMessage = language === 'tr'
+    ? 'Ödeme işlemi tamamlanamadı. Lütfen tekrar deneyin.'
+    : 'Payment could not be completed. Please try again.'
+  const enrollmentFailedMessage = language === 'tr'
+    ? 'Kurs kaydı oluşturulamadı. Lütfen tekrar deneyin.'
+    : 'Enrollment could not be created. Please try again.'
+  const enrollmentAfterPaymentFailedMessage = language === 'tr'
+    ? 'Ödeme alındı ancak kayıt işlemi tamamlanamadı. Lütfen tekrar deneyin veya destek ile iletişime geçin.'
+    : 'Payment was captured but enrollment could not be completed. Please try again or contact support.'
+  const paymentPreparingMessage = language === 'tr' ? 'Ödeme hazırlanıyor...' : 'Preparing payment...'
+  const enrollmentCreatingMessage = language === 'tr' ? 'Kayıt oluşturuluyor...' : 'Creating enrollment...'
+  const successMessage = language === 'tr'
+    ? 'Ödeme başarılı. Kurs kaydınız oluşturuldu.'
+    : 'Payment succeeded. Your enrollment has been created.'
+  const actionLabel = language === 'tr' ? 'İşlem' : 'Action'
 
-  const cardErrors: Partial<Record<keyof CardForm, string>> = {
-    ...(cardForm.cardHolder.trim().length >= 3 ? {} : { cardHolder: t('payment.validation.cardHolder') }),
-    ...(cardForm.cardNumber.replace(/\D/g, '').length === 16 ? {} : { cardNumber: t('payment.validation.cardNumber') }),
-    ...(isValidExpiryDate(cardForm.expiryDate) ? {} : { expiryDate: t('payment.validation.expiryDate') }),
-    ...(/^\d{3,4}$/.test(cardForm.cvc) ? {} : { cvc: t('payment.validation.cvc') }),
-  }
-
-  const invoiceErrors: Partial<Record<keyof InvoiceForm, string>> = {
-    ...(invoiceForm.companyName.trim().length >= 2 ? {} : { companyName: t('payment.validation.companyName') }),
-    ...(/^[A-Z0-9]{8,14}$/.test(invoiceForm.taxId) ? {} : { taxId: t('payment.validation.taxId') }),
-    ...(isValidEmail(invoiceForm.billingEmail) ? {} : { billingEmail: t('payment.validation.billingEmail') }),
-    ...(invoiceForm.billingAddress.trim().length >= 10
-      ? {}
-      : { billingAddress: t('payment.validation.billingAddress') }),
-  }
-
-  const activeErrors = method === 'card' ? cardErrors : invoiceErrors
-  const hasErrors = Object.keys(activeErrors).length > 0
-
-  const showError = (field: string) =>
-    submitted || touched[field] ? activeErrors[field as keyof typeof activeErrors] : undefined
-
-  const handleBlur = (field: string) => {
-    setTouched((current) => ({ ...current, [field]: true }))
-  }
-
-  const handleMethodChange = (nextMethod: PaymentMethod) => {
-    setMethod(nextMethod)
-    setSubmitted(false)
-  }
-
-  const handleConfirm = async () => {
-    setSubmitted(true)
-    setPaymentError(null)
-
-    if (hasErrors) {
+  const handleCheckout = async () => {
+    if (!isAuthenticated || !hasItems || isSubmitting) {
       return
     }
 
-    try {
-      setIsSubmitting(true)
+    setIsSubmitting(true)
+    setCheckoutMessage(null)
+    setProgressMessage(null)
 
-      if (isAuthenticated) {
-        // Backend en guvenilir user bilgisini token claim'inden aliyor.
-        await enrollmentService.createEnrollments(courseIds)
+    const successfulCourseIds: string[] = []
+    const successfulCourseTitles: string[] = []
+
+    try {
+      for (const item of items) {
+        const isPaidCourse = item.course.price > 0
+
+        if (isPaidCourse) {
+          setProgressMessage(paymentPreparingMessage)
+
+          try {
+            await createPaymentMutation.mutateAsync({
+              courseId: item.course.id,
+              provider: 'MOCK_GATEWAY',
+              paymentMethod: 'CARD',
+              idempotencyKey: createIdempotencyKey(),
+            })
+          } catch {
+            throw new Error(paymentFailedMessage)
+          }
+        }
+
+        setProgressMessage(enrollmentCreatingMessage)
+
+        try {
+          await enrollmentService.createEnrollment(
+            { courseId: item.course.id },
+            { skipGlobalErrorHandling: true },
+          )
+        } catch (enrollmentError) {
+          if (isPaymentRequiredForEnrollmentError(enrollmentError)) {
+            throw new Error(paymentRequiredMessage)
+          }
+
+          if (isPaidCourse) {
+            throw new Error(enrollmentAfterPaymentFailedMessage)
+          }
+
+          throw new Error(enrollmentFailedMessage)
+        }
+
+        successfulCourseIds.push(item.course.id)
+        successfulCourseTitles.push(item.course.title)
       }
 
-      setRecentlyPurchasedItems(items)
-      purchaseCourses(courseIds)
-      clearCart()
-      setIsModalOpen(true)
+      if (successfulCourseIds.length > 0) {
+        purchaseCourses(successfulCourseIds)
+        clearCart()
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['my-courses'] }),
+          queryClient.invalidateQueries({ queryKey: ['dashboard-overview'] }),
+        ])
+      }
+
+      setRecentlyPurchasedCourseTitles(successfulCourseTitles)
+      setCheckoutMessage(successMessage)
+      setIsSuccessModalOpen(true)
     } catch (error) {
-      const appError = normalizeApiError(error)
-      setPaymentError(appError.message)
+      if (successfulCourseIds.length > 0) {
+        purchaseCourses(successfulCourseIds)
+        for (const courseId of successfulCourseIds) {
+          removeCourse(courseId)
+        }
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ['my-courses'] }),
+          queryClient.invalidateQueries({ queryKey: ['dashboard-overview'] }),
+        ])
+      }
+
+      const message = error instanceof Error && error.message.trim()
+        ? error.message.trim()
+        : paymentFailedMessage
+
+      setCheckoutMessage(message)
     } finally {
+      setProgressMessage(null)
       setIsSubmitting(false)
     }
   }
 
   return (
-    <div className="space-y-7">
-      <PageHeader
+    <div className="space-y-8">
+      <DashboardPageHeader
         actions={
           <Link to={hasItems ? ROUTES.cart : ROUTES.courses}>
             <Button asChild variant="secondary">
@@ -186,292 +186,141 @@ const PaymentPage = () => {
         title={t('payment.title')}
       />
 
-      <section className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card>
+      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
           {hasItems ? (
-            <>
-              <div className="flex flex-wrap gap-3">
-                {[
-                  { id: 'card', label: t('payment.creditCard'), icon: CreditCard },
-                  { id: 'invoice', label: t('payment.invoice'), icon: Landmark },
-                ].map((option) => (
-                  <button
-                    key={option.id}
-                    className={`flex items-center gap-3 rounded-[var(--radius-navigation)] border px-4 py-3 text-sm font-medium transition ${
-                      method === option.id
-                        ? 'border-[color:var(--border-strong)] bg-[color:var(--surface-sky-haze)] theme-heading'
-                        : 'border-[color:var(--border)] bg-[color:var(--surface-strong)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
-                    }`}
-                    onClick={() => handleMethodChange(option.id as PaymentMethod)}
-                    type="button"
-                  >
-                    <option.icon className="h-4 w-4" />
-                    {option.label}
-                  </button>
-                ))}
+            <div className="space-y-5">
+              <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-2">
+                    <CreditCard className="h-4 w-4 text-[color:var(--primary)]" />
+                  </span>
+                  <div>
+                    <p className="theme-heading text-sm font-semibold">{language === 'tr' ? 'Ödeme Özeti' : 'Payment summary'}</p>
+                    <p className="theme-muted mt-1 text-sm leading-6">
+                      {language === 'tr'
+                        ? 'Ödeme sağlayıcı: MOCK_GATEWAY, ödeme yöntemi: CARD.'
+                        : 'Provider: MOCK_GATEWAY, payment method: CARD.'}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-4 rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-2 text-sm theme-muted">
+                  <ShieldCheck className="mr-2 inline h-4 w-4 text-[color:var(--primary)]" />
+                  {language === 'tr'
+                    ? 'Bu ekran demo ödeme akışıdır, kart bilgisi istenmez.'
+                    : 'This is a demo payment flow and does not require card details.'}
+                </div>
               </div>
 
-              {method === 'card' ? (
-                <>
-                  <div className="mt-8 grid gap-5 md:grid-cols-2">
-                    <Input
-                      autoComplete="cc-name"
-                      error={showError('cardHolder')}
-                      id="card-holder"
-                      label={t('payment.cardHolder')}
-                      onBlur={() => handleBlur('cardHolder')}
-                      onChange={(event) =>
-                        setCardForm((current) => ({ ...current, cardHolder: event.target.value }))
-                      }
-                      placeholder="Avery Coleman"
-                      value={cardForm.cardHolder}
-                    />
-                    <Input
-                      autoComplete="cc-number"
-                      error={showError('cardNumber')}
-                      id="card-number"
-                      inputMode="numeric"
-                      label={t('payment.cardNumber')}
-                      onBlur={() => handleBlur('cardNumber')}
-                      onChange={(event) =>
-                        setCardForm((current) => ({
-                          ...current,
-                          cardNumber: formatCardNumber(event.target.value),
-                        }))
-                      }
-                      placeholder="4242 4242 4242 4242"
-                      value={cardForm.cardNumber}
-                    />
-                    <Input
-                      autoComplete="cc-exp"
-                      error={showError('expiryDate')}
-                      id="card-expiry"
-                      inputMode="numeric"
-                      label={t('payment.expiryDate')}
-                      onBlur={() => handleBlur('expiryDate')}
-                      onChange={(event) =>
-                        setCardForm((current) => ({
-                          ...current,
-                          expiryDate: formatExpiryDate(event.target.value),
-                        }))
-                      }
-                      placeholder="12 / 28"
-                      value={cardForm.expiryDate}
-                    />
-                    <Input
-                      autoComplete="cc-csc"
-                      error={showError('cvc')}
-                      id="card-cvc"
-                      inputMode="numeric"
-                      label={t('payment.cvc')}
-                      onBlur={() => handleBlur('cvc')}
-                      onChange={(event) =>
-                        setCardForm((current) => ({
-                          ...current,
-                          cvc: formatCvc(event.target.value),
-                        }))
-                      }
-                      placeholder="123"
-                      value={cardForm.cvc}
-                    />
-                  </div>
+              <TableShell>
+                <table className="min-w-[760px] w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-[color:var(--border)] bg-[color:var(--surface-soft)] text-left">
+                      <th className="theme-subtle px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em]">
+                        {language === 'tr' ? 'Kurs' : 'Course'}
+                      </th>
+                      <th className="theme-subtle px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em]">{t('common.price')}</th>
+                      <th className="theme-subtle px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em]">{actionLabel}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((item) => (
+                      <tr className="border-b border-[color:var(--border)] last:border-b-0" key={item.courseId}>
+                        <td className="px-4 py-3.5">
+                          <div className="min-w-0">
+                            <p className="theme-heading font-medium">{item.course.title}</p>
+                            <p className="theme-muted mt-1 text-xs">{getCourseCategoryLabel(item.course)} · {item.course.level.levelName}</p>
+                          </div>
+                        </td>
+                        <td className="theme-heading px-4 py-3.5 font-semibold">
+                          {formatCoursePrice(item.course.price, item.course.currency, { locale, freeLabel })}
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <StatusBadge tone={item.course.price > 0 ? 'warning' : 'success'}>
+                            {item.course.price > 0
+                              ? (language === 'tr' ? 'Ücretli kurs' : 'Paid course')
+                              : (language === 'tr' ? 'Ücretsiz kurs' : 'Free course')}
+                          </StatusBadge>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableShell>
 
-                  <div className="mt-8 rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] p-5">
-                    <div className="flex items-center gap-3">
-                      <ShieldCheck className="h-5 w-5 text-[color:var(--primary)]" />
-                      <p className="theme-heading text-sm font-semibold">{t('payment.securityTitle')}</p>
-                    </div>
-                    <p className="theme-muted mt-3 text-sm leading-7">
-                      {t('payment.securityDescription')}
-                    </p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="mt-8 grid gap-5 md:grid-cols-2">
-                    <Input
-                      error={showError('companyName')}
-                      id="company-name"
-                      label={t('payment.companyName')}
-                      onBlur={() => handleBlur('companyName')}
-                      onChange={(event) =>
-                        setInvoiceForm((current) => ({ ...current, companyName: event.target.value }))
-                      }
-                      placeholder="Northstar Labs"
-                      value={invoiceForm.companyName}
-                    />
-                    <Input
-                      error={showError('taxId')}
-                      id="tax-id"
-                      label={t('payment.taxId')}
-                      onBlur={() => handleBlur('taxId')}
-                      onChange={(event) =>
-                        setInvoiceForm((current) => ({
-                          ...current,
-                          taxId: formatTaxId(event.target.value),
-                        }))
-                      }
-                      placeholder="1234567890"
-                      value={invoiceForm.taxId}
-                    />
-                    <Input
-                      error={showError('billingEmail')}
-                      id="billing-email"
-                      label={t('payment.billingEmail')}
-                      onBlur={() => handleBlur('billingEmail')}
-                      onChange={(event) =>
-                        setInvoiceForm((current) => ({ ...current, billingEmail: event.target.value }))
-                      }
-                      placeholder="finance@company.com"
-                      type="email"
-                      value={invoiceForm.billingEmail}
-                    />
-                    <div className="md:col-span-2">
-                      <Input
-                        error={showError('billingAddress')}
-                        id="billing-address"
-                        label={t('payment.billingAddress')}
-                        onBlur={() => handleBlur('billingAddress')}
-                        onChange={(event) =>
-                          setInvoiceForm((current) => ({ ...current, billingAddress: event.target.value }))
-                        }
-                        placeholder={t('payment.billingAddressPlaceholder')}
-                        value={invoiceForm.billingAddress}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-8 rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface-muted-mandarin)] p-5">
-                    <div className="flex items-center gap-3">
-                      <Landmark className="h-5 w-5 text-[color:var(--primary)]" />
-                      <p className="theme-heading text-sm font-semibold">{t('payment.invoiceNoticeTitle')}</p>
-                    </div>
-                    <p className="theme-muted mt-3 text-sm leading-7">
-                      {t('payment.invoiceNoticeDescription')}
-                    </p>
-                  </div>
-                </>
-              )}
-
-              {paymentError ? (
-                <p className="mt-6 rounded-2xl border border-[color:var(--danger)] bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
-                  {paymentError}
+              {checkoutMessage ? (
+                <p
+                  className={`rounded-sm border px-4 py-3 text-sm ${
+                    checkoutMessage === successMessage
+                      ? 'border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] theme-heading'
+                      : 'border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] text-[color:var(--danger)]'
+                  }`}
+                >
+                  {checkoutMessage}
                 </p>
               ) : null}
 
-              <Button className="mt-8 w-full" disabled={isSubmitting} onClick={handleConfirm} size="lg">
-                {method === 'card' ? t('payment.confirmPayment') : t('payment.confirmInvoiceRequest')}
+              <Button className="w-full justify-center" disabled={isSubmitting} onClick={() => void handleCheckout()} size="lg">
+                {progressMessage ?? (language === 'tr' ? 'Ödemeyi Tamamla ve Kursa Katıl' : 'Complete Payment and Join Course')}
               </Button>
-            </>
+            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[color:var(--surface-sky-haze)] text-[color:var(--primary)]">
-                <ShoppingCart className="h-7 w-7" />
-              </div>
-              <h2 className="theme-heading text-2xl font-semibold">{t('payment.emptyTitle')}</h2>
-              <p className="theme-muted mt-3 max-w-md text-sm leading-7">{t('payment.emptyDescription')}</p>
-              <Link className="mt-6 inline-flex" to={ROUTES.courses}>
-                <Button asChild>{t('payment.browseCourses')}</Button>
-              </Link>
-            </div>
-          )}
-        </Card>
-
-        <div className="space-y-6 xl:sticky xl:top-24 xl:self-start">
-          <Card className="border-[color:var(--border)] bg-[color:var(--surface-soft)]">
-            <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{t('payment.orderSummary')}</p>
-            <h2 className="theme-heading mt-3 text-2xl font-semibold">{t('cart.courseCount', { count: itemCount })}</h2>
-            <div className="theme-muted mt-6 space-y-4 text-sm">
-              <div className="flex items-center justify-between">
-                <span>{t('cart.itemsLabel')}</span>
-                <span>{itemCount}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>{t('payment.subtotal')}</span>
-                <span>{formatCurrency(subtotal)}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>{t('payment.estimatedTax')}</span>
-                <span>{formatCurrency(tax)}</span>
-              </div>
-              <div className="theme-heading flex items-center justify-between border-t border-[color:var(--border)] pt-4 text-base font-semibold">
-                <span>{t('payment.total')}</span>
-                <span>{formatCurrency(total)}</span>
-              </div>
-            </div>
-
-            <div className="theme-muted mt-6 rounded-[22px] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4 text-sm leading-7">
-              {t('payment.orderNote')}
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between gap-4">
-              <p className="theme-heading text-sm font-semibold">{t('payment.selectedCourses')}</p>
-              {hasItems ? (
-                <Link className="theme-muted text-sm font-medium transition hover:text-[color:var(--text-heading)]" to={ROUTES.cart}>
-                  {t('payment.backToCart')}
+            <EmptyState
+              action={(
+                <Link className="inline-flex" to={ROUTES.courses}>
+                  <Button asChild>{t('payment.browseCourses')}</Button>
                 </Link>
-              ) : null}
-            </div>
+              )}
+              description={t('payment.emptyDescription')}
+              title={t('payment.emptyTitle')}
+            />
+          )}
+        </section>
 
-            {hasItems ? (
-              <div className="mt-4 space-y-3">
-                {items.map((item) => (
-                  <div key={item.courseId} className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="theme-muted rounded-full border border-[color:var(--border)] bg-[color:var(--surface-muted)] px-3 py-1 text-xs font-semibold">
-                            {getCourseCategoryLabel(item.course)}
-                          </span>
-                          <span className="theme-subtle text-xs">{item.course.level}</span>
-                        </div>
-                        <h3 className="theme-heading mt-4 text-base font-semibold">{item.course.title}</h3>
-                        <p className="theme-muted mt-2 text-sm leading-6">{item.course.summary}</p>
-                      </div>
-                      <p className="theme-heading shrink-0 text-lg font-semibold">{formatCurrency(item.course.price)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="theme-muted mt-4 rounded-2xl border border-dashed border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-6 text-sm">
-                {t('payment.emptyDescription')}
-              </div>
-            )}
-          </Card>
-        </div>
+        <aside className="h-fit rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5 xl:sticky xl:top-24">
+          <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{t('payment.orderSummary')}</p>
+          <div className="theme-muted mt-5 space-y-4 text-sm">
+            <div className="flex items-center justify-between">
+              <span>{t('cart.itemsLabel')}</span>
+              <span>{itemCount}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>{t('payment.subtotal')}</span>
+              <span>{formatCurrency(subtotal, { currency: summaryCurrency, locale })}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>{t('payment.estimatedTax')}</span>
+              <span>{formatCurrency(tax, { currency: summaryCurrency, locale })}</span>
+            </div>
+            <div className="theme-heading flex items-center justify-between border-t border-[color:var(--border)] pt-4 text-base font-semibold">
+              <span>{t('payment.total')}</span>
+              <span>{formatCurrency(total, { currency: summaryCurrency, locale })}</span>
+            </div>
+          </div>
+
+          <div className="theme-muted mt-5 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 text-sm leading-7">
+            {t('payment.orderNote')}
+          </div>
+        </aside>
       </section>
 
       <Modal
-        description={
-          method === 'card' ? t('payment.successDescription') : t('payment.invoiceSuccessDescription')
-        }
-        onClose={() => setIsModalOpen(false)}
-        open={isModalOpen}
-        title={method === 'card' ? t('payment.successTitle') : t('payment.invoiceSuccessTitle')}
+        description={language === 'tr' ? 'Seçilen kurslarınız aktif hale getirildi.' : 'Your selected courses are now active.'}
+        onClose={() => setIsSuccessModalOpen(false)}
+        open={isSuccessModalOpen}
+        title={language === 'tr' ? 'Ödeme Başarılı' : 'Payment successful'}
       >
         <div className="space-y-4">
-          <div className="theme-muted rounded-[28px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-5 text-sm leading-7">
-            {method === 'card' ? t('payment.successBody') : t('payment.invoiceSuccessBody')}
-          </div>
-          {recentlyPurchasedItems.length > 0 ? (
-            <div className="rounded-[24px] border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] p-4">
+          <p className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm theme-heading">
+            {successMessage}
+          </p>
+          {recentlyPurchasedCourseTitles.length > 0 ? (
+            <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
               <p className="theme-subtle text-xs uppercase tracking-[0.22em]">
-                {t('payment.unlockedCourses', { count: recentlyPurchasedItems.length })}
+                {language === 'tr' ? 'Aktif edilen kurslar' : 'Activated courses'}
               </p>
-              <p className="theme-text mt-3 text-sm leading-7">
-                {recentlyPurchasedItems.map((item) => item.course.title).join(', ')}
-              </p>
+              <p className="theme-text mt-2 text-sm leading-6">{recentlyPurchasedCourseTitles.join(', ')}</p>
             </div>
-          ) : null}
-          {recentlyPurchasedItems[0] ? (
-            <Link className="block" to={ROUTES.coursePlayer(recentlyPurchasedItems[0].course.slug)}>
-              <Button asChild className="w-full justify-center">
-                {t('payment.startWatching')}
-              </Button>
-            </Link>
           ) : null}
         </div>
       </Modal>

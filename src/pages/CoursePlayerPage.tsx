@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, CheckCircle2, Clock3, ListVideo, LockKeyhole, PlayCircle, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import CourseVideoPlayer from '../components/player/CourseVideoPlayer'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import InfoBadge from '../components/ui/InfoBadge'
@@ -24,6 +25,7 @@ const PLAYBACK_URL_REFRESH_BUFFER_MS = 3_000
 
 const CoursePlayerPage = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { language } = useLanguage()
   const { slug = '' } = useParams()
   const { addCourse, isInCart } = useCart()
@@ -170,6 +172,11 @@ const CoursePlayerPage = () => {
     })
   }
 
+  const handleAddToCart = (courseId: string) => {
+    addCourse(courseId)
+    navigate(ROUTES.cart)
+  }
+
   if (error) {
     return <QueryErrorState error={error} />
   }
@@ -209,7 +216,7 @@ const CoursePlayerPage = () => {
             className="mt-5"
             items={[
               { key: 'duration', icon: Clock3, label: t('player.runtime'), value: data.duration },
-              { key: 'type', label: t('player.lessonType'), value: data.level },
+              { key: 'type', label: t('player.lessonType'), value: data.level.levelName },
             ]}
           />
 
@@ -226,7 +233,7 @@ const CoursePlayerPage = () => {
                 </Button>
               </Link>
             ) : (
-              <Button className="w-full justify-center sm:w-auto" onClick={() => addCourse(data.id)}>
+              <Button className="w-full justify-center sm:w-auto" onClick={() => handleAddToCart(data.id)}>
                 <ShoppingCart className="h-4 w-4" />
                 {t('common.addToCart')}
               </Button>
@@ -262,38 +269,21 @@ const CoursePlayerPage = () => {
 
       <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
         <Card>
-          <div className="overflow-hidden rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--color-forest-canopy)]">
-            {activeModule ? (
-              <video
-                className="aspect-video w-full bg-[color:var(--color-forest-canopy)] object-cover"
-                controls
-                controlsList="nodownload noremoteplayback"
-                disablePictureInPicture
-                key={`${data.id}-${activeModule.id}`}
-                onContextMenu={(event) => event.preventDefault()}
-                onError={handleVideoError}
-                onLoadedMetadata={handleVideoLoadedMetadata}
-                onPlay={handleVideoPlay}
-                preload="metadata"
-                ref={videoElementRef}
-                src={activeVideoSource || undefined}
-              />
-            ) : (
-              <div className="theme-muted flex aspect-video items-center justify-center px-6 text-center text-sm">
-                {t('player.chooseLesson')}
-              </div>
-            )}
-          </div>
-
-          {isVideoLoading ? (
-            <p className="theme-muted mt-3 text-sm">{t('loader.courseDetails')}</p>
-          ) : null}
-          {videoErrorMessage ? (
-            <p className="mt-3 text-sm text-[color:var(--danger)]">{videoErrorMessage}</p>
-          ) : null}
+          <CourseVideoPlayer
+            emptyMessage={t('player.chooseLesson')}
+            isSourceLoading={isVideoLoading}
+            onVideoError={handleVideoError}
+            onVideoLoadedMetadata={handleVideoLoadedMetadata}
+            onVideoPlay={handleVideoPlay}
+            sourceErrorMessage={videoErrorMessage}
+            src={activeVideoSource || undefined}
+            subtitle={activeModule?.description || data.description}
+            title={activeModuleTitle}
+            videoKey={activeModule ? `${data.id}-${activeModule.id}` : `${data.id}-empty`}
+            videoRef={videoElementRef}
+          />
 
           <div className="mt-5 border-t border-[color:var(--border)] pt-5">
-            <SectionHeader title={activeModuleTitle} />
             <MetaRow
               className="mt-3"
               items={[

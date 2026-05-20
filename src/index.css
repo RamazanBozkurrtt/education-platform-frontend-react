@@ -61,6 +61,12 @@ select {
   color: inherit;
 }
 
+input:not([type='checkbox']):not([type='radio']):not([type='range']),
+textarea,
+select {
+  border-radius: var(--radius-navigation);
+}
+
 button {
   cursor: pointer;
 }
@@ -180,8 +186,8 @@ input:-webkit-autofill:focus {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  border-radius: calc(var(--radius-cards) * 1.35);
-  background: linear-gradient(180deg, var(--page-glow-a), transparent 26%);
+  border-radius: 12px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--page-glow-a) 55%, transparent), transparent 20%);
 }
 
 .dashboard-content {
@@ -190,6 +196,36 @@ input:-webkit-autofill:focus {
 
 .theme-placeholder::placeholder {
   color: var(--text-subtle);
+}
+
+.app-input-shell {
+  border-color: color-mix(in srgb, var(--border) 90%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 74%, var(--surface-white));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.app-input-shell:hover {
+  border-color: color-mix(in srgb, var(--border-strong) 84%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 68%, var(--surface-white));
+}
+
+.app-input-shell:focus-within {
+  background: var(--surface-white);
+}
+
+html[data-theme='dark'] .app-input-shell {
+  border-color: color-mix(in srgb, var(--border) 92%, transparent);
+  background: color-mix(in srgb, var(--surface-soft) 76%, var(--surface-strong));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+html[data-theme='dark'] .app-input-shell:hover {
+  border-color: color-mix(in srgb, var(--border-strong) 76%, transparent);
+  background: color-mix(in srgb, var(--surface-hover) 66%, var(--surface-soft));
+}
+
+html[data-theme='dark'] .app-input-shell:focus-within {
+  background: color-mix(in srgb, var(--surface-soft) 58%, var(--surface-strong));
 }
 
 .language-switcher {
@@ -258,6 +294,30 @@ html[data-theme='dark'] .auth-shell-overlay {
     180deg,
     color-mix(in srgb, var(--bg) 42%, transparent) 0%,
     color-mix(in srgb, var(--bg) 64%, transparent) 100%
+  );
+}
+
+.complete-profile-bg {
+  filter: saturate(0.92) brightness(1.04) contrast(0.98);
+}
+
+.complete-profile-overlay {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-soft) 66%, transparent) 0%,
+    color-mix(in srgb, var(--surface-white) 78%, transparent) 100%
+  );
+}
+
+html[data-theme='dark'] .complete-profile-bg {
+  filter: saturate(0.8) brightness(0.66) contrast(1.06);
+}
+
+html[data-theme='dark'] .complete-profile-overlay {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bg) 46%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 68%, transparent) 100%
   );
 }
 

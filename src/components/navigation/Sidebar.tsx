@@ -40,6 +40,7 @@ const Sidebar = ({
   const isCurrentUserInstructor = isInstructor(user, claims)
   const instructorMenuLabel = language === 'tr' ? 'Eğitmen Paneli' : 'Instructor Panel'
   const becomeInstructorLabel = language === 'tr' ? 'Eğitmen Ol' : 'Become Instructor'
+  const paymentsLabel = language === 'tr' ? 'Ödemelerim' : 'My Payments'
 
   const navigationItems = [
     { label: t('nav.dashboard'), to: ROUTES.dashboard, icon: LayoutDashboard },
@@ -49,7 +50,7 @@ const Sidebar = ({
     { label: t('nav.myCourses'), to: ROUTES.myCourses, icon: BookOpenCheck },
     { label: t('nav.courses'), to: ROUTES.courses, icon: BookOpen },
     { label: t('nav.cart'), to: ROUTES.cart, icon: ShoppingCart, badge: itemCount },
-    { label: t('nav.payment'), to: ROUTES.payment, icon: CreditCard },
+    { label: paymentsLabel, to: ROUTES.payments, icon: CreditCard },
     { label: t('nav.search'), to: ROUTES.search, icon: Search },
   ]
 
@@ -65,14 +66,14 @@ const Sidebar = ({
 
       <aside
         className={cn(
-          'fixed inset-y-3 left-3 z-40 flex w-[286px] flex-col rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-white)] px-4 py-4 shadow-[var(--shadow-card)] transition-all duration-300 ease-out lg:static lg:inset-auto lg:h-[calc(100vh-2.5rem)]',
+          'fixed inset-y-2 left-2 z-40 flex w-[286px] flex-col rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3.5 py-3.5 shadow-none transition-all duration-300 ease-out lg:static lg:inset-auto lg:h-[calc(100vh-1rem)]',
           collapsed ? 'lg:w-[104px]' : 'lg:w-[284px]',
           mobileOpen ? 'translate-x-0' : '-translate-x-[115%] lg:translate-x-0',
         )}
       >
         <div className="mb-5 flex items-center justify-between border-b border-[color:var(--border)] pb-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--primary)]">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--primary)]">
               <GraduationCap className="h-5 w-5" />
             </div>
             <div className={cn('min-w-0 overflow-hidden transition-all', collapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100')}>
@@ -102,9 +103,9 @@ const Sidebar = ({
               key={item.to}
               className={({ isActive }) =>
                 cn(
-                  'group flex items-center gap-3 rounded-[var(--radius-navigation)] border px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)]',
+                  'group flex items-center gap-3 rounded-sm border px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)]',
                   isActive
-                    ? 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--text-heading)]'
+                    ? 'border-[color:var(--primary)] bg-[color:var(--surface-soft)] text-[color:var(--text-heading)]'
                     : 'border-transparent text-[color:var(--text-muted)] hover:border-[color:var(--border)] hover:bg-[color:var(--surface-soft)] hover:text-[color:var(--text-heading)]',
                   collapsed && 'lg:justify-center',
                 )
@@ -141,7 +142,7 @@ const Sidebar = ({
 
         <div
           className={cn(
-            'mt-auto rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3',
+            'mt-auto rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-3',
             collapsed && 'lg:hidden',
           )}
         >
@@ -155,3 +156,5 @@ const Sidebar = ({
 }
 
 export default Sidebar
+
+

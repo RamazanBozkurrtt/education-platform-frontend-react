@@ -31,7 +31,7 @@ const LessonVideoPreview = ({
       </Button>
 
       {isOpen ? (
-        <div className="overflow-hidden rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--color-forest-canopy)] p-3" id={previewPanelId}>
+        <div className="overflow-hidden rounded-none border border-[color:var(--border)] bg-[color:var(--color-forest-canopy)] p-3" id={previewPanelId}>
           {isLoading ? (
             <p className="text-sm text-white">Onizleme yukleniyor...</p>
           ) : null}
@@ -41,7 +41,7 @@ const LessonVideoPreview = ({
           {videoSrc && !isLoading ? (
             <video
               aria-label="Ders video onizlemesi"
-              className="aspect-video w-full rounded-md bg-black"
+              className="aspect-video w-full rounded-none bg-black"
               controls
               controlsList="nodownload noremoteplayback"
               disablePictureInPicture

@@ -262,7 +262,7 @@ const InstructorProfileForm = ({
 
       <label className="flex w-full flex-col gap-2" htmlFor="instructor-biography">
         <span className="theme-heading text-sm font-semibold">{copy.biography}</span>
-        <span className="flex rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
+        <span className="flex rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
           <textarea
             aria-invalid={Boolean(errors.biography)}
             className="theme-text theme-placeholder min-h-[120px] w-full resize-none bg-transparent text-sm leading-6 outline-none"

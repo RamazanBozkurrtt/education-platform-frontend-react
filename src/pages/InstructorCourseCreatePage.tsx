@@ -1,18 +1,23 @@
-import { type FormEvent, useState } from 'react'
+import { Image as ImageIcon } from 'lucide-react'
+import { type ChangeEvent, type FormEvent, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
 import Button from '../components/ui/Button'
+import CourseCategorySelector from '../components/instructor/CourseCategorySelector'
+import CourseLevelSelector from '../components/instructor/CourseLevelSelector'
 import { useLanguage } from '../hooks/useLanguage'
 import { instructorCourseService } from '../services/instructorCourseService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { emitAppToast } from '../shared/notifications/appToast'
 import { ROUTES } from '../utils/constants'
 
-type FormErrors = Partial<Record<'title' | 'description' | 'price' | 'categoryId' | 'learningOutcomes' | 'tags' | 'image', string>>
+type FormErrors = Partial<Record<'title' | 'description' | 'price' | 'levelId' | 'categoryIds' | 'learningOutcomes' | 'tags' | 'image', string>>
 const LEARNING_OUTCOME_COUNT = 4
+const MIN_CATEGORY_COUNT = 1
+const MAX_CATEGORY_COUNT = 5
 const DEFAULT_TAG_FIELD_COUNT = 3
 const MAX_TAG_COUNT = 6
 const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpg', 'image/jpeg', 'image/webp', 'image/svg+xml'])
@@ -33,7 +38,8 @@ const InstructorCourseCreatePage = () => {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
-  const [categoryId, setCategoryId] = useState('')
+  const [levelId, setLevelId] = useState('')
+  const [categoryIds, setCategoryIds] = useState<string[]>([])
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
   const [learningOutcomes, setLearningOutcomes] = useState<string[]>(
     Array.from({ length: LEARNING_OUTCOME_COUNT }, () => ''),
@@ -44,6 +50,15 @@ const InstructorCourseCreatePage = () => {
   const [errors, setErrors] = useState<FormErrors>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const {
+    data: levels = [],
+    isLoading: levelsLoading,
+    error: levelsError,
+    refetch: refetchLevels,
+  } = useQuery({
+    queryKey: ['course-public-levels'],
+    queryFn: () => instructorCourseService.getPublicLevels(),
+  })
   const {
     data: categories = [],
     isLoading: categoriesLoading,
@@ -61,8 +76,20 @@ const InstructorCourseCreatePage = () => {
       titleLabel: 'Kurs basligi',
       descriptionLabel: 'Kurs aciklamasi',
       priceLabel: 'Fiyat',
-      categoryLabel: 'Kategori',
+      levelLabel: 'Seviye',
+      levelPlaceholder: 'Seviye secin',
+      levelHelper: 'Kurs seviyesi secimi zorunludur.',
+      levelLoading: 'Seviyeler yukleniyor...',
+      levelEmpty: 'Secim icin uygun seviye bulunamadi.',
+      levelReload: 'Seviyeleri tekrar yukle',
+      levelLoadFailed: 'Seviye listesi su anda alinamadi.',
+      categoryLabel: 'Kategoriler',
       categoryPlaceholder: 'Kategori secin',
+      categoryHelper: `En az ${MIN_CATEGORY_COUNT}, en fazla ${MAX_CATEGORY_COUNT} kategori secilebilir.`,
+      categorySelectedSummary: (count: number) => `Secilen: ${count}/${MAX_CATEGORY_COUNT}`,
+      categoryLoading: 'Kategoriler yukleniyor...',
+      categoryEmpty: 'Secim icin uygun kategori bulunamadi.',
+      categoryClear: 'Secimi temizle',
       categoryReload: 'Kategorileri tekrar yukle',
       categoryLoadFailed: 'Kategori listesi su anda alinamadi.',
       outcomesLabel: 'Ogrenim ciktisi',
@@ -70,6 +97,14 @@ const InstructorCourseCreatePage = () => {
       outcomePlaceholder: (index: number) => `Ogrenim ciktisi ${index + 1}`,
       imageLabel: 'Kurs gorseli (opsiyonel)',
       imageHelper: 'Gorsel secmezsen varsayilan kurs gorseli kullanılır.',
+      imagePreviewLabel: 'Kurs karti onizlemesi',
+      imagePreviewHelper: 'Bu alan, kurs kartindaki gorselin nasil kirpilacagini gosterir.',
+      imagePreviewEmptyTitle: 'Gorsel secilmedi',
+      imagePreviewEmptyDescription: 'Bir gorsel yuklediginde onizleme burada gorunecek.',
+      imagePreviewAlt: 'Kurs gorseli onizlemesi',
+      titlePreviewFallback: 'Kurs basligi burada gorunecek',
+      previewCategoryFallback: 'Kategori secilmedi',
+      previewLevelLabel: 'Seviye secilmedi',
       tagsLabel: 'Etiketler',
       tagsHelper: `Etiketleri ayri kutulara gir. Bos kutular gonderilmez. (Maks ${MAX_TAG_COUNT})`,
       tagPlaceholder: (index: number) => `Etiket ${index + 1}`,
@@ -80,12 +115,15 @@ const InstructorCourseCreatePage = () => {
       validationTitle: 'Kurs basligi zorunludur.',
       validationDescription: 'Kurs aciklamasi zorunludur.',
       validationPrice: 'Fiyat 0 veya daha buyuk bir sayi olmalidir.',
-      validationCategoryId: 'Kategori secimi zorunludur.',
+      validationCategoryIds: `En az ${MIN_CATEGORY_COUNT} kategori secimi zorunludur.`,
+      validationCategoryIdsMax: `En fazla ${MAX_CATEGORY_COUNT} kategori secebilirsin.`,
+      validationLevelId: 'Kurs seviyesi secimi zorunludur.',
       validationOutcomes: 'Tam olarak 4 ogrenim ciktisi doldurulmalidir.',
       validationTags: 'Ayni etiket birden fazla kez kullanilamaz.',
       validationTagsMax: `En fazla ${MAX_TAG_COUNT} etiket girilebilir.`,
       validationImage: 'Kurs gorseli PNG, JPG, JPEG, WEBP veya SVG formatinda olmalidir.',
       invalidCategory: 'Secilen kategori gecersiz. Lutfen tekrar secin.',
+      invalidLevel: 'Gecersiz kurs seviyesi secildi.',
       imageUploadFailed: 'Kurs olusturuldu fakat gorsel yuklenemedi. Varsayilan gorsel kullanilacak.',
     }
     : {
@@ -95,8 +133,20 @@ const InstructorCourseCreatePage = () => {
       titleLabel: 'Course title',
       descriptionLabel: 'Course description',
       priceLabel: 'Price',
-      categoryLabel: 'Category',
-      categoryPlaceholder: 'Select a category',
+      levelLabel: 'Level',
+      levelPlaceholder: 'Select level',
+      levelHelper: 'Selecting a course level is required.',
+      levelLoading: 'Loading levels...',
+      levelEmpty: 'No levels are available for selection.',
+      levelReload: 'Reload levels',
+      levelLoadFailed: 'Level list could not be loaded right now.',
+      categoryLabel: 'Categories',
+      categoryPlaceholder: 'Select categories',
+      categoryHelper: `Select at least ${MIN_CATEGORY_COUNT} and at most ${MAX_CATEGORY_COUNT} categories.`,
+      categorySelectedSummary: (count: number) => `Selected: ${count}/${MAX_CATEGORY_COUNT}`,
+      categoryLoading: 'Loading categories...',
+      categoryEmpty: 'No categories are available for selection.',
+      categoryClear: 'Clear selection',
       categoryReload: 'Reload categories',
       categoryLoadFailed: 'Category list could not be loaded right now.',
       outcomesLabel: 'Learning outcomes',
@@ -104,6 +154,14 @@ const InstructorCourseCreatePage = () => {
       outcomePlaceholder: (index: number) => `Learning outcome ${index + 1}`,
       imageLabel: 'Course image (optional)',
       imageHelper: 'If no image is selected, the default image will be used.',
+      imagePreviewLabel: 'Course card preview',
+      imagePreviewHelper: 'This preview shows how the image will be cropped on the course card.',
+      imagePreviewEmptyTitle: 'No image selected',
+      imagePreviewEmptyDescription: 'The preview will appear here after you upload an image.',
+      imagePreviewAlt: 'Course image preview',
+      titlePreviewFallback: 'Course title will appear here',
+      previewCategoryFallback: 'No category selected',
+      previewLevelLabel: 'No level selected',
       tagsLabel: 'Tags',
       tagsHelper: `Use separate fields for each tag. Empty fields are ignored. (Max ${MAX_TAG_COUNT})`,
       tagPlaceholder: (index: number) => `Tag ${index + 1}`,
@@ -114,12 +172,15 @@ const InstructorCourseCreatePage = () => {
       validationTitle: 'Course title is required.',
       validationDescription: 'Course description is required.',
       validationPrice: 'Price must be a number greater than or equal to 0.',
-      validationCategoryId: 'Category selection is required.',
+      validationCategoryIds: `You must select at least ${MIN_CATEGORY_COUNT} category.`,
+      validationCategoryIdsMax: `You can select at most ${MAX_CATEGORY_COUNT} categories.`,
+      validationLevelId: 'Course level selection is required.',
       validationOutcomes: 'All 4 learning outcomes must be filled.',
       validationTags: 'Duplicate tags are not allowed.',
       validationTagsMax: `You can add at most ${MAX_TAG_COUNT} tags.`,
       validationImage: 'Course image must be PNG, JPG, JPEG, WEBP, or SVG.',
       invalidCategory: 'The selected category is invalid. Please choose again.',
+      invalidLevel: 'The selected course level is invalid.',
       imageUploadFailed: 'Course was created, but image upload failed. Backend default image will be used.',
     }
 
@@ -128,6 +189,65 @@ const InstructorCourseCreatePage = () => {
       error.code === 'COURSE_CATEGORY_NOT_FOUND' ||
       error.message.toLocaleLowerCase('en-US').includes('category')
     )
+  const isLevelNotFoundError = (error: ReturnType<typeof normalizeApiError>) =>
+    error.httpStatus === 404 && (
+      error.code === 'COURSE_LEVEL_NOT_FOUND' ||
+      error.message.toLocaleLowerCase('en-US').includes('level')
+    )
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!selectedImageFile) {
+      setImagePreviewUrl(null)
+      return
+    }
+
+    const objectUrl = URL.createObjectURL(selectedImageFile)
+    setImagePreviewUrl(objectUrl)
+
+    return () => {
+      URL.revokeObjectURL(objectUrl)
+    }
+  }, [selectedImageFile])
+
+  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const nextFile = event.target.files?.[0] ?? null
+
+    if (!nextFile) {
+      setSelectedImageFile(null)
+      setErrors((current) => {
+        if (!current.image) {
+          return current
+        }
+
+        const next = { ...current }
+        delete next.image
+        return next
+      })
+      return
+    }
+
+    if (!isAllowedImageFile(nextFile)) {
+      event.target.value = ''
+      setSelectedImageFile(null)
+      setErrors((current) => ({ ...current, image: copy.validationImage }))
+      return
+    }
+
+    setSelectedImageFile(nextFile)
+    setErrors((current) => {
+      if (!current.image) {
+        return current
+      }
+
+      const next = { ...current }
+      delete next.image
+      return next
+    })
+  }
+
+  const selectedCategoryName = categories.find((item) => categoryIds.includes(item.id))?.categoryName ?? copy.previewCategoryFallback
+  const selectedLevelName = levels.find((item) => item.id === levelId)?.levelName ?? copy.previewLevelLabel
 
   const updateLearningOutcome = (index: number, value: string) => {
     setLearningOutcomes((current) => current.map((item, itemIndex) => itemIndex === index ? value : item))
@@ -159,6 +279,11 @@ const InstructorCourseCreatePage = () => {
 
   const validate = () => {
     const nextErrors: FormErrors = {}
+    const normalizedCategoryIds = [...new Set(
+      categoryIds
+        .map((item) => item.trim())
+        .filter(Boolean),
+    )]
     const normalizedOutcomes = learningOutcomes
       .map((item) => item.trim())
     const normalizedTags = tags
@@ -178,8 +303,14 @@ const InstructorCourseCreatePage = () => {
     if (!price.trim() || Number.isNaN(parsedPrice) || parsedPrice < 0) {
       nextErrors.price = copy.validationPrice
     }
-    if (!categoryId.trim()) {
-      nextErrors.categoryId = copy.validationCategoryId
+    if (!levelId.trim()) {
+      nextErrors.levelId = copy.validationLevelId
+    }
+    if (normalizedCategoryIds.length < MIN_CATEGORY_COUNT) {
+      nextErrors.categoryIds = copy.validationCategoryIds
+    }
+    if (normalizedCategoryIds.length > MAX_CATEGORY_COUNT) {
+      nextErrors.categoryIds = copy.validationCategoryIdsMax
     }
 
     if (normalizedOutcomes.some((item) => !item) || normalizedOutcomes.length !== LEARNING_OUTCOME_COUNT) {
@@ -199,15 +330,28 @@ const InstructorCourseCreatePage = () => {
     return nextErrors
   }
 
-  const handleCategoryChange = (value: string) => {
-    setCategoryId(value)
+  const handleCategoryChange = (values: string[]) => {
+    setCategoryIds(values)
     setErrors((current) => {
-      if (!current.categoryId) {
+      if (!current.categoryIds) {
         return current
       }
 
       const next = { ...current }
-      delete next.categoryId
+      delete next.categoryIds
+      return next
+    })
+  }
+
+  const handleLevelChange = (value: string) => {
+    setLevelId(value)
+    setErrors((current) => {
+      if (!current.levelId) {
+        return current
+      }
+
+      const next = { ...current }
+      delete next.levelId
       return next
     })
   }
@@ -231,11 +375,17 @@ const InstructorCourseCreatePage = () => {
       const normalizedTags = tags
         .map((item) => item.trim())
         .filter(Boolean)
+      const normalizedCategoryIds = [...new Set(
+        categoryIds
+          .map((item) => item.trim())
+          .filter(Boolean),
+      )]
       const createdCourse = await instructorCourseService.createCourse({
         title: title.trim(),
         description: description.trim(),
         price: Number(price),
-        categoryId: categoryId.trim(),
+        levelId: levelId.trim(),
+        categoryIds: normalizedCategoryIds,
         learningOutcomes: normalizedLearningOutcomes,
         tags: normalizedTags,
       })
@@ -258,18 +408,28 @@ const InstructorCourseCreatePage = () => {
       nextErrors.title = appError.fieldErrors?.title?.[0] ?? nextErrors.title
       nextErrors.description = appError.fieldErrors?.description?.[0] ?? nextErrors.description
       nextErrors.price = appError.fieldErrors?.price?.[0] ?? nextErrors.price
-      nextErrors.categoryId = appError.fieldErrors?.categoryId?.[0]
+      nextErrors.levelId = appError.fieldErrors?.levelId?.[0]
+        ?? appError.fieldErrors?.level?.[0]
+        ?? appError.fieldErrors?.['level.id']?.[0]
+        ?? nextErrors.levelId
+      nextErrors.categoryIds = appError.fieldErrors?.categoryIds?.[0]
+        ?? appError.fieldErrors?.categoryId?.[0]
         ?? appError.fieldErrors?.category?.[0]
+        ?? appError.fieldErrors?.['categoryIds[0]']?.[0]
         ?? appError.fieldErrors?.['category.id']?.[0]
-        ?? nextErrors.categoryId
+        ?? nextErrors.categoryIds
       nextErrors.learningOutcomes = appError.fieldErrors?.learningOutcomes?.[0]
         ?? appError.fieldErrors?.outcomes?.[0]
         ?? nextErrors.learningOutcomes
       nextErrors.tags = appError.fieldErrors?.tags?.[0] ?? nextErrors.tags
 
       if (isCategoryNotFoundError(appError)) {
-        nextErrors.categoryId = copy.invalidCategory
+        nextErrors.categoryIds = copy.invalidCategory
         void refetchCategories()
+      }
+      if (isLevelNotFoundError(appError)) {
+        nextErrors.levelId = copy.invalidLevel
+        void refetchLevels()
       }
 
       if (Object.keys(nextErrors).length > 0) {
@@ -304,7 +464,7 @@ const InstructorCourseCreatePage = () => {
 
           <label className="flex w-full flex-col gap-2" htmlFor="course-description">
             <span className="theme-text text-sm font-medium">{copy.descriptionLabel}</span>
-            <span className="flex rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
+            <span className="flex rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
               <textarea
                 aria-invalid={Boolean(errors.description)}
                 className="theme-text theme-placeholder min-h-[120px] w-full resize-none bg-transparent text-sm leading-6 outline-none"
@@ -327,49 +487,93 @@ const InstructorCourseCreatePage = () => {
               type="number"
               value={price}
             />
-            <label className="flex w-full flex-col gap-2" htmlFor="course-category-id">
-              <span className="theme-text text-sm font-medium">{copy.categoryLabel}</span>
-              <span className="flex rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
-                <select
-                  aria-invalid={Boolean(errors.categoryId)}
-                  className="theme-text w-full bg-transparent text-sm outline-none"
-                  disabled={categoriesLoading}
-                  id="course-category-id"
-                  onChange={(event) => handleCategoryChange(event.target.value)}
-                  value={categoryId}
-                >
-                  <option value="">
-                    {categoriesLoading ? `${copy.categoryPlaceholder}...` : copy.categoryPlaceholder}
-                  </option>
-                  {categories.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.categoryName}
-                    </option>
-                  ))}
-                </select>
-              </span>
-              {errors.categoryId ? <span className="text-xs text-[color:var(--danger)]">{errors.categoryId}</span> : null}
-              {categoriesError ? (
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs text-[color:var(--danger)]">{copy.categoryLoadFailed}</span>
-                  <Button onClick={() => void refetchCategories()} type="button" variant="ghost">
-                    {copy.categoryReload}
-                  </Button>
-                </div>
-              ) : null}
-            </label>
+            <CourseLevelSelector
+              emptyStateText={copy.levelEmpty}
+              errorMessage={errors.levelId}
+              hasLoadError={Boolean(levelsError)}
+              helperText={copy.levelHelper}
+              label={copy.levelLabel}
+              levels={levels}
+              loadFailedText={copy.levelLoadFailed}
+              loading={levelsLoading}
+              loadingText={copy.levelLoading}
+              onChange={handleLevelChange}
+              onRetry={() => void refetchLevels()}
+              placeholder={copy.levelPlaceholder}
+              retryLabel={copy.levelReload}
+              selectedId={levelId}
+            />
           </div>
 
-          <div className="flex flex-col gap-2">
-            <span className="theme-text text-sm font-medium">{copy.imageLabel}</span>
-            <input
-              accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml"
-              className="theme-text file:theme-text h-12 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-2 text-sm file:mr-3 file:cursor-pointer file:rounded-[var(--radius-badges)] file:border file:border-[color:var(--border)] file:bg-[color:var(--surface-soft)] file:px-3 file:py-1.5 file:text-xs file:font-medium file:hover:bg-[color:var(--surface-hover)]"
-              onChange={(event) => setSelectedImageFile(event.target.files?.[0] ?? null)}
-              type="file"
+          <div>
+            <CourseCategorySelector
+              categories={categories}
+              clearLabel={copy.categoryClear}
+              emptyStateText={copy.categoryEmpty}
+              errorMessage={errors.categoryIds}
+              hasLoadError={Boolean(categoriesError)}
+              helperText={copy.categoryHelper}
+              label={copy.categoryLabel}
+              loadFailedText={copy.categoryLoadFailed}
+              loading={categoriesLoading}
+              loadingText={copy.categoryLoading}
+              onChange={handleCategoryChange}
+              onRetry={() => void refetchCategories()}
+              retryLabel={copy.categoryReload}
+              selectedIds={categoryIds}
+              selectedSummary={copy.categorySelectedSummary(categoryIds.length)}
             />
-            <span className="theme-subtle text-xs">{copy.imageHelper}</span>
-            {errors.image ? <span className="text-xs text-[color:var(--danger)]">{errors.image}</span> : null}
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)]">
+            <div className="flex flex-col gap-2">
+              <span className="theme-text text-sm font-medium">{copy.imageLabel}</span>
+              <input
+                accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml"
+                className="theme-text file:theme-text h-12 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-2 text-sm file:mr-3 file:cursor-pointer file:rounded-[var(--radius-navigation)] file:border file:border-[color:var(--border)] file:bg-[color:var(--surface-soft)] file:px-3 file:py-1.5 file:text-xs file:font-medium file:hover:bg-[color:var(--surface-hover)]"
+                onChange={handleImageChange}
+                type="file"
+              />
+              <span className="theme-subtle text-xs">{copy.imageHelper}</span>
+              {errors.image ? <span className="text-xs text-[color:var(--danger)]">{errors.image}</span> : null}
+            </div>
+
+            <div className="space-y-3 rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <span className="theme-text text-sm font-medium">{copy.imagePreviewLabel}</span>
+                <span className="theme-subtle text-xs">{selectedImageFile?.name ?? ''}</span>
+              </div>
+
+              <div className="flex items-start justify-between gap-3">
+                <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-2.5 py-1 text-xs font-medium theme-muted">
+                  {selectedCategoryName}
+                </span>
+                <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-2.5 py-1 text-xs theme-muted">
+                  {selectedLevelName}
+                </span>
+              </div>
+
+              <div className="overflow-hidden rounded-[var(--radius-navigation)] border border-[color:var(--border)]">
+                {imagePreviewUrl ? (
+                  <img
+                    alt={copy.imagePreviewAlt}
+                    className="h-44 w-full object-cover"
+                    src={imagePreviewUrl}
+                  />
+                ) : (
+                  <div className="flex h-44 w-full flex-col items-center justify-center gap-2 bg-[color:var(--surface-strong)] px-4 text-center">
+                    <ImageIcon aria-hidden className="h-6 w-6 text-[color:var(--text-muted)]" />
+                    <p className="theme-text text-sm font-medium">{copy.imagePreviewEmptyTitle}</p>
+                    <p className="theme-subtle text-xs">{copy.imagePreviewEmptyDescription}</p>
+                  </div>
+                )}
+              </div>
+
+              <p className="text-clamp-2 theme-heading text-sm font-semibold">
+                {title.trim() || copy.titlePreviewFallback}
+              </p>
+              <span className="theme-subtle block text-xs">{copy.imagePreviewHelper}</span>
+            </div>
           </div>
 
           <div className="flex w-full flex-col gap-2">

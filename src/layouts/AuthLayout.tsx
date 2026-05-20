@@ -21,7 +21,7 @@ const AuthLayout = () => {
         </div>
       </div>
 
-      <div className="relative z-10 mx-auto grid h-[calc(100dvh-5.5rem)] w-full max-w-[1480px] items-center gap-8 lg:grid-cols-[1fr_520px]">
+      <div className="relative z-10 mx-auto grid h-[calc(100dvh-5.5rem)] w-full max-w-[1480px] items-center gap-8 lg:grid-cols-[1fr_500px]">
         <section className="hidden h-full items-center lg:flex">
           <div className="max-w-3xl">
             <Link
@@ -40,7 +40,7 @@ const AuthLayout = () => {
               />
               <h1
                 className={cn(
-                  'theme-heading text-7xl font-semibold leading-none tracking-[-0.08em] transition-all duration-300 group-hover:-translate-y-1 group-focus-visible:-translate-y-0.5 xl:text-[7.5rem]',
+                  'theme-heading text-6xl font-semibold leading-none tracking-[-0.08em] transition-all duration-300 group-hover:-translate-y-2.5 group-focus-visible:-translate-y-0.5 xl:text-[6.75rem]',
                   'group-hover:text-[color:var(--text-heading)]',
                 )}
               >
@@ -53,7 +53,7 @@ const AuthLayout = () => {
         <section className="flex h-full items-center justify-center lg:justify-end">
           <div
             className={cn(
-              'w-full max-w-[520px] rounded-[var(--radius-cards)] border p-6 shadow-[var(--shadow-sm)] sm:p-8',
+              'w-full max-w-[460px] rounded-[var(--radius-cards)] border p-5 shadow-[var(--shadow-sm)] sm:p-6 lg:-translate-x-12',
               'border-[color:var(--border)] bg-[color:var(--surface-white)]/95',
             )}
           >
@@ -74,7 +74,7 @@ const AuthLayout = () => {
                 />
                 <h1
                   className={cn(
-                    'theme-heading text-4xl font-semibold tracking-[-0.06em] transition-all duration-300 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5',
+                    'theme-heading text-3xl font-semibold tracking-[-0.06em] transition-all duration-300 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5',
                     'group-hover:text-[color:var(--text-heading)]',
                   )}
                 >

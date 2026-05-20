@@ -1,4 +1,4 @@
-import { BriefcaseBusiness, Code2, Globe, ImagePlus, Link as LinkIcon, LoaderCircle, LogOut, Mail, Trash2, UserRound } from 'lucide-react'
+import { AlertTriangle, BriefcaseBusiness, Code2, Globe, ImagePlus, Link as LinkIcon, LoaderCircle, LogOut, Mail, RefreshCw, Trash2, UserRound } from 'lucide-react'
 import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
@@ -14,6 +14,59 @@ import { ROUTES } from '../utils/constants'
 
 type FormErrors = Partial<Record<'firstName' | 'lastName' | 'headline' | 'biography' | 'avatar' | 'linkedin' | 'github' | 'website', string>>
 type PasswordFormErrors = Partial<Record<'oldPassword' | 'newPassword' | 'confirmNewPassword', string>>
+
+const DEACTIVATION_CONFIRMATION_PHRASES = {
+  en: [
+    'I understand that deactivating my profile will remove access to my account.',
+    'I confirm that I want to deactivate my profile and sign out now.',
+    'I accept that my account will be deactivated and access will be revoked.',
+    'I understand this action deactivates my profile and cannot be undone here.',
+    'I choose to deactivate my profile and end my current session.',
+    'I confirm profile deactivation and I am aware of the consequences.',
+    'I acknowledge that deactivation will disable my account access.',
+    'I understand deactivating my profile will log me out immediately.',
+    'I confirm I want to deactivate my profile at this time.',
+    'I agree that my profile should be deactivated right now.',
+    'I understand that deactivation will require reactivation to use my account again.',
+    'I confirm that I am intentionally deactivating my profile.',
+    'I accept responsibility for deactivating my profile now.',
+    'I understand this will deactivate my account and clear my session.',
+    'I confirm account deactivation and acknowledge access will be blocked.',
+    'I want to deactivate my profile and proceed with this action.',
+    'I understand my profile will be deactivated until reactivated.',
+    'I confirm that I no longer want this profile active.',
+    'I acknowledge and approve the deactivation of my profile.',
+    'I confirm this profile should be deactivated immediately.',
+  ],
+  tr: [
+    'Profilimi devre disi birakmanin hesabima erisimi kapatacagini anliyorum.',
+    'Profilimi devre disi birakmak istedigimi ve simdi cikis yapilacagini onayliyorum.',
+    'Hesabimin devre disi birakilacagini ve erisimin kapatilacagini kabul ediyorum.',
+    'Bu islemin profilimi devre disi birakacagini ve buradan geri alinamayacagini anliyorum.',
+    'Profilimi devre disi birakmayi ve mevcut oturumu sonlandirmayi seciyorum.',
+    'Profil devre disi birakma islemini ve sonuclarini bildigimi onayliyorum.',
+    'Devre disi birakmanin hesap erisimimi kapatacagini kabul ediyorum.',
+    'Profilimi devre disi birakmanin beni hemen cikis yaptiracagini anliyorum.',
+    'Bu anda profilimi devre disi birakmak istedigimi onayliyorum.',
+    'Profilimin hemen devre disi birakilmasini kabul ediyorum.',
+    'Devre disi birakmadan sonra hesabi yeniden acmak icin reaktivasyon gerekecegini anliyorum.',
+    'Profilimi bilerek devre disi biraktigimi onayliyorum.',
+    'Profilimi simdi devre disi birakma sorumlulugunu kabul ediyorum.',
+    'Bu islemin hesabimi devre disi birakip oturumumu temizleyecegini anliyorum.',
+    'Hesap devre disi birakma islemini ve erisimin engellenecegini onayliyorum.',
+    'Profilimi devre disi birakmak ve bu islemi surdurmek istiyorum.',
+    'Profilimin yeniden etkinlestirilene kadar devre disi kalacagini anliyorum.',
+    'Bu profilin artik aktif kalmasini istemedigimi onayliyorum.',
+    'Profilimin devre disi birakilmasini bilerek kabul ediyorum.',
+    'Bu profilin hemen devre disi birakilmasini onayliyorum.',
+  ],
+} as const
+
+const getRandomDeactivationPhrase = (language: string) => {
+  const normalizedLanguage = language.toLocaleLowerCase().startsWith('tr') ? 'tr' : 'en'
+  const phrases = DEACTIVATION_CONFIRMATION_PHRASES[normalizedLanguage]
+  return phrases[Math.floor(Math.random() * phrases.length)]
+}
 
 const mapApiFieldErrorsToForm = (fieldErrors?: Record<string, string[]>): FormErrors => {
   const normalized = getFirstFieldErrorMap(fieldErrors)
@@ -92,11 +145,12 @@ const getSocialIcon = (label: string) => {
 }
 
 const ProfilePage = () => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const { user, logout, updateProfile, changePassword } = useAuth()
+  const { user, logout, updateProfile, changePassword, deactivateMe } = useAuth()
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [isDeactivating, setIsDeactivating] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
@@ -116,8 +170,11 @@ const ProfilePage = () => {
   const [confirmNewPassword, setConfirmNewPassword] = useState('')
   const [errors, setErrors] = useState<FormErrors>({})
   const [passwordErrors, setPasswordErrors] = useState<PasswordFormErrors>({})
+  const [deactivatePhrase, setDeactivatePhrase] = useState(() => getRandomDeactivationPhrase(i18n.language))
+  const [deactivateInput, setDeactivateInput] = useState('')
   const [feedback, setFeedback] = useState<{ message: string; tone: 'success' | 'error' } | null>(null)
   const [passwordFeedback, setPasswordFeedback] = useState<{ message: string; tone: 'success' | 'error' } | null>(null)
+  const [deactivateFeedback, setDeactivateFeedback] = useState<{ message: string; tone: 'success' | 'error' } | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -134,6 +191,12 @@ const ProfilePage = () => {
     setGithub(getSocialValue(user.socialLinks, 'github'))
     setWebsite(getSocialValue(user.socialLinks, 'website'))
   }, [user])
+
+  useEffect(() => {
+    setDeactivatePhrase(getRandomDeactivationPhrase(i18n.language))
+    setDeactivateInput('')
+    setDeactivateFeedback(null)
+  }, [i18n.language])
 
   if (!user) {
     return null
@@ -330,6 +393,40 @@ const ProfilePage = () => {
     }
   }
 
+  const handleRefreshDeactivatePhrase = () => {
+    setDeactivatePhrase(getRandomDeactivationPhrase(i18n.language))
+    setDeactivateInput('')
+    setDeactivateFeedback(null)
+  }
+
+  const handleDeactivateProfile = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setDeactivateFeedback(null)
+
+    if (deactivateInput.trim() !== deactivatePhrase) {
+      setDeactivateFeedback({
+        message: t('profile.deactivate.mismatch', { defaultValue: 'The confirmation sentence does not match.' }),
+        tone: 'error',
+      })
+      return
+    }
+
+    setIsDeactivating(true)
+
+    try {
+      await deactivateMe()
+      navigate(ROUTES.login, { replace: true })
+    } catch (error) {
+      const appError = normalizeApiError(error)
+      setDeactivateFeedback({
+        message: appError.message || t('profile.deactivate.requestError', { defaultValue: 'Profile deactivation failed. Please try again.' }),
+        tone: 'error',
+      })
+    } finally {
+      setIsDeactivating(false)
+    }
+  }
+
   const handleChangePassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const nextErrors = validatePasswordForm()
@@ -456,6 +553,83 @@ const ProfilePage = () => {
     </Card>
   )
 
+  const renderDeactivateCard = () => (
+    <Card>
+      <div className="rounded-[18px] border border-[color:var(--danger)]/35 bg-[color:var(--surface-soft-peach)] p-4">
+        <div className="flex items-start gap-3">
+          <span className="mt-0.5 rounded-full border border-[color:var(--danger)]/35 p-1.5 text-[color:var(--danger)]">
+            <AlertTriangle className="h-4 w-4" />
+          </span>
+          <div>
+            <p className="theme-heading text-sm font-semibold">
+              {t('profile.deactivate.title', { defaultValue: 'Deactivate profile' })}
+            </p>
+            <p className="theme-muted mt-1 text-xs">
+              {t('profile.deactivate.description', { defaultValue: 'Type the sentence exactly to confirm profile deactivation.' })}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-[14px] border border-[color:var(--danger)]/25 bg-[color:var(--surface-strong)] px-3 py-2.5">
+          <p className="theme-subtle text-[11px] uppercase tracking-[0.2em]">
+            {t('profile.deactivate.promptLabel', { defaultValue: 'Confirmation sentence' })}
+          </p>
+          <p className="theme-text mt-2 text-sm leading-6">{deactivatePhrase}</p>
+        </div>
+
+        <form className="mt-4 space-y-3" onSubmit={handleDeactivateProfile}>
+          <label className="flex w-full flex-col gap-2" htmlFor="profile-deactivate-confirmation">
+            <span className="theme-heading text-sm font-semibold">
+              {t('profile.deactivate.inputLabel', { defaultValue: 'Type the sentence above' })}
+            </span>
+            <span className="flex rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--danger)] focus-within:ring-2 focus-within:ring-[color:rgba(180,35,61,0.2)]">
+              <textarea
+                aria-invalid={deactivateFeedback?.tone === 'error'}
+                className="theme-text theme-placeholder w-full resize-none bg-transparent text-sm leading-6 outline-none"
+                id="profile-deactivate-confirmation"
+                onChange={(event) => {
+                  setDeactivateInput(event.target.value)
+                  setDeactivateFeedback(null)
+                }}
+                placeholder={t('profile.deactivate.inputPlaceholder', { defaultValue: 'Write the sentence exactly as shown.' })}
+                rows={3}
+                value={deactivateInput}
+              />
+            </span>
+          </label>
+
+          {deactivateFeedback ? (
+            <p className={`text-sm ${deactivateFeedback.tone === 'success' ? 'theme-text' : 'text-[color:var(--danger)]'}`}>
+              {deactivateFeedback.message}
+            </p>
+          ) : null}
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              className="flex-1 border-[color:var(--danger)] bg-[color:var(--danger)] text-white hover:border-[color:var(--danger)] hover:bg-[color:var(--danger)] hover:opacity-90"
+              disabled={isDeactivating || isLoggingOut || isSaving || isChangingPassword || uploadingAvatar || deactivateInput.trim() !== deactivatePhrase}
+              type="submit"
+            >
+              {isDeactivating
+                ? t('profile.deactivate.submitting', { defaultValue: 'Deactivating profile...' })
+                : t('profile.deactivate.submit', { defaultValue: 'Deactivate profile' })}
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={isDeactivating}
+              onClick={handleRefreshDeactivatePhrase}
+              type="button"
+              variant="secondary"
+            >
+              <RefreshCw className="h-4 w-4" />
+              {t('profile.deactivate.newSentence', { defaultValue: 'New sentence' })}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </Card>
+  )
+
   const displayAvatarUrl = isEditing ? (avatarUrl || user.avatarUrl) : user.avatarUrl
 
   return (
@@ -494,15 +668,15 @@ const ProfilePage = () => {
 
             <div className="mt-4 flex flex-wrap gap-2">
               {isEditing ? (
-                <Button disabled={isSaving || isLoggingOut} onClick={handleCancelEditing} variant="secondary">
+                <Button disabled={isSaving || isLoggingOut || isDeactivating} onClick={handleCancelEditing} variant="secondary">
                   {t('profile.cancelEdit')}
                 </Button>
               ) : (
-                <Button disabled={isLoggingOut || isSaving} onClick={handleStartEditing} variant="secondary">
+                <Button disabled={isLoggingOut || isSaving || isDeactivating} onClick={handleStartEditing} variant="secondary">
                   {t('profile.edit')}
                 </Button>
               )}
-              <Button disabled={isLoggingOut || isSaving} onClick={handleLogout} variant="ghost">
+              <Button disabled={isLoggingOut || isSaving || isDeactivating} onClick={handleLogout} variant="ghost">
                 <LogOut className="h-4 w-4" />
                 {isLoggingOut ? t('profile.loggingOut') : t('profile.logout')}
               </Button>
@@ -600,7 +774,7 @@ const ProfilePage = () => {
 
                 <label className="flex w-full flex-col gap-2" htmlFor="profile-biography">
                   <span className="theme-heading text-sm font-semibold">{t('profileSetup.biography')}</span>
-                  <span className="flex rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
+                  <span className="flex rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
                     <textarea
                       aria-invalid={Boolean(errors.biography)}
                       className="theme-text theme-placeholder w-full resize-none bg-transparent text-sm leading-6 outline-none"
@@ -670,6 +844,7 @@ const ProfilePage = () => {
             </Card>
 
             {renderPasswordCard()}
+            {renderDeactivateCard()}
           </div>
         ) : (
           <div className="space-y-6">
@@ -712,6 +887,7 @@ const ProfilePage = () => {
             ) : null}
 
             {renderPasswordCard()}
+            {renderDeactivateCard()}
           </div>
         )}
       </section>

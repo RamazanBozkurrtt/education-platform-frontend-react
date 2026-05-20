@@ -6,6 +6,7 @@ import type {
   AppLanguage,
   Course,
   CourseCategoryOption,
+  CourseLevelOption,
   DashboardOverview,
 } from '../utils/types'
 import { isAppError } from '../shared/errors/types'
@@ -55,13 +56,6 @@ const extractPagedItems = (value: unknown) => {
       ? payload.items
       : []
 
-  if (content.length === 0 && Object.keys(payload).length > 0) {
-    return {
-      items: [payload],
-      lastPage: true,
-    }
-  }
-
   const pageNumber = typeof payload.number === 'number' ? payload.number : undefined
   const totalPages = typeof payload.totalPages === 'number' ? payload.totalPages : undefined
   const hasLastFlag = typeof payload.last === 'boolean'
@@ -107,6 +101,24 @@ const toCategoryOption = (value: unknown): CourseCategoryOption | null => {
   }
 }
 
+const toLevelOption = (value: unknown): CourseLevelOption | null => {
+  const payload = toRecord(value)
+  const levelId = toIdentifier(payload.id ?? payload.levelId)
+  const levelNameRaw = payload.levelName ?? payload.name
+  const levelName = typeof levelNameRaw === 'string' && levelNameRaw.trim().length > 0
+    ? levelNameRaw.trim()
+    : undefined
+
+  if (!levelId || !levelName) {
+    return null
+  }
+
+  return {
+    id: levelId,
+    levelName,
+  }
+}
+
 const buildCategoryIndex = (categories: CourseCategoryOption[]) =>
   categories.reduce<Record<string, string>>((accumulator, category) => {
     accumulator[category.id] = category.categoryName
@@ -114,28 +126,46 @@ const buildCategoryIndex = (categories: CourseCategoryOption[]) =>
   }, {})
 
 const enrichCourseCategory = (course: Course, categoryIndex: Record<string, string>): Course => {
-  const categoryId = toIdentifier(course.categoryId)
+  const categoryIds = Array.isArray(course.categoryIds)
+    ? course.categoryIds.map((item) => toIdentifier(item)).filter((item): item is string => Boolean(item))
+    : []
+  const primaryCategoryId = categoryIds[0] ?? toIdentifier(course.categoryId)
 
-  if (!categoryId) {
+  if (!primaryCategoryId) {
     return course
   }
 
-  const resolvedCategoryName = categoryIndex[categoryId]
+  const normalizedCategoryIds = categoryIds.length > 0
+    ? [...new Set(categoryIds)]
+    : [primaryCategoryId]
+  const existingCategoryMap = new Map(
+    (course.categories ?? [])
+      .map((item) => {
+        const id = toIdentifier(item?.id)
+        const name = typeof item?.categoryName === 'string' ? item.categoryName.trim() : ''
+        return id && name ? [id, name] as const : null
+      })
+      .filter((item): item is readonly [string, string] => item !== null),
+  )
+  const resolvedCategories = normalizedCategoryIds.map((id, index) => ({
+    id,
+    categoryName: categoryIndex[id] ?? existingCategoryMap.get(id) ?? (index === 0 ? course.category : id),
+  }))
+  const resolvedCategoryName = resolvedCategories[0]?.categoryName ?? categoryIndex[primaryCategoryId]
 
   if (!resolvedCategoryName) {
     return course
   }
 
   const normalizedCurrentCategory = typeof course.category === 'string' ? course.category.trim() : ''
-  const shouldReplaceCategory = normalizedCurrentCategory.length === 0 || normalizedCurrentCategory === categoryId
-
-  if (!shouldReplaceCategory) {
-    return course
-  }
+  const shouldReplaceCategory = normalizedCurrentCategory.length === 0 || normalizedCurrentCategory === primaryCategoryId
 
   return {
     ...course,
-    category: resolvedCategoryName,
+    categoryIds: normalizedCategoryIds,
+    categories: resolvedCategories,
+    categoryId: primaryCategoryId,
+    category: shouldReplaceCategory ? resolvedCategoryName : course.category,
   }
 }
 
@@ -324,9 +354,15 @@ const createDashboardOverview = (courses: Course[], language: AppLanguage): Dash
     slug: 'placeholder',
     title: language === 'tr' ? 'Kayıtlı kurs bulunamadı' : 'No enrolled course available',
     imageUrl: '',
+    categoryIds: ['general'],
+    categories: [{ id: 'general', categoryName: language === 'tr' ? 'Genel' : 'General' }],
     category: language === 'tr' ? 'Genel' : 'General',
     categoryKey: 'general',
-    level: language === 'tr' ? 'Tüm seviyeler' : 'All levels',
+    levelId: 'all-levels',
+    level: {
+      id: 'all-levels',
+      levelName: language === 'tr' ? 'Tüm seviyeler' : 'All levels',
+    },
     levelKey: 'all-levels',
     duration: 'N/A',
     lessons: 0,
@@ -482,6 +518,37 @@ export const courseService = {
     }
 
     return mappedCategories
+  },
+
+  async getPublicLevels() {
+    const response = await api.get<ApiEnvelope<unknown>>(API_ENDPOINTS.courses.publicLevels, {
+      skipAuthRefresh: true,
+      skipGlobalErrorHandling: true,
+    })
+    const data = requireEnvelopeData(response.data, 'Course level response is missing data.')
+    const rawItems = Array.isArray(data)
+      ? data
+      : Array.isArray(toRecord(data).items)
+        ? toRecord(data).items as unknown[]
+        : Array.isArray(toRecord(data).content)
+          ? toRecord(data).content as unknown[]
+          : []
+
+    const seenIds = new Set<string>()
+    const mappedLevels: CourseLevelOption[] = []
+
+    for (const item of rawItems) {
+      const option = toLevelOption(item)
+
+      if (!option || seenIds.has(option.id)) {
+        continue
+      }
+
+      seenIds.add(option.id)
+      mappedLevels.push(option)
+    }
+
+    return mappedLevels
   },
 
   async createCourse(payload: CoursePayload) {

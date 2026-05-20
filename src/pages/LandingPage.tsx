@@ -16,7 +16,7 @@ import { courseService } from '../services/courseService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { buildCatalogPath, getCatalogCategories } from '../utils/catalogFilters'
 import { ROUTES } from '../utils/constants'
-import { getCourseCategoryFilterKey, getCourseCategoryLabel } from '../utils/courseCategory'
+import { getCourseCategoryFilterKeys, getCourseCategoryLabel } from '../utils/courseCategory'
 
 const parseStudentCount = (value: string) => {
   const normalized = value.trim().toLowerCase()
@@ -296,8 +296,8 @@ const LandingPage = () => {
         ? categoriesFromApi.map((category) => ({
           key: category.id,
           label: category.categoryName,
-          count: resolvedCourses.filter((course) => getCourseCategoryFilterKey(course) === category.id).length,
-          highlight: resolvedCourses.find((course) => getCourseCategoryFilterKey(course) === category.id)?.tags.slice(0, 2).join(' / ')
+          count: resolvedCourses.filter((course) => getCourseCategoryFilterKeys(course).includes(category.id)).length,
+          highlight: resolvedCourses.find((course) => getCourseCategoryFilterKeys(course).includes(category.id))?.tags.slice(0, 2).join(' / ')
             ?? copy.emptyCategoryHighlight,
         })).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
         : getCatalogCategories(resolvedCourses).map((category) => ({
@@ -341,7 +341,7 @@ const LandingPage = () => {
     id: course.id,
     title: course.title,
     summary: course.summary,
-    meta: `${course.level} | ${course.lessons} ${copy.lessonsLabel}`,
+    meta: `${course.level.levelName} | ${course.lessons} ${copy.lessonsLabel}`,
     href: buildCatalogPath({ query: course.title }),
   }))
 

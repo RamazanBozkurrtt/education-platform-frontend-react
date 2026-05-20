@@ -26,6 +26,7 @@ interface CartContextValue {
 }
 
 const CartContext = createContext<CartContextValue | undefined>(undefined)
+const normalizeCourseId = (courseId: string) => String(courseId ?? '').trim()
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { language } = useLanguage()
@@ -50,7 +51,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const parsed = JSON.parse(storedCart) as string[]
-      setCourseIds(Array.isArray(parsed) ? parsed : [])
+      const normalized = Array.isArray(parsed)
+        ? Array.from(new Set(
+          parsed
+            .map((item) => normalizeCourseId(item))
+            .filter(Boolean),
+        ))
+        : []
+      setCourseIds(normalized)
     } catch {
       setCourseIds([])
     }
@@ -83,27 +91,33 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const total = subtotal + tax
 
   const addCourse = (courseId: string) => {
+    const normalizedCourseId = normalizeCourseId(courseId)
+    if (!normalizedCourseId) {
+      return
+    }
+
     setCourseIds((currentIds) =>
-      currentIds.includes(courseId) ? currentIds : [...currentIds, courseId],
+      currentIds.includes(normalizedCourseId) ? currentIds : [...currentIds, normalizedCourseId],
     )
   }
 
   const removeCourse = (courseId: string) => {
-    setCourseIds((currentIds) => currentIds.filter((currentId) => currentId !== courseId))
+    const normalizedCourseId = normalizeCourseId(courseId)
+    setCourseIds((currentIds) => currentIds.filter((currentId) => currentId !== normalizedCourseId))
   }
 
   const clearCart = () => {
     setCourseIds([])
   }
 
-  const isInCart = (courseId: string) => courseIds.includes(courseId)
+  const isInCart = (courseId: string) => courseIds.includes(normalizeCourseId(courseId))
 
   return (
     <CartContext.Provider
       value={{
         items,
         courseIds,
-        itemCount: items.length,
+        itemCount: courseIds.length,
         subtotal,
         tax,
         total,

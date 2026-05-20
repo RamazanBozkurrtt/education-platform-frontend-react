@@ -49,11 +49,11 @@ const RegisterPage = () => {
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col">
+    <div className="mx-auto flex max-w-sm flex-col">
       <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">{t('auth.createWorkspace')}</p>
-      <h2 className="theme-heading mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{t('auth.createAccount')}</h2>
+      <h2 className="theme-heading mt-3 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">{t('auth.createAccount')}</h2>
 
-      <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+      <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
         <Input
           error={fieldErrors.name}
           icon={<UserRound className="h-4 w-4" />}

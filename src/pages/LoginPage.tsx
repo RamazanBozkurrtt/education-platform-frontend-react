@@ -74,11 +74,11 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="mx-auto flex max-w-md flex-col">
+    <div className="mx-auto flex max-w-sm flex-col">
       <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">{t('auth.welcomeBack')}</p>
-      <h2 className="theme-heading mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{t('auth.signIn')}</h2>
+      <h2 className="theme-heading mt-3 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">{t('auth.signIn')}</h2>
 
-      <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+      <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
         <Input
           error={fieldErrors.email}
           icon={<Mail className="h-4 w-4" />}
@@ -105,6 +105,11 @@ const LoginPage = () => {
           type="password"
           value={password}
         />
+        <div className="flex justify-end">
+          <Link className="theme-heading text-xs font-semibold transition hover:opacity-80" to={ROUTES.forgotPassword}>
+            {t('auth.forgotPassword.link')}
+          </Link>
+        </div>
         {formError ? (
           <div className="rounded-2xl border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
             {formError}

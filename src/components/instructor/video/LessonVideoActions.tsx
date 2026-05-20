@@ -49,7 +49,7 @@ const LessonVideoActions = ({
 
       <div className="flex flex-wrap gap-2">
         <Button
-          className="w-full sm:w-auto"
+          className="w-full border-[color:var(--border)] hover:border-[color:var(--border-strong)] sm:w-auto"
           disabled={isUploading || !hasVideo}
           onClick={onDelete}
           size="sm"

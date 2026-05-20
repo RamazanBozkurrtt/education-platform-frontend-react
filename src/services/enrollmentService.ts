@@ -2,6 +2,7 @@ import api from './api'
 import { API_ENDPOINTS } from './endpoints'
 import type { ApiEnvelope } from '../utils/types'
 import { isAppError } from '../shared/errors/types'
+import type { AxiosRequestConfig } from 'axios'
 
 export interface EnrollmentCreateRequest {
   courseId: string
@@ -29,6 +30,10 @@ export interface CustomPageResponse<T> {
 interface EnrollmentListQuery {
   pageNumber?: number
   pageSize?: number
+}
+
+interface EnrollmentRequestOptions {
+  skipGlobalErrorHandling?: boolean
 }
 
 const requireEnvelopeData = <T>(envelope: ApiEnvelope<T>, fallbackMessage: string) => {
@@ -67,12 +72,17 @@ const buildEnrollmentCreatePayload = (payload: EnrollmentCreateRequest): Enrollm
     : { courseId }
 }
 
+const toRequestConfig = (options?: EnrollmentRequestOptions): AxiosRequestConfig => ({
+  skipGlobalErrorHandling: options?.skipGlobalErrorHandling,
+})
+
 export const enrollmentService = {
-  async createEnrollment(payload: EnrollmentCreateRequest) {
+  async createEnrollment(payload: EnrollmentCreateRequest, options?: EnrollmentRequestOptions) {
     try {
       const response = await api.post<ApiEnvelope<EnrollmentResponse>>(
         API_ENDPOINTS.enrollments.create,
         buildEnrollmentCreatePayload(payload),
+        toRequestConfig(options),
       )
       return requireEnvelopeData(response.data, 'Enrollment response is missing data.')
     } catch (error) {
@@ -84,14 +94,14 @@ export const enrollmentService = {
     }
   },
 
-  async createEnrollments(courseIds: string[], userId?: number) {
+  async createEnrollments(courseIds: string[], userId?: number, options?: EnrollmentRequestOptions) {
     const uniqueCourseIds = [...new Set(courseIds.map((courseId) => courseId.trim()).filter(Boolean))]
 
     for (const courseId of uniqueCourseIds) {
       await enrollmentService.createEnrollment({
         courseId,
         userId,
-      })
+      }, options)
     }
   },
 
