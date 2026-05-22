@@ -25,7 +25,7 @@ const LessonVideoUploader = ({
         <span className="theme-heading text-xs font-semibold uppercase tracking-[0.14em]">Video dosyasi (MP4)</span>
         <input
           accept="video/mp4,.mp4"
-          className="theme-text h-11 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
+          className="theme-text h-11 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
           disabled={isUploading}
           id={inputId}
           onChange={(event) => onFileSelect(event.target.files?.[0] ?? null)}
@@ -37,11 +37,12 @@ const LessonVideoUploader = ({
 
       {selectedFile ? (
         <p className="theme-muted text-xs">
-          Secilen dosya: <span className="theme-heading font-medium">{selectedFile.name}</span>
+          Secilen dosya: <span className="theme-heading break-all font-medium">{selectedFile.name}</span>
         </p>
       ) : null}
 
       <Button
+        className="w-full sm:w-auto"
         disabled={isUploading || !selectedFile}
         onClick={onUpload}
         size="sm"

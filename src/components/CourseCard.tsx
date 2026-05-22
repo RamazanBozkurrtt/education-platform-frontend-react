@@ -1,14 +1,15 @@
 import { ArrowRight, CheckCircle2, Clock3, PlayCircle, ShoppingCart, Star, UserRound } from 'lucide-react'
 import type { SyntheticEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../hooks/useCart'
 import { useLibrary } from '../hooks/useLibrary'
+import { useLanguage } from '../hooks/useLanguage'
 import { resolveServiceUrl } from '../config/api'
 import { API_ENDPOINTS } from '../services/endpoints'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
-import { formatCurrency } from '../utils/helpers'
+import { formatCoursePrice } from '../utils/helpers'
 import type { Course } from '../utils/types'
 import Button from './ui/Button'
 import Card from './ui/Card'
@@ -21,12 +22,16 @@ interface CourseCardProps {
 
 const CourseCard = ({ course }: CourseCardProps) => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { addCourse, isInCart } = useCart()
   const { isPurchased } = useLibrary()
+  const { language } = useLanguage()
   const inCart = isInCart(course.id)
   const purchased = isPurchased(course.id)
   const fallbackImageUrl = resolveServiceUrl(API_ENDPOINTS.courses.image.public(course.id))
   const courseImageUrl = course.imageUrl || fallbackImageUrl
+  const locale = language === 'tr' ? 'tr-TR' : 'en-US'
+  const freeLabel = language === 'tr' ? 'Ücretsiz' : 'Free'
 
   const handleImageError = (event: SyntheticEvent<HTMLImageElement>) => {
     const target = event.currentTarget
@@ -39,29 +44,42 @@ const CourseCard = ({ course }: CourseCardProps) => {
     target.src = fallbackImageUrl
   }
 
+  const handleAddToCart = () => {
+    addCourse(course.id)
+    navigate(ROUTES.cart)
+  }
+
   return (
-    <Card className="flex h-full flex-col">
+    <Card className="flex h-full flex-col overflow-hidden">
       <div className="flex items-start justify-between gap-4">
         <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1 text-xs font-medium theme-muted">
           {getCourseCategoryLabel(course)}
         </span>
         <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-1 text-xs theme-muted">
-          {course.level}
+          {course.level.levelName}
         </span>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-[var(--radius-navigation)] border border-[color:var(--border)]">
+      <Link
+        aria-label={`${course.title} ${t('common.viewDetails')}`}
+        className="mt-4 block overflow-hidden rounded-[var(--radius-navigation)] border border-[color:var(--border)]"
+        to={ROUTES.courseDetail(course.slug)}
+      >
         <img
           alt={course.title}
-          className="h-44 w-full object-cover"
+          className="h-44 w-full object-cover transition-transform duration-300 hover:scale-[1.01]"
           loading="lazy"
           onError={handleImageError}
           src={courseImageUrl}
         />
-      </div>
+      </Link>
 
-      <div className="mt-4 min-h-[7rem]">
-        <h3 className="text-clamp-2 theme-heading text-xl font-semibold leading-7">{course.title}</h3>
+      <div className="mt-4 min-h-[7.25rem]">
+        <h3 className="text-clamp-2 theme-heading text-xl font-semibold leading-7">
+          <Link className="transition-colors hover:text-[color:var(--primary)]" to={ROUTES.courseDetail(course.slug)}>
+            {course.title}
+          </Link>
+        </h3>
         <p className="theme-muted mt-2 flex items-center gap-2 text-sm">
           <UserRound className="h-4 w-4 text-[color:var(--text-muted)]" />
           {course.instructor.name}
@@ -86,28 +104,30 @@ const CourseCard = ({ course }: CourseCardProps) => {
         <div className="flex items-end justify-between gap-4 border-t border-[color:var(--border)] pt-4">
           <div>
             <p className="theme-subtle text-xs">{t('common.price')}</p>
-            <p className="theme-heading mt-1 text-2xl font-semibold">{formatCurrency(course.price)}</p>
+            <p className="theme-heading mt-1 text-2xl font-semibold">
+              {formatCoursePrice(course.price, course.currency, { locale, freeLabel })}
+            </p>
           </div>
           <p className="theme-muted text-sm">{course.instructor.role}</p>
         </div>
 
-        <div className="mt-4 flex flex-col gap-2.5">
+        <div className="mt-4 grid gap-2.5 sm:grid-cols-2">
           {purchased ? (
-            <Link className="w-full" to={ROUTES.coursePlayer(course.slug)}>
+            <Link className="w-full sm:col-span-2" to={ROUTES.coursePlayer(course.slug)}>
               <Button asChild className="group/cta w-full justify-center">
                 <PlayCircle className="h-4 w-4" />
                 {t('common.watchCourse')}
               </Button>
             </Link>
           ) : inCart ? (
-            <Link className="w-full" to={ROUTES.cart}>
+            <Link className="w-full sm:col-span-2" to={ROUTES.cart}>
               <Button asChild className="group/cta w-full justify-center" variant="secondary">
                 <CheckCircle2 className="h-4 w-4 text-[color:var(--text-muted)]" />
                 {t('common.goToCart')}
               </Button>
             </Link>
           ) : (
-            <Button className="w-full justify-center" onClick={() => addCourse(course.id)} variant="secondary">
+            <Button className="w-full justify-center sm:col-span-2" onClick={handleAddToCart} variant="secondary">
               <ShoppingCart className="h-4 w-4" />
               {t('common.addToCart')}
             </Button>
@@ -125,3 +145,4 @@ const CourseCard = ({ course }: CourseCardProps) => {
 }
 
 export default CourseCard
+

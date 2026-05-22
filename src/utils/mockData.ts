@@ -30,6 +30,7 @@ type LocalizedCourse = Omit<
   | 'title'
   | 'category'
   | 'categoryKey'
+  | 'levelId'
   | 'level'
   | 'levelKey'
   | 'duration'
@@ -42,7 +43,8 @@ type LocalizedCourse = Omit<
 > & {
   title: LocalizedField<string>
   category: LocalizedField<string>
-  level: LocalizedField<string>
+  levelId: string
+  levelName: LocalizedField<string>
   duration: LocalizedField<string>
   summary: LocalizedField<string>
   description: LocalizedField<string>
@@ -104,7 +106,8 @@ const localizedCourses: LocalizedCourse[] = [
     title: localized('Product Strategy Foundations', 'Ürün Stratejisi Temelleri'),
     imageUrl: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1400&q=80',
     category: localized('Product', 'Ürün'),
-    level: localized('Intermediate', 'Orta'),
+    levelId: 'intermediate',
+    levelName: localized('Intermediate', 'Orta'),
     duration: localized('6 weeks', '6 hafta'),
     lessons: 18,
     progress: 72,
@@ -176,7 +179,8 @@ const localizedCourses: LocalizedCourse[] = [
     title: localized('Data Analytics for Growth', 'Büyüme İçin Veri Analitiği'),
     imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=1400&q=80',
     category: localized('Analytics', 'Analitik'),
-    level: localized('Advanced', 'İleri'),
+    levelId: 'advanced',
+    levelName: localized('Advanced', 'İleri'),
     duration: localized('8 weeks', '8 hafta'),
     lessons: 24,
     progress: 41,
@@ -248,7 +252,8 @@ const localizedCourses: LocalizedCourse[] = [
     title: localized('UX Systems for SaaS', 'SaaS İçin UX Sistemleri'),
     imageUrl: 'https://images.unsplash.com/photo-1518773553398-650c184e0bb3?auto=format&fit=crop&w=1400&q=80',
     category: localized('Design', 'Tasarım'),
-    level: localized('Intermediate', 'Orta'),
+    levelId: 'intermediate',
+    levelName: localized('Intermediate', 'Orta'),
     duration: localized('5 weeks', '5 hafta'),
     lessons: 15,
     progress: 58,
@@ -320,7 +325,8 @@ const localizedCourses: LocalizedCourse[] = [
     title: localized('AI Operations for Modern Teams', 'Modern Ekipler İçin Yapay Zeka Operasyonları'),
     imageUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=1400&q=80',
     category: localized('Engineering', 'Mühendislik'),
-    level: localized('Beginner', 'Başlangıç'),
+    levelId: 'beginner',
+    levelName: localized('Beginner', 'Başlangıç'),
     duration: localized('4 weeks', '4 hafta'),
     lessons: 12,
     progress: 19,
@@ -443,8 +449,12 @@ const mapCourse = (course: LocalizedCourse, language: AppLanguage): Course => ({
   title: pick(course.title, language),
   category: pick(course.category, language),
   categoryKey: toStableKey(pick(course.category, 'en')),
-  level: pick(course.level, language),
-  levelKey: toStableKey(pick(course.level, 'en')),
+  levelId: course.levelId,
+  level: {
+    id: course.levelId,
+    levelName: pick(course.levelName, language),
+  },
+  levelKey: toStableKey(pick(course.levelName, 'en')),
   duration: pick(course.duration, language),
   summary: pick(course.summary, language),
   description: pick(course.description, language),
@@ -508,7 +518,7 @@ export const searchCatalog = (filters: SearchFilters, language: AppLanguage): Se
       course.tags.some((tag) => tag.toLocaleLowerCase(language).includes(normalizedQuery))
 
     const matchesCategory = !filters.category || course.category === filters.category
-    const matchesLevel = !filters.level || course.level === filters.level
+    const matchesLevel = !filters.level || course.level.levelName === filters.level
 
     return matchesQuery && matchesCategory && matchesLevel
   })
@@ -516,7 +526,7 @@ export const searchCatalog = (filters: SearchFilters, language: AppLanguage): Se
   return {
     filters: {
       categories: [...new Set(courses.map((course) => course.category))],
-      levels: [...new Set(courses.map((course) => course.level))],
+      levels: [...new Set(courses.map((course) => course.level.levelName))],
     },
     results,
   }

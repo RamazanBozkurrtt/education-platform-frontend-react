@@ -8,6 +8,9 @@ import LandingPage from '../pages/LandingPage'
 import PublicCatalogPage from '../pages/PublicCatalogPage'
 import LoginPage from '../pages/LoginPage'
 import RegisterPage from '../pages/RegisterPage'
+import ForgotPasswordPage from '../pages/ForgotPasswordPage'
+import ResetPasswordPage from '../pages/ResetPasswordPage'
+import ReactivateAccountPage from '../pages/ReactivateAccountPage'
 import CompleteProfilePage from '../pages/CompleteProfilePage'
 import DashboardPage from '../pages/DashboardPage'
 import MyCoursesPage from '../pages/MyCoursesPage'
@@ -16,6 +19,7 @@ import CourseDetailPage from '../pages/CourseDetailPage'
 import CoursePlayerPage from '../pages/CoursePlayerPage'
 import CartPage from '../pages/CartPage'
 import PaymentPage from '../pages/PaymentPage'
+import MyPaymentsPage from '../pages/MyPaymentsPage'
 import SearchPage from '../pages/SearchPage'
 import ProfilePage from '../pages/ProfilePage'
 import BecomeInstructorPage from '../pages/BecomeInstructorPage'
@@ -35,6 +39,9 @@ const AppRouter = () => (
     <Route element={<AuthLayout />}>
       <Route path={ROUTES.login} element={<LoginPage />} />
       <Route path={ROUTES.register} element={<RegisterPage />} />
+      <Route path={ROUTES.forgotPassword} element={<ForgotPasswordPage />} />
+      <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
+      <Route path={ROUTES.reactivateAccount} element={<ReactivateAccountPage />} />
     </Route>
 
     <Route element={<ProtectedRoute />}>
@@ -50,6 +57,7 @@ const AppRouter = () => (
         <Route path={ROUTES.coursePlayer()} element={<CoursePlayerPage />} />
         <Route path={ROUTES.cart} element={<CartPage />} />
         <Route path={ROUTES.payment} element={<PaymentPage />} />
+        <Route path={ROUTES.payments} element={<MyPaymentsPage />} />
         <Route path={ROUTES.search} element={<SearchPage />} />
         <Route path={ROUTES.profile} element={<ProfilePage />} />
         <Route path={ROUTES.becomeInstructor} element={<BecomeInstructorPage />} />

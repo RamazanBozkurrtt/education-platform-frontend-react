@@ -29,7 +29,7 @@ const formatDate = (value: string, locale: string) => {
 
 const ReviewItem = ({ review, canEdit, canDelete, onEdit, onDelete, isDeleting = false }: ReviewItemProps) => {
   const { language } = useLanguage()
-  const displayName = review.userDisplayName?.trim() || 'Kullanici'
+  const displayName = review.userDisplayName?.trim() || (language === 'tr' ? 'Kullanici' : 'User')
   const initials = getInitials(displayName)
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const createdAt = formatDate(review.createdAt, locale)
@@ -37,9 +37,9 @@ const ReviewItem = ({ review, canEdit, canDelete, onEdit, onDelete, isDeleting =
   const wasUpdated = Boolean(review.updatedAt) && review.updatedAt !== review.createdAt
 
   return (
-    <article className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
+    <article className="space-y-3 px-4 py-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-3">
           {review.userProfileImageUrl ? (
             <img
               alt={displayName}
@@ -51,33 +51,36 @@ const ReviewItem = ({ review, canEdit, canDelete, onEdit, onDelete, isDeleting =
               {initials}
             </span>
           )}
-          <div>
-            <p className="theme-heading text-sm font-semibold">{displayName}</p>
+          <div className="min-w-0">
+            <p className="theme-heading truncate text-sm font-semibold">{displayName}</p>
             <p className="theme-muted text-xs">{createdAt}</p>
           </div>
         </div>
 
-        <RatingStars readOnly size="sm" value={review.rating} />
+        <div className="shrink-0 text-right">
+          <RatingStars readOnly size="sm" value={review.rating} />
+          <p className="theme-subtle mt-1 text-xs">{review.rating.toFixed(1)} / 5</p>
+        </div>
       </div>
 
-      <p className="theme-text mt-3 whitespace-pre-wrap text-sm leading-6">{review.comment}</p>
+      <p className="theme-text whitespace-pre-wrap text-sm leading-6">{review.comment}</p>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {wasUpdated ? (
-          <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] px-2.5 py-1 text-xs theme-muted">
-            Guncellendi {updatedAt}
+          <span className="rounded-sm border border-[color:var(--border)] px-2.5 py-1 text-xs theme-muted">
+            {language === 'tr' ? 'Guncellendi' : 'Updated'} {updatedAt}
           </span>
         ) : null}
 
         {canEdit ? (
           <Button onClick={() => onEdit(review)} size="sm" type="button" variant="ghost">
-            Duzenle
+            {language === 'tr' ? 'Duzenle' : 'Edit'}
           </Button>
         ) : null}
 
         {canDelete ? (
           <Button disabled={isDeleting} onClick={() => onDelete(review)} size="sm" type="button" variant="ghost">
-            Sil
+            {language === 'tr' ? 'Sil' : 'Delete'}
           </Button>
         ) : null}
       </div>

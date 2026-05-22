@@ -4,6 +4,7 @@ import { Filter, Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import CatalogCourseCard from '../components/CatalogCourseCard'
+import '../components/catalog/catalog.css'
 import PublicNavbar from '../components/navigation/PublicNavbar'
 import Input from '../components/ui/Input'
 import Loader from '../components/ui/Loader'
@@ -11,7 +12,7 @@ import QueryErrorState from '../components/ui/QueryErrorState'
 import { useLanguage } from '../hooks/useLanguage'
 import { courseService } from '../services/courseService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
-import { getCourseCategoryFilterKey } from '../utils/courseCategory'
+import { getCourseCategoryFilterKeys } from '../utils/courseCategory'
 import {
   buildCatalogPath,
   filterCatalogCourses,
@@ -30,51 +31,51 @@ const PublicCatalogPage = () => {
 
   const copy = language === 'tr'
     ? {
-      eyebrow: 'KurslarÄ± keÅŸfet',
-      title: 'Kurs kataloÄŸu',
-      description: 'Kurslari arama, kategori ve seviye filtreleriyle incele.',
+      eyebrow: 'EduBase Katalog',
+      title: 'Kurs kesfini hedef odakli yonetin',
+      description: 'Konu, seviye ve kapsam bilgisine gore kurslari karsilastirin; ekip ve bireysel ogrenme hedeflerine uygun secimi daha hizli yapin.',
       searchLabel: 'Kurs ara',
       searchPlaceholder: 'Kurs adi, beceri, egitmen veya etiket',
       filterLabel: 'Filtreler',
-      all: 'TÃ¼mÃ¼',
+      all: 'Tumu',
       categories: 'Kategoriler',
       levels: 'Seviyeler',
-      featured: 'One cikanlar',
+      featured: 'One cikan basliklar',
       clear: 'Filtreleri temizle',
-      results: 'SonuÃ§lar',
+      results: 'Sonuclar',
       resultsTitle: 'kurs bulundu',
-      resultsDescription: 'Filtrelerine uyan kurslar listeleniyor.',
-      emptyTitle: 'SonuÃ§ bulunamadÄ±',
-      emptyDescription: 'AramayÄ± deÄŸiÅŸtir veya filtreleri temizleyip yeniden dene.',
+      resultsDescription: 'Secili filtrelere uygun kurslar asagida listeleniyor.',
+      emptyTitle: 'Sonuc bulunamadi',
+      emptyDescription: 'Arama ifadesini degistirip tekrar deneyin veya filtreleri sifirlayin.',
       stats: [
         { label: 'Kategori', getValue: (count: number) => String(count) },
         { label: 'Kurs', getValue: (count: number) => String(count) },
         { label: 'Seviye', getValue: (count: number) => String(count) },
       ],
       chips: {
-        all: 'TÃ¼m kurslar',
+        all: 'Tum kurslar',
         beginner: 'Baslangic seviyesi',
         categoryPrefix: 'Kategori',
       },
       navSections: [{ id: 'course-results', label: 'Kurslar' }],
     }
     : {
-      eyebrow: 'Explore courses',
-      title: 'Course catalog',
-      description: 'Browse courses with search, category, and level filters.',
+      eyebrow: 'EduBase Catalog',
+      title: 'Run course discovery with clear structure',
+      description: 'Compare courses by topic, level, and scope to make faster decisions for individual and team learning goals.',
       searchLabel: 'Search courses',
       searchPlaceholder: 'Course title, skill, instructor, or tag',
       filterLabel: 'Filters',
       all: 'All',
       categories: 'Categories',
       levels: 'Levels',
-      featured: 'Featured',
+      featured: 'Featured topics',
       clear: 'Clear filters',
       results: 'Results',
       resultsTitle: 'courses found',
-      resultsDescription: 'Courses matching your filters are listed below.',
+      resultsDescription: 'Courses matching your selected filters are listed below.',
       emptyTitle: 'No results found',
-      emptyDescription: 'Try another search phrase or clear filters.',
+      emptyDescription: 'Try a different search phrase or reset your filters.',
       stats: [
         { label: 'Categories', getValue: (count: number) => String(count) },
         { label: 'Courses', getValue: (count: number) => String(count) },
@@ -96,6 +97,7 @@ const PublicCatalogPage = () => {
     queryKey: ['public-catalog-categories'],
     queryFn: () => courseService.getPublicCategories(),
   })
+
   const appError = error ? normalizeApiError(error) : null
   const hasRecoverablePublicError = appError?.kind === 'auth' || appError?.kind === 'forbidden'
   const resolvedCourses = courses ?? []
@@ -108,18 +110,24 @@ const PublicCatalogPage = () => {
     return categoriesFromApi.map((category) => ({
       key: category.id,
       label: category.categoryName,
-      count: resolvedCourses.filter((course) => getCourseCategoryFilterKey(course) === category.id).length,
-      highlight: resolvedCourses.find((course) => getCourseCategoryFilterKey(course) === category.id)?.tags.slice(0, 2).join(' / ')
+      count: resolvedCourses.filter((course) => getCourseCategoryFilterKeys(course).includes(category.id)).length,
+      highlight: resolvedCourses.find((course) => getCourseCategoryFilterKeys(course).includes(category.id))?.tags.slice(0, 2).join(' / ')
         ?? (language === 'tr' ? 'Kurslari incele' : 'Explore courses'),
     })).sort((left, right) => right.count - left.count || left.label.localeCompare(right.label))
   }, [categoriesFromApi, language, resolvedCourses])
+
   const levels = useMemo(() => getCatalogLevels(resolvedCourses), [resolvedCourses])
   const featuredCourses = useMemo(() => [...resolvedCourses].sort((left, right) => right.rating - left.rating).slice(0, 3), [resolvedCourses])
+
   const chips = useMemo(() => {
     const firstCategory = categories[0]
+    const beginnerLevel = levels.find((item) => {
+      const normalized = item.label.toLocaleLowerCase('tr-TR')
+      return normalized.includes('beginner') || normalized.includes('başlangıç') || normalized.includes('baslangic')
+    }) ?? levels[0]
     const nextChips: Array<{ label: string; value: { category?: string; level?: string } }> = [
       { label: copy.chips.all, value: {} },
-      { label: copy.chips.beginner, value: { level: 'beginner' } },
+      { label: copy.chips.beginner, value: beginnerLevel ? { level: beginnerLevel.key } : {} },
     ]
 
     if (firstCategory) {
@@ -130,7 +138,7 @@ const PublicCatalogPage = () => {
     }
 
     return nextChips
-  }, [categories, copy.chips.all, copy.chips.beginner, copy.chips.categoryPrefix])
+  }, [categories, copy.chips.all, copy.chips.beginner, copy.chips.categoryPrefix, levels])
 
   const filteredCourses = useMemo(
     () => filterCatalogCourses(resolvedCourses, { query: deferredQuery, category: categoryKey, level: levelKey }, language),
@@ -203,25 +211,25 @@ const PublicCatalogPage = () => {
         onAnchorClick={handleAnchorClick}
       />
 
-      <main className="relative mx-auto max-w-[1480px] px-4 pb-16 pt-8 lg:px-8 lg:pt-10">
-        <section className="grid gap-6 xl:grid-cols-[1.02fr_0.98fr]">
-          <div className="public-section-card rounded-[var(--radius-cards)] p-8 md:p-10">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[color:var(--primary)]">{copy.eyebrow}</p>
-            <h1 className="theme-heading mt-4 text-4xl font-semibold tracking-[-0.03em] md:text-5xl">{copy.title}</h1>
-            <p className="theme-muted mt-5 max-w-2xl text-sm leading-8 md:text-base">{copy.description}</p>
+      <main className="catalog-main">
+        <section className="catalog-hero">
+          <div className="catalog-hero-copy">
+            <p className="catalog-eyebrow">{copy.eyebrow}</p>
+            <h1 className="catalog-title">{copy.title}</h1>
+            <p className="catalog-description">{copy.description}</p>
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="catalog-quick-links">
               {chips.map((chip) => (
-                <Link className="public-outline-button h-11 px-4 text-sm font-semibold" key={chip.label} to={buildCatalogPath(chip.value)}>
+                <Link className="public-outline-button h-10 px-4 text-sm font-semibold" key={chip.label} to={buildCatalogPath(chip.value)}>
                   {chip.label}
                 </Link>
               ))}
             </div>
           </div>
 
-          <div className="public-section-card rounded-[var(--radius-cards)] p-7 md:p-8">
+          <div className="catalog-hero-panel">
             <Input
-              className="rounded-[var(--radius-buttons)] border-[color:var(--border)] bg-[color:var(--surface-soft)]"
+              className="catalog-search-shell"
               icon={<Search className="h-4 w-4" />}
               label={copy.searchLabel}
               onChange={(event) => {
@@ -233,37 +241,37 @@ const PublicCatalogPage = () => {
               value={query}
             />
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
-              <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-5 py-5">
-                <p className="theme-subtle text-xs uppercase tracking-[0.2em]">{copy.stats[0].label}</p>
-                <p className="theme-heading mt-2 text-3xl font-semibold tracking-[-0.04em]">{copy.stats[0].getValue(categories.length)}</p>
+            <div className="catalog-stats-strip">
+              <div className="catalog-stat">
+                <p className="catalog-stat-label">{copy.stats[0].label}</p>
+                <p className="catalog-stat-value">{copy.stats[0].getValue(categories.length)}</p>
               </div>
-              <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-5 py-5">
-                <p className="theme-subtle text-xs uppercase tracking-[0.2em]">{copy.stats[1].label}</p>
-                <p className="theme-heading mt-2 text-3xl font-semibold tracking-[-0.04em]">{copy.stats[1].getValue(resolvedCourses.length)}</p>
+              <div className="catalog-stat">
+                <p className="catalog-stat-label">{copy.stats[1].label}</p>
+                <p className="catalog-stat-value">{copy.stats[1].getValue(resolvedCourses.length)}</p>
               </div>
-              <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-5 py-5">
-                <p className="theme-subtle text-xs uppercase tracking-[0.2em]">{copy.stats[2].label}</p>
-                <p className="theme-heading mt-2 text-3xl font-semibold tracking-[-0.04em]">{copy.stats[2].getValue(levels.length)}</p>
+              <div className="catalog-stat">
+                <p className="catalog-stat-label">{copy.stats[2].label}</p>
+                <p className="catalog-stat-value">{copy.stats[2].getValue(levels.length)}</p>
               </div>
             </div>
 
-            <p className="theme-muted mt-5 text-sm leading-7">{copy.resultsDescription}</p>
+            <p className="catalog-hero-note">{copy.resultsDescription}</p>
           </div>
         </section>
 
-        <section className="mt-6 grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]" id="course-results">
-          <aside className="public-section-card h-fit rounded-[var(--radius-cards)] p-5">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-[color:var(--primary)]" />
-              <p className="theme-heading text-sm font-semibold">{copy.filterLabel}</p>
-            </div>
+        <section className="catalog-layout" id="course-results">
+          <aside className="catalog-filter-panel">
+            <p className="catalog-filter-title">
+              <Filter className="h-4 w-4" />
+              {copy.filterLabel}
+            </p>
 
-            <div className="mt-6">
-              <p className="theme-heading text-sm font-semibold">{copy.categories}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
+            <div className="catalog-filter-group">
+              <h3>{copy.categories}</h3>
+              <div className="catalog-filter-chips">
                 <button
-                  className={`rounded-[var(--radius-badges)] border px-3 py-2 text-sm transition ${categoryKey ? 'border-[color:var(--border)] bg-[color:var(--surface-soft)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]' : 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]'}`}
+                  className={`catalog-chip ${categoryKey ? '' : 'catalog-chip-active'}`}
                   onClick={() => {
                     setCategoryKey('')
                     syncFiltersToUrl({ query, category: '', level: levelKey })
@@ -275,7 +283,7 @@ const PublicCatalogPage = () => {
 
                 {categories.map((item) => (
                   <button
-                    className={`rounded-[var(--radius-badges)] border px-3 py-2 text-sm transition ${categoryKey === item.key ? 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]' : 'border-[color:var(--border)] bg-[color:var(--surface-soft)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'}`}
+                    className={`catalog-chip ${categoryKey === item.key ? 'catalog-chip-active' : ''}`}
                     key={item.key}
                     onClick={() => {
                       setCategoryKey(item.key)
@@ -289,11 +297,11 @@ const PublicCatalogPage = () => {
               </div>
             </div>
 
-            <div className="mt-6">
-              <p className="theme-heading text-sm font-semibold">{copy.levels}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
+            <div className="catalog-filter-group">
+              <h3>{copy.levels}</h3>
+              <div className="catalog-filter-chips">
                 <button
-                  className={`rounded-[var(--radius-badges)] border px-3 py-2 text-sm transition ${levelKey ? 'border-[color:var(--border)] bg-[color:var(--surface-soft)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]' : 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]'}`}
+                  className={`catalog-chip ${levelKey ? '' : 'catalog-chip-active'}`}
                   onClick={() => {
                     setLevelKey('')
                     syncFiltersToUrl({ query, category: categoryKey, level: '' })
@@ -305,7 +313,7 @@ const PublicCatalogPage = () => {
 
                 {levels.map((item) => (
                   <button
-                    className={`rounded-[var(--radius-badges)] border px-3 py-2 text-sm transition ${levelKey === item.key ? 'border-[color:var(--primary)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]' : 'border-[color:var(--border)] bg-[color:var(--surface-soft)] theme-muted hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'}`}
+                    className={`catalog-chip ${levelKey === item.key ? 'catalog-chip-active' : ''}`}
                     key={item.key}
                     onClick={() => {
                       setLevelKey(item.key)
@@ -319,12 +327,12 @@ const PublicCatalogPage = () => {
               </div>
             </div>
 
-            <div className="mt-6 border-t border-[color:var(--border)] pt-6">
-              <p className="theme-heading text-sm font-semibold">{copy.featured}</p>
-              <div className="mt-4 flex flex-wrap gap-2">
+            <div className="catalog-filter-group">
+              <h3>{copy.featured}</h3>
+              <div className="catalog-filter-chips">
                 {featuredCourses.map((course) => (
                   <button
-                    className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2 text-sm theme-muted transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]"
+                    className="catalog-chip"
                     key={course.id}
                     onClick={() => {
                       setQuery(course.title)
@@ -338,39 +346,43 @@ const PublicCatalogPage = () => {
               </div>
             </div>
 
-            <button className="public-outline-button mt-6 h-11 w-full px-4 text-sm font-semibold" onClick={() => {
-              setQuery('')
-              setCategoryKey('')
-              setLevelKey('')
-              syncFiltersToUrl({ query: '', category: '', level: '' })
-            }} type="button">
+            <button
+              className="public-outline-button h-10 px-4 text-sm font-semibold catalog-clear-button"
+              onClick={() => {
+                setQuery('')
+                setCategoryKey('')
+                setLevelKey('')
+                syncFiltersToUrl({ query: '', category: '', level: '' })
+              }}
+              type="button"
+            >
               {copy.clear}
             </button>
           </aside>
 
-          <div className="space-y-5">
-            <div className="public-section-card rounded-[var(--radius-cards)] p-6">
-              <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{copy.results}</p>
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-4">
-                <h2 className="theme-heading text-2xl font-semibold tracking-[-0.03em]">
+          <div className="catalog-results">
+            <div className="catalog-results-head">
+              <p className="catalog-results-label">{copy.results}</p>
+              <div className="catalog-results-row">
+                <h2 className="catalog-results-title">
                   {filteredCourses.length} {copy.resultsTitle}
                 </h2>
                 {(query || categoryKey || levelKey) ? (
-                  <p className="theme-muted text-sm">{copy.resultsDescription}</p>
+                  <p className="catalog-results-description">{copy.resultsDescription}</p>
                 ) : null}
               </div>
             </div>
 
             {filteredCourses.length ? (
-              <div className="grid gap-5 md:grid-cols-2">
+              <div className="catalog-course-grid">
                 {filteredCourses.map((course) => (
                   <CatalogCourseCard course={course} key={course.id} />
                 ))}
               </div>
             ) : (
-              <div className="public-section-card rounded-[var(--radius-cards)] p-8">
-                <h3 className="theme-heading text-2xl font-semibold tracking-[-0.03em]">{copy.emptyTitle}</h3>
-                <p className="theme-muted mt-4 text-sm leading-8">{copy.emptyDescription}</p>
+              <div className="catalog-empty-state">
+                <h3>{copy.emptyTitle}</h3>
+                <p>{copy.emptyDescription}</p>
               </div>
             )}
           </div>
@@ -381,5 +393,3 @@ const PublicCatalogPage = () => {
 }
 
 export default PublicCatalogPage
-
-

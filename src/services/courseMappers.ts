@@ -1,5 +1,5 @@
 import { resolveServiceUrl } from '../config/api'
-import type { Course, CourseModule } from '../utils/types'
+import type { Course, CourseLevelOption, CourseModule } from '../utils/types'
 
 export interface BackendInstructorResponse {
   fullName?: string | null
@@ -14,6 +14,11 @@ export interface BackendLessonResponse {
   description?: string | null
   duration?: string | number | null
   durationInMinutes?: number | null
+  duration_in_minutes?: number | null
+  durationMinutes?: number | null
+  durationInSeconds?: number | null
+  duration_seconds?: number | null
+  durationSeconds?: number | null
   lessonType?: string | null
   type?: string | null
   completed?: boolean | null
@@ -29,6 +34,12 @@ export interface BackendCourseCategoryResponse {
   name?: string | null
 }
 
+export interface BackendCourseLevelResponse {
+  id?: string | number | null
+  levelName?: string | null
+  name?: string | null
+}
+
 export interface BackendCourseResponse {
   id?: string | number | null
   slug?: string | null
@@ -40,9 +51,12 @@ export interface BackendCourseResponse {
   coverImageUrl?: string | null
   thumbnailUrl?: string | null
   categoryId?: string | number | null
+  categoryIds?: Array<string | number | null> | null
   category?: string | BackendCourseCategoryResponse | null
+  categories?: Array<BackendCourseCategoryResponse | string | null> | null
   categoryName?: string | null
-  level?: string | null
+  levelId?: string | number | null
+  level?: string | BackendCourseLevelResponse | null
   levelName?: string | null
   duration?: string | number | null
   lessons?: number | BackendLessonResponse[] | null
@@ -51,6 +65,8 @@ export interface BackendCourseResponse {
   studentsCount?: number | null
   rating?: number | null
   price?: number | null
+  currency?: string | null
+  currencyCode?: string | null
   progress?: number | null
   summary?: string | null
   description?: string | null
@@ -160,10 +176,20 @@ const normalizeDuration = (value: unknown) => {
   return typeof asNumber === 'number' ? `${Math.round(asNumber)} min` : 'N/A'
 }
 
-const toSeconds = (value: unknown) => {
+const toSeconds = (
+  value: unknown,
+  options?: {
+    bareNumberUnit?: 'seconds' | 'minutes'
+  },
+) => {
+  const bareNumberUnit = options?.bareNumberUnit ?? 'seconds'
   const numeric = toNumber(value)
 
   if (typeof numeric === 'number' && numeric >= 0) {
+    if (bareNumberUnit === 'minutes') {
+      return Math.round(numeric * 60)
+    }
+
     return Math.round(numeric)
   }
 
@@ -190,7 +216,92 @@ const toSeconds = (value: unknown) => {
     }
   }
 
+  const isoDurationMatch = asText.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/i)
+
+  if (isoDurationMatch) {
+    const [, hoursPart, minutesPart, secondsPart] = isoDurationMatch
+    const hours = Number(hoursPart ?? 0)
+    const minutes = Number(minutesPart ?? 0)
+    const seconds = Number(secondsPart ?? 0)
+
+    if (Number.isFinite(hours) && Number.isFinite(minutes) && Number.isFinite(seconds)) {
+      return Math.round((hours * 3600) + (minutes * 60) + seconds)
+    }
+  }
+
+  const durationUnitRegex = /(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|hour|hours|m|min|mins|minute|minutes|s|sec|secs|second|seconds)\b/gi
+  let unitMatch: RegExpExecArray | null
+  let totalSecondsFromUnits = 0
+  let hasUnitMatch = false
+
+  while ((unitMatch = durationUnitRegex.exec(asText)) !== null) {
+    const amount = Number(unitMatch[1].replace(',', '.'))
+    const unit = unitMatch[2].toLocaleLowerCase('en-US')
+
+    if (!Number.isFinite(amount)) {
+      continue
+    }
+
+    hasUnitMatch = true
+
+    if (unit.startsWith('h')) {
+      totalSecondsFromUnits += amount * 3600
+      continue
+    }
+
+    if (unit.startsWith('m')) {
+      totalSecondsFromUnits += amount * 60
+      continue
+    }
+
+    totalSecondsFromUnits += amount
+  }
+
+  if (hasUnitMatch && totalSecondsFromUnits >= 0) {
+    return Math.round(totalSecondsFromUnits)
+  }
+
   return undefined
+}
+
+const toDurationMinutes = (lesson: BackendLessonResponse & Record<string, unknown>) => {
+  const minuteCandidates = [
+    lesson.durationInMinutes,
+    lesson.duration_in_minutes,
+    lesson.durationMinutes,
+    lesson.duration_inMinutes,
+  ]
+
+  for (const candidate of minuteCandidates) {
+    const parsed = toNumber(candidate)
+
+    if (typeof parsed === 'number' && parsed >= 0) {
+      return parsed
+    }
+  }
+
+  return undefined
+}
+
+const toDurationSecondsFromLesson = (lesson: BackendLessonResponse & Record<string, unknown>) => {
+  const explicitSecondCandidates = [
+    lesson.durationInSeconds,
+    lesson.duration_seconds,
+    lesson.durationSeconds,
+    lesson.duration_in_seconds,
+  ]
+
+  for (const candidate of explicitSecondCandidates) {
+    const parsed = toNumber(candidate)
+
+    if (typeof parsed === 'number' && parsed >= 0) {
+      return Math.round(parsed)
+    }
+  }
+
+  // Backend payloads often carry lesson.duration as minutes when second-specific
+  // fields are absent. Treat bare numeric duration as minutes in this fallback.
+  return toSeconds(lesson.duration, { bareNumberUnit: 'minutes' })
 }
 
 const formatDurationFromSeconds = (seconds: number) => {
@@ -225,6 +336,68 @@ const toCourseCategory = (value: unknown): BackendCourseCategoryResponse | null 
   return value as BackendCourseCategoryResponse
 }
 
+const toCourseLevel = (value: unknown): BackendCourseLevelResponse | null => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return null
+  }
+
+  return value as BackendCourseLevelResponse
+}
+
+const toCourseCategories = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  const result: Array<{ id: string; categoryName: string }> = []
+  const seenIds = new Set<string>()
+
+  for (const item of value) {
+    if (typeof item === 'string') {
+      const name = trimToUndefined(item)
+
+      if (!name || seenIds.has(name)) {
+        continue
+      }
+
+      seenIds.add(name)
+      result.push({
+        id: name,
+        categoryName: name,
+      })
+      continue
+    }
+
+    const category = toCourseCategory(item)
+    const id = toIdentifier(category?.id)
+    const categoryName = trimToUndefined(category?.categoryName) ?? trimToUndefined(category?.name)
+
+    if (!id || !categoryName || seenIds.has(id)) {
+      continue
+    }
+
+    seenIds.add(id)
+    result.push({
+      id,
+      categoryName,
+    })
+  }
+
+  return result
+}
+
+const toIdentifierArray = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return [...new Set(
+    value
+      .map((item) => toIdentifier(item))
+      .filter((item): item is string => Boolean(item)),
+  )]
+}
+
 const extractLessonList = (course: BackendCourseResponse) => {
   const sources: unknown[] = [
     course.modules,
@@ -243,11 +416,16 @@ const extractLessonList = (course: BackendCourseResponse) => {
 }
 
 const mapLesson = (courseId: string, value: unknown, index: number): CourseModule => {
-  const lesson = toRecord(value) as BackendLessonResponse
+  const lesson = toRecord(value) as BackendLessonResponse & Record<string, unknown>
   const lessonId = toIdentifier(lesson.id) ?? `${courseId}-lesson-${index + 1}`
-  const durationInSeconds = toSeconds(lesson.duration)
-  const durationMinutes = toNumber(lesson.durationInMinutes)
-  const durationValue = typeof durationInSeconds === 'number'
+  const durationMinutes = toDurationMinutes(lesson)
+  const durationInSeconds = toDurationSecondsFromLesson(lesson)
+  const durationValue = typeof durationMinutes === 'number'
+    ? formatDurationFromSeconds(Math.round(durationMinutes * 60))
+    : typeof durationInSeconds === 'number'
+      ? formatDurationFromSeconds(durationInSeconds)
+      : normalizeDuration(lesson.duration)
+  const fallbackDurationValue = typeof durationInSeconds === 'number'
     ? formatDurationFromSeconds(durationInSeconds)
     : typeof durationMinutes === 'number'
       ? formatDurationFromSeconds(Math.round(durationMinutes * 60))
@@ -256,7 +434,7 @@ const mapLesson = (courseId: string, value: unknown, index: number): CourseModul
   return {
     id: lessonId,
     title: trimToUndefined(lesson.title) ?? `Lesson ${index + 1}`,
-    duration: durationValue,
+    duration: durationValue || fallbackDurationValue,
     type: trimToUndefined(lesson.type) ?? trimToUndefined(lesson.lessonType) ?? 'Lesson',
     completed: Boolean(lesson.completed ?? lesson.isCompleted ?? false),
     description: trimToUndefined(lesson.description),
@@ -307,18 +485,18 @@ const resolveCourseDuration = (course: BackendCourseResponse, modules: CourseMod
     }
 
     for (const rawLesson of source) {
-      const lesson = toRecord(rawLesson) as BackendLessonResponse
-      const durationInSeconds = toSeconds(lesson.duration)
-      const durationInMinutes = toNumber(lesson.durationInMinutes)
+      const lesson = toRecord(rawLesson) as BackendLessonResponse & Record<string, unknown>
+      const durationInMinutes = toDurationMinutes(lesson)
+      const durationInSeconds = toDurationSecondsFromLesson(lesson)
 
-      if (typeof durationInSeconds === 'number') {
-        totalSeconds += durationInSeconds
+      if (typeof durationInMinutes === 'number') {
+        totalSeconds += Math.round(durationInMinutes * 60)
         hasAnyDuration = true
         continue
       }
 
-      if (typeof durationInMinutes === 'number') {
-        totalSeconds += Math.round(durationInMinutes * 60)
+      if (typeof durationInSeconds === 'number') {
+        totalSeconds += durationInSeconds
         hasAnyDuration = true
       }
     }
@@ -347,14 +525,45 @@ export const mapBackendCourseToCourse = (value: unknown): Course => {
   const id = toIdentifier(course.id) ?? crypto.randomUUID()
   const lessons = extractLessonList(course).map((lesson, index) => mapLesson(id, lesson, index))
   const categoryObject = toCourseCategory(course.category)
-  const categoryId = toIdentifier(course.categoryId) ?? toIdentifier(categoryObject?.id)
-  const category = trimToUndefined(categoryObject?.categoryName)
+  const legacyCategoryId = toIdentifier(course.categoryId) ?? toIdentifier(categoryObject?.id)
+  const categoryIdsFromResponse = toIdentifierArray(course.categoryIds)
+  const categoriesFromResponse = toCourseCategories(course.categories)
+  const categoryIds = [...new Set([
+    ...categoryIdsFromResponse,
+    ...categoriesFromResponse.map((item) => item.id),
+    ...(legacyCategoryId ? [legacyCategoryId] : []),
+  ])]
+  const categoryId = categoryIds[0] ?? legacyCategoryId
+  const category = trimToUndefined(categoriesFromResponse[0]?.categoryName)
+    ?? trimToUndefined(categoryObject?.categoryName)
     ?? trimToUndefined(categoryObject?.name)
     ?? trimToUndefined(typeof course.category === 'string' ? course.category : undefined)
     ?? trimToUndefined(course.categoryName)
     ?? categoryId
     ?? 'General'
-  const level = trimToUndefined(course.level) ?? trimToUndefined(course.levelName) ?? 'All levels'
+  const categories = categoryIds
+    .map((itemId, index) => {
+      const matchedCategory = categoriesFromResponse.find((item) => item.id === itemId)
+      const resolvedName = matchedCategory?.categoryName ?? (index === 0 ? category : itemId)
+      return resolvedName
+        ? {
+          id: itemId,
+          categoryName: resolvedName,
+        }
+        : null
+    })
+    .filter((item): item is { id: string; categoryName: string } => item !== null)
+  const levelObject = toCourseLevel(course.level)
+  const levelId = toIdentifier(course.levelId) ?? toIdentifier(levelObject?.id)
+  const levelName = trimToUndefined(levelObject?.levelName)
+    ?? trimToUndefined(levelObject?.name)
+    ?? trimToUndefined(typeof course.level === 'string' ? course.level : undefined)
+    ?? trimToUndefined(course.levelName)
+    ?? 'All levels'
+  const resolvedLevel: CourseLevelOption = {
+    id: levelId ?? (slugify(levelName) || 'all-levels'),
+    levelName,
+  }
   const normalizedDescription = trimToUndefined(course.description)
   const normalizedSummary = trimToUndefined(course.summary)
   const title = trimToUndefined(course.title) ?? 'Untitled Course'
@@ -372,11 +581,14 @@ export const mapBackendCourseToCourse = (value: unknown): Course => {
     slug: toIdentifier(course.slug) ?? id,
     title,
     imageUrl: toAbsoluteMediaUrl(normalizedImageUrl ?? `/api/v1/courses/public/${id}/image`),
+    categoryIds,
+    categories,
     categoryId,
     category,
     categoryKey: slugify(category) || 'general',
-    level,
-    levelKey: slugify(level) || 'all-levels',
+    levelId: levelId ?? resolvedLevel.id,
+    level: resolvedLevel,
+    levelKey: slugify(levelName) || 'all-levels',
     duration: resolveCourseDuration(course, lessons),
     lessons: resolveLessonsCount(course, lessons),
     progress: Math.max(0, Math.min(100, Math.round(toNumber(course.progress) ?? 0))),
@@ -384,12 +596,15 @@ export const mapBackendCourseToCourse = (value: unknown): Course => {
       ? formatLearnerCount(studentCount)
       : trimToUndefined(course.students) ?? '0',
     rating: Math.max(0, Math.min(5, toNumber(course.rating) ?? 0)),
-    price: Math.max(0, Math.round(toNumber(course.price) ?? 0)),
+    price: Math.max(0, toNumber(course.price) ?? 0),
+    currency: trimToUndefined(course.currency)?.toUpperCase()
+      ?? trimToUndefined(course.currencyCode)?.toUpperCase()
+      ?? 'TRY',
     accent: getAccent(id),
     summary: normalizedSummary ?? normalizedDescription ?? title,
     description: normalizedDescription ?? normalizedSummary ?? title,
     outcomes: toStringArray(course.outcomes),
-    tags: tags.length > 0 ? tags : [category, level],
+    tags: tags.length > 0 ? tags : [category, levelName],
     modules: lessons.sort((left, right) => (left.order ?? 0) - (right.order ?? 0)),
     instructor: resolveInstructor(course),
   }

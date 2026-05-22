@@ -15,7 +15,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {label ? <span className="theme-heading text-sm font-semibold">{label}</span> : null}
         <span
           className={cn(
-            'group flex h-12 items-center gap-3 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 transition-colors focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]',
+            'group app-input-shell flex h-12 items-center gap-3 rounded-[var(--radius-navigation)] border px-4 transition-[background-color,border-color,box-shadow] duration-200 focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]',
             error && 'border-[color:var(--danger)] focus-within:border-[color:var(--danger)] focus-within:ring-[color:rgba(138,47,63,0.2)]',
             className,
           )}

@@ -1,18 +1,18 @@
-﻿import { useEffect } from 'react'
+import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, CirclePlay, GraduationCap, LayoutDashboard, UserRoundCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import ActivityList from '../components/dashboard/ActivityList'
+import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
+import DashboardSection from '../components/dashboard/DashboardSection'
+import MetricTile from '../components/dashboard/MetricTile'
+import StatusBadge from '../components/dashboard/StatusBadge'
 import InstructorCtaCard from '../components/instructor/InstructorCtaCard'
-import PageHeader from '../components/PageHeader'
-import StatCard from '../components/StatCard'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
-import InfoBadge from '../components/ui/InfoBadge'
 import Loader from '../components/ui/Loader'
 import MetaRow from '../components/ui/MetaRow'
 import QueryErrorState from '../components/ui/QueryErrorState'
-import SectionHeader from '../components/ui/SectionHeader'
 import TagList from '../components/ui/TagList'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../hooks/useLanguage'
@@ -48,9 +48,25 @@ const DashboardPage = () => {
     return <Loader label={t('loader.dashboardMetrics')} />
   }
 
+  const getMetricTone = (tone: 'cyan' | 'emerald' | 'amber' | 'indigo') => {
+    if (tone === 'emerald') {
+      return 'success'
+    }
+
+    if (tone === 'amber') {
+      return 'warning'
+    }
+
+    if (tone === 'indigo') {
+      return 'neutral'
+    }
+
+    return 'primary'
+  }
+
   return (
-    <div className="space-y-[var(--section-gap)]">
-      <PageHeader
+    <div className="space-y-8">
+      <DashboardPageHeader
         actions={
           <>
             <Link to={ROUTES.courses}>
@@ -93,92 +109,85 @@ const DashboardPage = () => {
         title={t('dashboard.title')}
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-2">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {data.metrics.map((metric) => (
-          <StatCard key={metric.label} {...metric} />
+          <MetricTile
+            hint={language === 'tr' ? `Tamamlanma ${Math.round(metric.progress)}%` : `${Math.round(metric.progress)}% completed`}
+            key={metric.label}
+            label={metric.label}
+            progress={metric.progress}
+            tone={getMetricTone(metric.tone)}
+            value={metric.value}
+          />
         ))}
       </section>
 
       <InstructorCtaCard isInstructor={isCurrentUserInstructor} />
 
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
-        <Card>
-          <SectionHeader
-            description={data.focusCourse.description}
-            title={data.focusCourse.title}
-          />
-
-          <MetaRow
-            className="mt-4"
-            items={[
-              { key: 'progress', label: t('dashboard.progress'), value: `${data.focusCourse.progress}%` },
-              { key: 'lessons', label: t('courseDetail.lessons'), value: String(data.focusCourse.lessons) },
-              { key: 'duration', label: t('courseDetail.duration'), value: data.focusCourse.duration },
-              { key: 'category', label: language === 'tr' ? 'Kategori' : 'Category', value: getCourseCategoryLabel(data.focusCourse) },
-            ]}
-          />
-
-          <div className="mt-4 border-t border-[color:var(--border)] pt-4">
-            <TagList hideWhenEmpty label={language === 'tr' ? 'Etiketler' : 'Tags'} tags={data.focusCourse.tags} />
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {data.focusCourse.modules.map((module, index) => (
-              <div
-                key={module.id}
-                className="flex items-center justify-between gap-4 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="theme-heading flex h-9 w-9 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-xs font-semibold">
-                    {String(index + 1).padStart(2, '0')}
-                  </div>
-                  <div>
-                    <p className="theme-heading font-medium">{module.title}</p>
-                    <p className="theme-muted mt-1 text-xs">
-                      {module.type} · {module.duration}
-                    </p>
-                  </div>
-                </div>
-                <CirclePlay className="theme-subtle h-5 w-5" />
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <div className="space-y-4">
-          <Card>
-            <SectionHeader title={t('dashboard.upcomingMilestones')} />
-            <div className="mt-4 space-y-3">
-              {data.upcomingMilestones.map((milestone) => (
-                <div key={milestone.id} className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="theme-heading text-sm font-medium">{milestone.label}</p>
-                    <InfoBadge>{milestone.status}</InfoBadge>
-                  </div>
-                  <p className="theme-muted mt-2 text-xs">{milestone.due}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeader
-              description={t('dashboard.recentActivityDescription')}
-              title={t('dashboard.recentActivity')}
+      <section className="grid gap-7 xl:grid-cols-[1.35fr_0.95fr]">
+        <DashboardSection
+          description={data.focusCourse.description}
+          title={data.focusCourse.title}
+        >
+          <div className="space-y-5">
+            <MetaRow
+              items={[
+                { key: 'progress', label: t('dashboard.progress'), value: `${data.focusCourse.progress}%` },
+                { key: 'lessons', label: t('courseDetail.lessons'), value: String(data.focusCourse.lessons) },
+                { key: 'duration', label: t('courseDetail.duration'), value: data.focusCourse.duration },
+                { key: 'category', label: language === 'tr' ? 'Kategori' : 'Category', value: getCourseCategoryLabel(data.focusCourse) },
+              ]}
             />
-            <div className="mt-4 space-y-3">
-              {data.recentActivity.map((activity) => (
-                <div key={activity.id} className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="theme-heading text-sm font-medium">{activity.title}</p>
-                    <InfoBadge>{activity.tag}</InfoBadge>
-                  </div>
-                  <p className="theme-muted mt-2 text-sm">{activity.description}</p>
-                  <p className="theme-subtle mt-2 text-xs">{activity.time}</p>
-                </div>
-              ))}
+
+            <div className="border-t border-[color:var(--border)] pt-4">
+              <TagList hideWhenEmpty label={language === 'tr' ? 'Etiketler' : 'Tags'} tags={data.focusCourse.tags} />
             </div>
-          </Card>
+
+            <div className="overflow-hidden rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
+              <ul className="divide-y divide-[color:var(--border)]">
+                {data.focusCourse.modules.map((module, index) => (
+                  <li className="flex items-center justify-between gap-4 px-4 py-3.5" key={module.id}>
+                    <div className="flex min-w-0 items-center gap-3">
+                      <span className="theme-subtle w-7 text-xs font-semibold">{String(index + 1).padStart(2, '0')}</span>
+                      <div className="min-w-0">
+                        <p className="theme-heading truncate text-sm font-medium">{module.title}</p>
+                        <p className="theme-muted mt-0.5 text-xs">{module.type} · {module.duration}</p>
+                      </div>
+                    </div>
+                    <CirclePlay className="theme-subtle h-4 w-4 shrink-0" />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </DashboardSection>
+
+        <div className="space-y-7">
+          <DashboardSection title={t('dashboard.upcomingMilestones')}>
+            <ActivityList
+              items={data.upcomingMilestones.map((milestone) => ({
+                id: milestone.id,
+                title: milestone.label,
+                meta: milestone.due,
+                badge: <StatusBadge>{milestone.status}</StatusBadge>,
+              }))}
+            />
+          </DashboardSection>
+
+          <DashboardSection
+            description={t('dashboard.recentActivityDescription')}
+            title={t('dashboard.recentActivity')}
+          >
+            <ActivityList
+              items={data.recentActivity.map((activity) => ({
+                id: activity.id,
+                title: activity.title,
+                description: activity.description,
+                meta: activity.time,
+                badge: <StatusBadge>{activity.tag}</StatusBadge>,
+              }))}
+            />
+          </DashboardSection>
         </div>
       </section>
     </div>
@@ -186,4 +195,5 @@ const DashboardPage = () => {
 }
 
 export default DashboardPage
+
 

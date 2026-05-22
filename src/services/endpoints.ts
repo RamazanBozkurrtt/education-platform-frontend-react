@@ -2,15 +2,19 @@ export const API_ENDPOINTS = {
   auth: {
     login: '/api/v1/auth/login',
     register: '/api/v1/auth/register',
+    forgotPassword: '/api/v1/auth/forgot-password',
+    resetPassword: '/api/v1/auth/reset-password',
     refreshToken: '/api/v1/auth/refresh-token',
     logout: '/api/v1/auth/logout',
     changePassword: '/api/v1/auth/change-password',
     me: '/api/v1/auth/me',
     reactivateAccount: '/api/v1/auth/reactivate-account',
+    requestReactivation: '/api/v1/auth/reactivate-account/request',
   },
   courses: {
     publicList: '/api/v1/courses/public',
     publicCategories: '/api/v1/courses/public/categories',
+    publicLevels: '/api/v1/courses/public/levels',
     publicDetail: (courseId: string) => `/api/v1/courses/public/${courseId}`,
     authorizedDetail: (courseId: string) => `/api/v1/courses/${courseId}`,
     listForAdmin: '/api/v1/courses',
@@ -37,6 +41,13 @@ export const API_ENDPOINTS = {
     me: '/api/v1/enrollments/me',
     byId: (enrollmentId: number | string) => `/api/v1/enrollments/${enrollmentId}`,
     byCourse: (courseId: string) => `/api/v1/enrollments/by-course/${courseId}`,
+  },
+  payments: {
+    create: '/api/v1/payments',
+    me: '/api/v1/payments/me',
+    byId: (paymentId: string) => `/api/v1/payments/${paymentId}`,
+    confirm: (paymentId: string) => `/api/v1/payments/${paymentId}/confirm`,
+    invoice: (paymentId: string) => `/api/v1/payments/${paymentId}/invoice`,
   },
   users: {
     me: '/api/v1/users/me',

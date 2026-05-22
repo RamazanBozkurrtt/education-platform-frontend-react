@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import Button from '../ui/Button'
 import RatingStars from './RatingStars'
+import { useLanguage } from '../../hooks/useLanguage'
 import type { CreateReviewRequest, UpdateReviewRequest } from '../../utils/types'
 
 interface ReviewFormProps {
@@ -28,6 +29,7 @@ const ReviewForm = ({
   isSubmitting = false,
   submitError,
 }: ReviewFormProps) => {
+  const { language } = useLanguage()
   const [rating, setRating] = useState(initialValue?.rating ?? 0)
   const [comment, setComment] = useState(initialValue?.comment ?? '')
   const [errors, setErrors] = useState<FormErrors>({})
@@ -40,27 +42,33 @@ const ReviewForm = ({
 
   const submitLabel = useMemo(() => {
     if (isSubmitting) {
-      return mode === 'create' ? 'Gonderiliyor...' : 'Guncelleniyor...'
+      return mode === 'create'
+        ? (language === 'tr' ? 'Gonderiliyor...' : 'Submitting...')
+        : (language === 'tr' ? 'Guncelleniyor...' : 'Updating...')
     }
 
-    return mode === 'create' ? 'Degerlendirme gonder' : 'Degerlendirmeyi guncelle'
-  }, [isSubmitting, mode])
+    return mode === 'create'
+      ? (language === 'tr' ? 'Degerlendirme gonder' : 'Submit review')
+      : (language === 'tr' ? 'Degerlendirmeyi guncelle' : 'Update review')
+  }, [isSubmitting, language, mode])
 
   const validate = () => {
     const nextErrors: FormErrors = {}
 
     if (!Number.isFinite(rating) || rating < 1 || rating > 5) {
-      nextErrors.rating = 'Puan 1 ile 5 arasinda olmali.'
+      nextErrors.rating = language === 'tr' ? 'Puan 1 ile 5 arasinda olmali.' : 'Rating must be between 1 and 5.'
     }
 
     const trimmedComment = comment.trim()
 
     if (!trimmedComment) {
-      nextErrors.comment = 'Yorum bos olamaz.'
+      nextErrors.comment = language === 'tr' ? 'Yorum bos olamaz.' : 'Comment cannot be empty.'
     } else if (trimmedComment.length < 5) {
-      nextErrors.comment = 'Yorum en az 5 karakter olmali.'
+      nextErrors.comment = language === 'tr' ? 'Yorum en az 5 karakter olmali.' : 'Comment must be at least 5 characters.'
     } else if (trimmedComment.length > MAX_COMMENT_LENGTH) {
-      nextErrors.comment = `Yorum en fazla ${MAX_COMMENT_LENGTH} karakter olabilir.`
+      nextErrors.comment = language === 'tr'
+        ? `Yorum en fazla ${MAX_COMMENT_LENGTH} karakter olabilir.`
+        : `Comment must be at most ${MAX_COMMENT_LENGTH} characters.`
     }
 
     return nextErrors
@@ -82,7 +90,7 @@ const ReviewForm = ({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div>
-        <p className="theme-heading text-sm font-semibold">Puanin</p>
+        <p className="theme-heading text-sm font-semibold">{language === 'tr' ? 'Puanin' : 'Your rating'}</p>
         <RatingStars
           className="mt-1"
           onChange={(nextRating) => {
@@ -97,16 +105,16 @@ const ReviewForm = ({
       </div>
 
       <label className="flex flex-col gap-2" htmlFor="review-comment">
-        <span className="theme-heading text-sm font-semibold">Yorum</span>
+        <span className="theme-heading text-sm font-semibold">{language === 'tr' ? 'Yorum' : 'Comment'}</span>
         <textarea
-          className="theme-text theme-placeholder min-h-28 w-full rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 text-sm outline-none transition focus:border-[color:var(--primary)] focus:ring-2 focus:ring-[color:var(--focus-ring)]"
+          className="theme-text theme-placeholder min-h-28 w-full rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm outline-none transition focus:border-[color:var(--primary)] focus:ring-2 focus:ring-[color:var(--focus-ring)]"
           id="review-comment"
           maxLength={MAX_COMMENT_LENGTH}
           onChange={(event) => {
             setComment(event.target.value)
             setErrors((current) => ({ ...current, comment: undefined }))
           }}
-          placeholder="Deneyimini kisa ve net sekilde yaz"
+          placeholder={language === 'tr' ? 'Deneyimini kisa ve net sekilde yaz' : 'Share your experience briefly and clearly'}
           value={comment}
         />
         <div className="flex items-center justify-between gap-4">
@@ -116,7 +124,7 @@ const ReviewForm = ({
       </label>
 
       {submitError ? (
-        <div className="rounded-[var(--radius-cards)] border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
+        <div className="rounded-sm border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
           {submitError}
         </div>
       ) : null}

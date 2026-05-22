@@ -1,14 +1,16 @@
-﻿import { useMemo } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, CirclePlay, PlusCircle, UserRound } from 'lucide-react'
+import { CirclePlay, PlusCircle, UserRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import PageHeader from '../components/PageHeader'
+import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
+import DashboardSection from '../components/dashboard/DashboardSection'
+import EmptyState from '../components/dashboard/EmptyState'
+import MetricTile from '../components/dashboard/MetricTile'
+import StatusBadge from '../components/dashboard/StatusBadge'
+import TableShell from '../components/dashboard/TableShell'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
-import InfoBadge from '../components/ui/InfoBadge'
 import Loader from '../components/ui/Loader'
 import QueryErrorState from '../components/ui/QueryErrorState'
-import SectionHeader from '../components/ui/SectionHeader'
 import { useLanguage } from '../hooks/useLanguage'
 import { courseService } from '../services/courseService'
 import { ROUTES } from '../utils/constants'
@@ -18,35 +20,56 @@ const InstructorDashboardPage = () => {
   const { language } = useLanguage()
   const copy = language === 'tr'
     ? {
-      eyebrow: 'Eğitmen paneli',
-      title: 'Kurslarini yonet',
-      description: 'Kurs olusturma, ders/video yonetimi ve profil guncelleme adimlarini buradan yonetebilirsin.',
-      myCourses: 'Kurslarim',
+      eyebrow: 'Egitmen paneli',
+      title: 'Kurs yonetimi',
+      description: 'Kurslarini, ders planini ve video yukleme surecini bu sayfadan yonet.',
+      myCourses: 'Kurslar',
       newCourse: 'Yeni kurs',
       profile: 'Profil',
       totalCourses: 'Toplam kurs',
-      publishedCourses: 'Yayındaki kurs',
+      publishedCourses: 'Yayindaki kurs',
       totalLessons: 'Toplam ders',
-      totalStudents: 'Öğrenci',
+      totalStudents: 'Ogrenci',
       noCourse: 'Henuz kurs olusturmadin.',
-      noCourseHint: 'Ilk kursunu olusturarak egitmen panelini kullanmaya baslayabilirsin.',
+      noCourseHint: 'Ilk kursunu olusturarak paneldeki yonetim alanlarini aktif hale getirebilirsin.',
       goToCourseCreate: 'Ilk kursunu olustur',
       addVideo: 'Yonet',
+      tableCourse: 'Kurs',
+      tableCategory: 'Kategori',
+      tableLevel: 'Seviye',
+      tableLessons: 'Ders',
+      tableStudents: 'Ogrenci',
+      tableStatus: 'Durum',
+      tableActions: 'Islem',
+      statusPublished: 'Yayinda',
+      statusDraft: 'Taslak',
+      panelHint: 'Ders/video yonetimi icin ilgili kursu acip icerik ekranina gecebilirsin.',
     }
     : {
       eyebrow: 'Instructor panel',
-      title: 'Manage your courses',
-      description: 'Create courses, upload lesson videos, and keep your instructor profile updated.',
-      myCourses: 'Your courses',
+      title: 'Course operations',
+      description: 'Manage course delivery, lesson plans, and video uploads from one place.',
+      myCourses: 'Courses',
       newCourse: 'New course',
       profile: 'Profile',
       totalCourses: 'Total courses',
       publishedCourses: 'Published courses',
       totalLessons: 'Total lessons',
       totalStudents: 'Learners',
-      noCourse: 'You have not created any courses yet.',
+      noCourse: 'No courses yet.',
+      noCourseHint: 'Create your first course to unlock course management and lesson workflows.',
       goToCourseCreate: 'Create first course',
       addVideo: 'Manage',
+      tableCourse: 'Course',
+      tableCategory: 'Category',
+      tableLevel: 'Level',
+      tableLessons: 'Lessons',
+      tableStudents: 'Learners',
+      tableStatus: 'Status',
+      tableActions: 'Action',
+      statusPublished: 'Published',
+      statusDraft: 'Draft',
+      panelHint: 'Open a course to manage lessons and upload video content.',
     }
 
   const { data: courses, error, isLoading } = useQuery({
@@ -71,10 +94,10 @@ const InstructorDashboardPage = () => {
     }, 0)
 
     return [
-      { label: copy.totalCourses, value: totalCourses.toString() },
-      { label: copy.publishedCourses, value: publishedCourses.toString() },
-      { label: copy.totalLessons, value: totalLessons.toString() },
-      { label: copy.totalStudents, value: Math.round(totalStudents).toLocaleString('en-US') },
+      { label: copy.totalCourses, value: totalCourses.toString(), tone: 'neutral' as const },
+      { label: copy.publishedCourses, value: publishedCourses.toString(), tone: 'success' as const },
+      { label: copy.totalLessons, value: totalLessons.toString(), tone: 'primary' as const },
+      { label: copy.totalStudents, value: Math.round(totalStudents).toLocaleString('en-US'), tone: 'warning' as const },
     ]
   }, [copy.publishedCourses, copy.totalCourses, copy.totalLessons, copy.totalStudents, courses])
 
@@ -83,12 +106,12 @@ const InstructorDashboardPage = () => {
   }
 
   if (isLoading || !courses) {
-    return <Loader label={language === 'tr' ? 'Eğitmen paneli yükleniyor...' : 'Loading instructor dashboard...'} />
+    return <Loader label={language === 'tr' ? 'Egitmen paneli yukleniyor...' : 'Loading instructor dashboard...'} />
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <div className="space-y-8">
+      <DashboardPageHeader
         actions={
           <>
             <Link to={ROUTES.instructorNewCourse}>
@@ -110,63 +133,74 @@ const InstructorDashboardPage = () => {
         title={copy.title}
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => (
-          <Card key={stat.label}>
-            <p className="theme-muted text-sm">{stat.label}</p>
-            <p className="theme-heading mt-1 text-2xl font-semibold">{stat.value}</p>
-          </Card>
+          <MetricTile key={stat.label} label={stat.label} tone={stat.tone} value={stat.value} />
         ))}
       </section>
 
-      <Card>
-        <SectionHeader title={copy.myCourses} />
-
+      <DashboardSection title={copy.myCourses}>
         {courses.length === 0 ? (
-          <div className="mt-4 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
-            <p className="theme-heading text-sm font-semibold">{copy.noCourse}</p>
-            <p className="theme-muted mt-2 text-sm">{copy.noCourseHint}</p>
-            <Link className="mt-3 inline-flex" to={ROUTES.instructorNewCourse}>
-              <Button asChild>{copy.goToCourseCreate}</Button>
-            </Link>
-          </div>
+          <EmptyState
+            action={(
+              <Link className="inline-flex" to={ROUTES.instructorNewCourse}>
+                <Button asChild>{copy.goToCourseCreate}</Button>
+              </Link>
+            )}
+            description={copy.noCourseHint}
+            title={copy.noCourse}
+          />
         ) : (
-          <div className="mt-4 space-y-3">
-            {courses.slice(0, 6).map((course) => (
-              <div key={course.id} className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="theme-heading font-medium">{course.title}</p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <InfoBadge>{getCourseCategoryLabel(course)}</InfoBadge>
-                      <InfoBadge>{course.level}</InfoBadge>
-                    </div>
-                  </div>
-                  <Link to={ROUTES.instructorNewCourseVideo(course.id)}>
-                    <Button size="sm" variant="secondary">
-                      <CirclePlay className="h-4 w-4" />
-                      {copy.addVideo}
-                    </Button>
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
+          <TableShell>
+            <table className="min-w-[780px] w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-[color:var(--border)] bg-[color:var(--surface-soft)] text-left">
+                  <th className="theme-subtle px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em]">{copy.tableCourse}</th>
+                  <th className="theme-subtle px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em]">{copy.tableCategory}</th>
+                  <th className="theme-subtle px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em]">{copy.tableLevel}</th>
+                  <th className="theme-subtle px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em]">{copy.tableLessons}</th>
+                  <th className="theme-subtle px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em]">{copy.tableStudents}</th>
+                  <th className="theme-subtle px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em]">{copy.tableStatus}</th>
+                  <th className="theme-subtle px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em]">{copy.tableActions}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {courses.slice(0, 6).map((course) => (
+                  <tr className="border-b border-[color:var(--border)] last:border-b-0" key={course.id}>
+                    <td className="px-4 py-3.5">
+                      <p className="theme-heading font-medium">{course.title}</p>
+                    </td>
+                    <td className="theme-muted px-4 py-3.5">{getCourseCategoryLabel(course)}</td>
+                    <td className="theme-muted px-4 py-3.5">{course.level.levelName}</td>
+                    <td className="theme-muted px-4 py-3.5">{course.lessons}</td>
+                    <td className="theme-muted px-4 py-3.5">{course.students}</td>
+                    <td className="px-4 py-3.5">
+                      <StatusBadge tone={course.progress > 0 ? 'success' : 'default'}>
+                        {course.progress > 0 ? copy.statusPublished : copy.statusDraft}
+                      </StatusBadge>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <Link to={ROUTES.instructorNewCourseVideo(course.id)}>
+                        <Button size="sm" variant="secondary">
+                          <CirclePlay className="h-4 w-4" />
+                          {copy.addVideo}
+                        </Button>
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableShell>
         )}
-      </Card>
+      </DashboardSection>
 
-      <Card>
-        <div className="flex items-center gap-3">
-          <BookOpen className="h-5 w-5 text-[color:var(--primary)]" />
-          <p className="theme-muted text-sm">
-            {language === 'tr'
-              ? 'Ders/video yonetimi icin kurs secip ilgili kurs ekranina gec.'
-              : 'Choose a course and open its management page to upload videos.'}
-          </p>
-        </div>
-      </Card>
+      <div className="border-t border-[color:var(--border)] pt-4">
+        <p className="theme-muted text-sm">{copy.panelHint}</p>
+      </div>
     </div>
   )
 }
 
 export default InstructorDashboardPage
+

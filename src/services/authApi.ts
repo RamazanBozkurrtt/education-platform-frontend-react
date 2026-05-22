@@ -5,7 +5,10 @@ import type {
   ApiEnvelope,
   AuthPayload,
   ChangePasswordPayload,
+  ForgotPasswordPayload,
   LoginSuccessData,
+  ReactivationRequestPayload,
+  ResetPasswordPayload,
   RegisteredUserData,
 } from '../utils/types'
 
@@ -56,6 +59,36 @@ export const authApi = {
     return requireEnvelopeData(response.data, 'Refresh token response is missing authentication data.')
   },
 
+  async forgotPassword(payload: ForgotPasswordPayload) {
+    const response = await authClient.post<ApiEnvelope<unknown>>(API_ENDPOINTS.auth.forgotPassword, payload)
+    return response.data.message || 'If an account exists with this email, we sent a password reset link.'
+  },
+
+  async requestReactivation(payload: ReactivationRequestPayload) {
+    const response = await authClient.post<ApiEnvelope<unknown>>(API_ENDPOINTS.auth.requestReactivation, payload)
+    const envelope = response.data
+    const data = envelope.data
+
+    if (typeof data === 'string' && data.trim()) {
+      return data.trim()
+    }
+
+    if (data && typeof data === 'object' && 'message' in data) {
+      const nestedMessage = (data as { message?: unknown }).message
+
+      if (typeof nestedMessage === 'string' && nestedMessage.trim()) {
+        return nestedMessage.trim()
+      }
+    }
+
+    return envelope.message || 'If an account exists and is eligible for reactivation, a reactivation link has been sent.'
+  },
+
+  async resetPassword(payload: ResetPasswordPayload) {
+    const response = await authClient.post<ApiEnvelope<unknown>>(API_ENDPOINTS.auth.resetPassword, payload)
+    return response.data.message || 'Your password has been reset successfully.'
+  },
+
   async logout(accessToken: string) {
     const headers = createNoAuthHeaders()
     headers.set('Authorization', `Bearer ${accessToken}`)
@@ -83,6 +116,12 @@ export const authApi = {
       params: { token },
     })
 
-    return response.data.data
+    const data = response.data.data
+
+    if (typeof data === 'string' && data.trim()) {
+      return data.trim()
+    }
+
+    return response.data.message || 'Your account has been reactivated. You can sign in now.'
   },
 }

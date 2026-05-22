@@ -72,7 +72,7 @@ const InstructorProfilePage = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <PageHeader description={copy.description} eyebrow={copy.eyebrow} title={copy.title} />
       <Card>
         <InstructorProfileForm

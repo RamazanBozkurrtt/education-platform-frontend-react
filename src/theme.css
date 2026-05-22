@@ -1,38 +1,36 @@
 @theme {
   /* Colors */
-  --color-canvas-porcelain: #fff5ee;
-  --color-white: #ffffff;
-  --color-midnight-ink: #0f161e;
-  --color-harbor-mist: #333942;
-  --color-forest-canopy: #012620;
-  --color-deep-teal: #004038;
-  --color-fresh-teal: #00f5dc;
-  --color-muted-sage: #00544c;
-  --color-soft-peach: #fde8ce;
-  --color-muted-mandarin: #ffdcbf;
-  --color-sky-haze: #bee9f4;
-  --color-lime-glow: #d5ff4d;
-  --color-spring-bud: #7edcaf;
+  --color-stormcloud-ink: #282e3f;
+  --color-quizlet-violet: #4255ff;
+  --color-sky-study: #98e3ff;
+  --color-flashcard-pink: #eeaaff;
+  --color-night-violet: #423ed8;
+  --color-practice-orange: #ffc38c;
+  --color-slate-text: #586380;
+  --color-light-slate: #939bb4;
+  --color-deep-slate: #2e3856;
+  --color-page-background: #f6f7fb;
+  --color-pure-white: #ffffff;
+  --color-ash-border: #d9dde8;
 
   /* Typography */
-  --font-proxima-nova: 'Proxima Nova', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-source-serif-pro: 'Source Serif Pro', ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-hurmeno2-webfont: 'hurme_no2-webfont', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Typography — Scale */
-  --text-body-sm: 16px;
-  --leading-body-sm: 1.5;
-  --text-body: 18px;
+  --text-caption: 12px;
+  --leading-caption: 1.5;
+  --text-body-sm: 14px;
+  --leading-body-sm: 1.43;
+  --text-body: 16px;
   --leading-body: 1.5;
   --text-subheading: 20px;
   --leading-subheading: 1.25;
-  --text-heading-sm: 24px;
-  --leading-heading-sm: 1.22;
-  --text-heading: 32px;
-  --leading-heading: 1.17;
-  --text-heading-lg: 56px;
-  --leading-heading-lg: 1.13;
-  --text-display: 72px;
-  --leading-display: 1;
+  --text-heading: 24px;
+  --leading-heading: 1.33;
+  --text-heading-lg: 32px;
+  --leading-heading-lg: 1.27;
+  --text-display: 44px;
+  --leading-display: 1.25;
 
   /* Spacing */
   --spacing-8: 8px;
@@ -40,12 +38,17 @@
   --spacing-24: 24px;
   --spacing-32: 32px;
   --spacing-40: 40px;
+  --spacing-48: 48px;
   --spacing-64: 64px;
-  --spacing-88: 88px;
-  --spacing-104: 104px;
 
   /* Border Radius */
+  --radius-md: 4px;
   --radius-lg: 8px;
-  --radius-2xl: 16px;
-  --radius-3xl: 25px;
+  --radius-3xl: 24px;
+  --radius-full: 200px;
+
+  /* Shadows */
+  --shadow-md: rgba(40, 46, 62, 0.1) 0px 4px 16px 0px;
+  --shadow-subtle: rgba(0, 0, 0, 0.3) 0px 0px 1px 0px inset;
+  --shadow-sm: rgba(40, 46, 62, 0.1) 0px 2px 4px 0px;
 }

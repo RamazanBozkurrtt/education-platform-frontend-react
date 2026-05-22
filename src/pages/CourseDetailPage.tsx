@@ -1,29 +1,32 @@
-import { useEffect, useMemo, useState } from 'react'
+﻿import { useMemo, useState } from 'react'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowRight, BadgeCheck, BookOpen, CheckCircle2, Clock3, PlayCircle, ShoppingCart, Star, Users2 } from 'lucide-react'
+import { BookOpen, Clock3, PlayCircle, Star, Users2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
-import { useLanguage } from '../hooks/useLanguage'
-import { useCart } from '../hooks/useCart'
-import { useLibrary } from '../hooks/useLibrary'
-import { useAuth } from '../hooks/useAuth'
+import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
+import DashboardSection from '../components/dashboard/DashboardSection'
+import StatusBadge from '../components/dashboard/StatusBadge'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
-import InfoBadge from '../components/ui/InfoBadge'
 import Loader from '../components/ui/Loader'
 import MetaRow from '../components/ui/MetaRow'
+import Modal from '../components/ui/Modal'
 import QueryErrorState from '../components/ui/QueryErrorState'
-import SectionHeader from '../components/ui/SectionHeader'
 import TagList from '../components/ui/TagList'
 import CourseReviewList from '../components/reviews/CourseReviewList'
 import CourseReviewSummary from '../components/reviews/CourseReviewSummary'
 import ReviewForm from '../components/reviews/ReviewForm'
+import { useLanguage } from '../hooks/useLanguage'
+import { useCart } from '../hooks/useCart'
+import { useLibrary } from '../hooks/useLibrary'
+import { useAuth } from '../hooks/useAuth'
+import { useConfirmPaymentMutation, useCreatePaymentMutation } from '../hooks/usePayments'
 import { courseService } from '../services/courseService'
+import { enrollmentService } from '../services/enrollmentService'
 import { reviewService } from '../services/reviewService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
-import { formatCurrency } from '../utils/helpers'
+import { createIdempotencyKey, formatCoursePrice } from '../utils/helpers'
 import { isAdmin } from '../utils/roles'
 import type { CreateReviewRequest, Review, UpdateReviewRequest } from '../utils/types'
 
@@ -94,41 +97,93 @@ const resolveErrorMessageFromPayload = (error: unknown) => {
   return appError.message
 }
 
+const isPaymentRequiredForEnrollmentError = (error: unknown) => {
+  const appError = normalizeApiError(error)
+
+  if (appError.httpStatus === 402) {
+    return true
+  }
+
+  if (appError.code?.trim().toUpperCase() === 'PAYMENT_REQUIRED_FOR_ENROLLMENT') {
+    return true
+  }
+
+  const rawPayload = appError.raw && typeof appError.raw === 'object'
+    ? appError.raw as Record<string, unknown>
+    : undefined
+
+  const codeFromPayload = typeof rawPayload?.code === 'string'
+    ? rawPayload.code.trim().toUpperCase()
+    : typeof rawPayload?.error === 'string'
+      ? rawPayload.error.trim().toUpperCase()
+      : undefined
+
+  return codeFromPayload === 'PAYMENT_REQUIRED_FOR_ENROLLMENT'
+}
+
 const CourseDetailPage = () => {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const { language } = useLanguage()
   const { user, claims, isAuthenticated } = useAuth()
-  const { addCourse, isInCart } = useCart()
-  const { isPurchased } = useLibrary()
+  const { removeCourse } = useCart()
+  const { isPurchased, purchaseCourses } = useLibrary()
   const { slug = '' } = useParams()
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [editingReview, setEditingReview] = useState<Review | null>(null)
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null)
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
+  const [purchaseError, setPurchaseError] = useState<string | null>(null)
+  const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null)
+  const [purchaseStage, setPurchaseStage] = useState<'payment' | 'confirm' | 'enrollment' | null>(null)
+  const createPaymentMutation = useCreatePaymentMutation()
+  const confirmPaymentMutation = useConfirmPaymentMutation()
 
   const copy = language === 'tr'
     ? {
-      detailsTitle: 'Kurs detaylar\u0131',
-      detailsDescription: 'Kurs \u00f6zeti, dersler ve de\u011ferlendirmeler.',
+      detailsTitle: 'Kurs detaylari',
+      detailsDescription: 'Kurs ozeti, dersler ve degerlendirmeler.',
       lessonsTitle: 'Dersler',
-      lessonsDescription: 'Bu kurs i\u00e7in ders listesi.',
+      lessonsDescription: 'Bu kurs icin ders listesi.',
       tags: 'Etiketler',
       ratingLabel: 'Puan',
       statusTitle: 'Kurs durumu',
-      statusDescription: 'Eri\u015fim ve sat\u0131n alma i\u015flemleri.',
-      purchased: 'Kursa eri\u015fimin var',
-      notPurchased: 'Hen\u00fcz sat\u0131n al\u0131nmad\u0131',
-      reviewTitle: 'De\u011ferlendirmeler',
+      statusDescription: 'Erisim ve satin alma islemleri.',
+      purchased: 'Kursa erisimin var',
+      notPurchased: 'Henuz satin alinmadi',
+      reviewTitle: 'Degerlendirmeler',
       reviewCount: 'degerlendirme',
-      yourReview: 'Bu kurs i\u00e7in de\u011ferlendirmen',
-      deleteReview: 'De\u011ferlendirmeyi sil',
-      reviewLoginRequired: 'Devam etmek i\u00e7in giri\u015f yapmal\u0131s\u0131n.',
+      reviewWriteTitle: 'Degerlendirme yap',
+      reviewListTitle: 'Tum yorumlar',
+      yourReview: 'Bu kurs icin degerlendirmen',
+      deleteReview: 'Degerlendirmeyi sil',
+      reviewLoginRequired: 'Devam etmek icin giris yapmalisin.',
+      reviewPurchaseRequired: 'Degerlendirme yapmak icin kursu satin almalisin.',
       noTag: 'Etiket yok.',
-      noOutcome: 'Bu kurs i\u00e7in \u00f6\u011frenim kazan\u0131m\u0131 eklenmemi\u015f.',
-      noLessons: 'Bu kurs i\u00e7in hen\u00fcz ders eklenmedi.',
-      instructorTitle: 'E\u011fitmen',
-      progressTitle: '\u0130lerleme',
+      noOutcome: 'Bu kurs icin ogrenim kazanimi eklenmemis.',
+      noLessons: 'Bu kurs icin henuz ders eklenmedi.',
+      instructorTitle: 'Egitmen',
+      progressTitle: 'Ilerleme',
+      level: 'Seviye',
+      includedOutcomes: 'Kazanacagin yetkinlikler',
+      enrollFree: 'Kursa Katıl',
+      buyAndEnroll: 'Satın Al ve Katıl',
+      checkoutTitle: 'Ödeme Onayı',
+      checkoutDescription: 'Bu kursa kaydolmak için ödemeyi onaylayın.',
+      paymentProvider: 'Provider',
+      paymentMethod: 'Ödeme yöntemi',
+      completePayment: 'Ödemeyi Tamamla',
+      paymentPreparing: 'Ödeme hazırlanıyor...',
+      paymentConfirming: 'Ödeme doğrulanıyor...',
+      enrollmentCreating: 'Kayıt oluşturuluyor...',
+      paymentSuccess: 'Ödeme başarılı. Kurs kaydınız oluşturuldu.',
+      paymentDeclined: 'Odeme basarisiz. Yeni bir odeme denemesi baslatabilirsiniz.',
+      enrollmentSuccess: 'Kurs kaydınız oluşturuldu.',
+      paymentRequiredMessage: 'Bu kursa kayıt olmak için önce ödeme işlemini tamamlamalısınız.',
+      paymentFailedMessage: 'Ödeme işlemi tamamlanamadı. Lütfen tekrar deneyin.',
+      enrollmentFailedMessage: 'Kurs kaydı oluşturulamadı. Lütfen tekrar deneyin.',
+      enrollmentAfterPaymentFailedMessage: 'Ödeme alındı ancak kayıt işlemi tamamlanamadı. Lütfen tekrar deneyin veya destek ile iletişime geçin.',
     }
     : {
       detailsTitle: 'Course details',
@@ -143,14 +198,36 @@ const CourseDetailPage = () => {
       notPurchased: 'Not purchased yet',
       reviewTitle: 'Reviews',
       reviewCount: 'reviews',
+      reviewWriteTitle: 'Write a review',
+      reviewListTitle: 'All reviews',
       yourReview: 'Your review for this course',
       deleteReview: 'Delete review',
       reviewLoginRequired: 'Sign in to leave a review.',
+      reviewPurchaseRequired: 'You need to purchase this course before leaving a review.',
       noTag: 'No tags added.',
       noOutcome: 'No learning outcomes added for this course.',
       noLessons: 'No lessons have been added to this course yet.',
       instructorTitle: 'Instructor',
       progressTitle: 'Progress',
+      level: 'Level',
+      includedOutcomes: 'What you will learn',
+      enrollFree: 'Join Course',
+      buyAndEnroll: 'Buy and Join',
+      checkoutTitle: 'Payment confirmation',
+      checkoutDescription: 'Confirm payment to enroll in this course.',
+      paymentProvider: 'Provider',
+      paymentMethod: 'Payment method',
+      completePayment: 'Complete Payment',
+      paymentPreparing: 'Preparing payment...',
+      paymentConfirming: 'Confirming payment...',
+      enrollmentCreating: 'Creating enrollment...',
+      paymentSuccess: 'Payment succeeded. Your enrollment has been created.',
+      paymentDeclined: 'Payment failed. You can start a new payment attempt.',
+      enrollmentSuccess: 'Your enrollment has been created.',
+      paymentRequiredMessage: 'You need to complete payment before enrolling in this course.',
+      paymentFailedMessage: 'Payment could not be completed. Please try again.',
+      enrollmentFailedMessage: 'Enrollment could not be created. Please try again.',
+      enrollmentAfterPaymentFailedMessage: 'Payment was captured but enrollment could not be completed. Please try again or contact support.',
     }
 
   const { data, error, isLoading } = useQuery({
@@ -160,6 +237,10 @@ const CourseDetailPage = () => {
 
   const courseId = data?.id ?? ''
   const isUserAdmin = isAdmin(user, claims)
+  const purchased = data ? isPurchased(data.id) : false
+  const isPaidCourse = Boolean(data && data.price > 0)
+  const locale = language === 'tr' ? 'tr-TR' : 'en-US'
+  const freeLabel = language === 'tr' ? 'Ücretsiz' : 'Free'
 
   const {
     data: reviewSummary,
@@ -202,26 +283,6 @@ const CourseDetailPage = () => {
     [reviewPages?.pages],
   )
 
-  useEffect(() => {
-    if (!courseId) {
-      return
-    }
-
-    console.log('[REVIEW_FLOW] courseId:', courseId)
-  }, [courseId])
-
-  useEffect(() => {
-    if (!reviewSummary) {
-      return
-    }
-
-    console.log('[REVIEW_FLOW] summary:', reviewSummary)
-  }, [reviewSummary])
-
-  useEffect(() => {
-    console.log('[REVIEW_FLOW] reviews:', reviews)
-  }, [reviews])
-
   const ownReview = useMemo(
     () => reviews.find((review) => review.ownedByCurrentUser || (Boolean(user?.id) && review.userId === user?.id)) ?? null,
     [reviews, user?.id],
@@ -240,31 +301,34 @@ const CourseDetailPage = () => {
 
   const createReviewMutation = useMutation({
     mutationFn: async (payload: CreateReviewRequest) => {
-      console.log('[REVIEW_FLOW] create payload:', payload)
-      const response = await reviewService.createCourseReview(courseId, payload)
-      console.log('[REVIEW_FLOW] create response:', response)
-      return response
+      return reviewService.createCourseReview(courseId, payload)
     },
   })
 
   const updateReviewMutation = useMutation({
     mutationFn: async ({ reviewId, payload }: { reviewId: string; payload: UpdateReviewRequest }) => {
-      const response = await reviewService.updateReview(reviewId, payload)
-      console.log('[REVIEW_FLOW] update response:', response)
-      return response
+      return reviewService.updateReview(reviewId, payload)
     },
   })
 
   const deleteReviewMutation = useMutation({
     mutationFn: async (reviewId: string) => {
-      const response = await reviewService.deleteReview(reviewId)
-      console.log('[REVIEW_FLOW] delete response:', response)
-      return response
+      return reviewService.deleteReview(reviewId)
     },
   })
 
   const handleReviewSubmit = async (payload: CreateReviewRequest | UpdateReviewRequest) => {
     if (!courseId) {
+      return
+    }
+
+    if (!isAuthenticated) {
+      setSubmitError(copy.reviewLoginRequired)
+      return
+    }
+
+    if (!purchased) {
+      setSubmitError(copy.reviewPurchaseRequired)
       return
     }
 
@@ -283,8 +347,6 @@ const CourseDetailPage = () => {
 
       await refreshReviewData()
     } catch (error_) {
-      const axiosLikeError = error_ as { response?: { status?: number; data?: unknown } }
-      console.log('[REVIEW_FLOW] error:', axiosLikeError.response?.status, axiosLikeError.response?.data)
       const appError = normalizeApiError(error_)
 
       if (appError.httpStatus === 409) {
@@ -302,6 +364,11 @@ const CourseDetailPage = () => {
   }
 
   const handleDeleteReview = async (review: Review) => {
+    if (!isUserAdmin && !purchased) {
+      setSubmitError(copy.reviewPurchaseRequired)
+      return
+    }
+
     setDeletingReviewId(review.id)
     setSubmitError(null)
     setSuccessMessage(null)
@@ -316,16 +383,118 @@ const CourseDetailPage = () => {
       setSuccessMessage(language === 'tr' ? 'Degerlendirme silindi.' : 'Review deleted.')
       await refreshReviewData()
     } catch (error_) {
-      const axiosLikeError = error_ as { response?: { status?: number; data?: unknown } }
-      console.log('[REVIEW_FLOW] error:', axiosLikeError.response?.status, axiosLikeError.response?.data)
       setSubmitError(resolveErrorMessageFromPayload(error_))
     } finally {
       setDeletingReviewId(null)
     }
   }
 
-  const canEditReview = (review: Review) => Boolean(review.ownedByCurrentUser || review.userId === user?.id)
+  const canManageOwnReview = isAuthenticated && purchased
+  const canEditReview = (review: Review) =>
+    canManageOwnReview && Boolean(review.ownedByCurrentUser || review.userId === user?.id)
   const canDeleteReview = (review: Review) => canEditReview(review) || isUserAdmin
+
+  const refreshEnrollmentState = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['my-courses'] }),
+      queryClient.invalidateQueries({ queryKey: ['dashboard-overview'] }),
+      queryClient.invalidateQueries({ queryKey: ['course', language, slug] }),
+    ])
+  }
+
+  const handleFreeEnrollment = async () => {
+    if (!data || purchased || purchaseStage) {
+      return
+    }
+
+    setPurchaseError(null)
+    setPurchaseSuccess(null)
+    setPurchaseStage('enrollment')
+
+    try {
+      await enrollmentService.createEnrollment(
+        { courseId: data.id },
+        { skipGlobalErrorHandling: true },
+      )
+      purchaseCourses([data.id])
+      removeCourse(data.id)
+      await refreshEnrollmentState()
+      setPurchaseSuccess(copy.enrollmentSuccess)
+    } catch (error) {
+      if (isPaymentRequiredForEnrollmentError(error)) {
+        setPurchaseError(copy.paymentRequiredMessage)
+      } else {
+        setPurchaseError(copy.enrollmentFailedMessage)
+      }
+    } finally {
+      setPurchaseStage(null)
+    }
+  }
+
+  const handlePaidEnrollment = async (approved: boolean) => {
+    if (!data || purchased || purchaseStage) {
+      return
+    }
+
+    setPurchaseError(null)
+    setPurchaseSuccess(null)
+    setPurchaseStage('payment')
+
+    try {
+      const createdPayment = await createPaymentMutation.mutateAsync({
+        courseId: data.id,
+        provider: 'MOCK_GATEWAY',
+        paymentMethod: 'CARD',
+        idempotencyKey: createIdempotencyKey(),
+        autoConfirm: false,
+        buyerFullName: user?.name,
+        buyerEmail: user?.email,
+      })
+
+      setPurchaseStage('confirm')
+
+      const confirmedPayment = await confirmPaymentMutation.mutateAsync({
+        paymentId: createdPayment.id,
+        payload: {
+          approved,
+          failureReason: approved ? undefined : copy.paymentDeclined,
+          buyerFullName: user?.name,
+          buyerEmail: user?.email,
+        },
+      })
+
+      if (confirmedPayment.status !== 'SUCCEEDED') {
+        setPurchaseError(confirmedPayment.failureReason ?? copy.paymentDeclined)
+        return
+      }
+
+      setPurchaseStage('enrollment')
+
+      try {
+        await enrollmentService.createEnrollment(
+          { courseId: data.id },
+          { skipGlobalErrorHandling: true },
+        )
+      } catch (enrollmentError) {
+        if (isPaymentRequiredForEnrollmentError(enrollmentError)) {
+          setPurchaseError(copy.paymentRequiredMessage)
+        } else {
+          setPurchaseError(copy.enrollmentAfterPaymentFailedMessage)
+        }
+        return
+      }
+
+      purchaseCourses([data.id])
+      removeCourse(data.id)
+      await refreshEnrollmentState()
+      setPurchaseSuccess(copy.paymentSuccess)
+      setCheckoutOpen(false)
+    } catch {
+      setPurchaseError(copy.paymentFailedMessage)
+    } finally {
+      setPurchaseStage(null)
+    }
+  }
 
   if (error) {
     return <QueryErrorState error={error} />
@@ -335,171 +504,163 @@ const CourseDetailPage = () => {
     return <Loader label={t('loader.courseDetails')} />
   }
 
-  const purchased = isPurchased(data.id)
-
   return (
-    <div className="space-y-6">
-      <Card>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-3xl">
-            <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{getCourseCategoryLabel(data)}</p>
-            <h1 className="theme-heading mt-2 break-words text-3xl font-semibold leading-tight md:text-4xl">{data.title}</h1>
-            <p className="theme-muted mt-3 text-sm leading-7">{data.description}</p>
-
-            <MetaRow
-              className="mt-4"
-              items={[
-                { key: 'rating', icon: Star, label: copy.ratingLabel, value: data.rating.toFixed(1) },
-                { key: 'instructor', label: copy.instructorTitle, value: data.instructor.name },
-                { key: 'duration', icon: Clock3, label: t('courseDetail.duration'), value: data.duration },
-                { key: 'lessons', icon: BookOpen, label: t('courseDetail.lessons'), value: t('courseDetail.lessonsValue', { count: data.lessons }) },
-                { key: 'students', icon: Users2, label: t('courseDetail.enrolled'), value: t('courseDetail.enrolledValue', { students: data.students }) },
-                { key: 'level', label: 'Seviye', value: data.level },
-              ]}
-            />
-
-            <div className="mt-4">
-              <TagList emptyText={copy.noTag} hideWhenEmpty label={copy.tags} tags={data.tags} />
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
+    <div className="space-y-8">
+      <DashboardPageHeader
+        actions={(
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             {purchased ? (
-              <Link to={ROUTES.coursePlayer(data.slug)}>
-                <Button asChild>
+              <Link className="w-full sm:w-auto" to={ROUTES.coursePlayer(data.slug)}>
+                <Button asChild className="w-full justify-center">
                   <PlayCircle className="h-4 w-4" />
                   {t('common.watchCourse')}
                 </Button>
               </Link>
-            ) : isInCart(data.id) ? (
-              <Link to={ROUTES.cart}>
-                <Button asChild variant="secondary">
-                  <CheckCircle2 className="h-4 w-4" />
-                  {t('common.goToCart')}
-                </Button>
-              </Link>
             ) : (
-              <Button onClick={() => addCourse(data.id)}>
-                <ShoppingCart className="h-4 w-4" />
-                {t('common.addToCart')}
-              </Button>
+              <>
+                {isPaidCourse ? (
+                  <Button
+                    className="w-full justify-center sm:w-auto"
+                    disabled={Boolean(purchaseStage)}
+                    onClick={() => setCheckoutOpen(true)}
+                  >
+                    {copy.buyAndEnroll}
+                  </Button>
+                ) : (
+                  <Button
+                    className="w-full justify-center sm:w-auto"
+                    disabled={Boolean(purchaseStage)}
+                    onClick={() => {
+                      void handleFreeEnrollment()
+                    }}
+                  >
+                    {purchaseStage === 'enrollment' ? copy.enrollmentCreating : copy.enrollFree}
+                  </Button>
+                )}
+              </>
             )}
           </div>
+        )}
+        description={data.description}
+        eyebrow={getCourseCategoryLabel(data)}
+        title={data.title}
+      />
+
+      <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
+        <MetaRow
+          items={[
+            { key: 'rating', icon: Star, label: copy.ratingLabel, value: data.rating.toFixed(1) },
+            { key: 'instructor', label: copy.instructorTitle, value: data.instructor.name },
+            { key: 'duration', icon: Clock3, label: t('courseDetail.duration'), value: data.duration },
+            { key: 'lessons', icon: BookOpen, label: t('courseDetail.lessons'), value: t('courseDetail.lessonsValue', { count: data.lessons }) },
+            { key: 'students', icon: Users2, label: t('courseDetail.enrolled'), value: t('courseDetail.enrolledValue', { students: data.students }) },
+            { key: 'level', label: copy.level, value: data.level.levelName },
+          ]}
+        />
+
+        <div className="mt-4 border-t border-[color:var(--border)] pt-4">
+          <TagList emptyText={copy.noTag} hideWhenEmpty label={copy.tags} tags={data.tags} />
         </div>
-      </Card>
+      </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
-        <div className="space-y-6">
-          <Card>
-            <SectionHeader
-              description={copy.detailsDescription}
-              title={copy.detailsTitle}
-            />
-
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
+        <div className="min-w-0 space-y-7">
+          <DashboardSection description={copy.detailsDescription} title={copy.detailsTitle}>
             {data.outcomes.length > 0 ? (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <ul className="divide-y divide-[color:var(--border)] rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
                 {data.outcomes.map((outcome) => (
-                  <div className="flex gap-3 rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4" key={outcome}>
-                    <BadgeCheck className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--primary)]" />
-                    <p className="theme-text text-sm leading-6">{outcome}</p>
-                  </div>
+                  <li className="theme-text px-4 py-3 text-sm leading-6" key={outcome}>{outcome}</li>
                 ))}
-              </div>
+              </ul>
             ) : (
-              <p className="theme-muted mt-4 text-sm">{copy.noOutcome}</p>
+              <p className="theme-muted text-sm">{copy.noOutcome}</p>
             )}
-          </Card>
+          </DashboardSection>
 
-          <Card>
-            <SectionHeader
-              description={copy.lessonsDescription}
-              title={copy.lessonsTitle}
-            />
-
+          <DashboardSection description={copy.lessonsDescription} title={copy.lessonsTitle}>
             {data.modules.length > 0 ? (
-              <div className="mt-4 space-y-3">
+              <ul className="divide-y divide-[color:var(--border)] rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
                 {data.modules.map((module, index) => (
-                  <div className="rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4" key={module.id}>
-                    <div className="flex items-center justify-between gap-4">
+                  <li className="px-4 py-3.5" key={module.id}>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-xs font-semibold theme-heading">
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
+                        <span className="theme-subtle w-7 text-xs font-semibold">{String(index + 1).padStart(2, '0')}</span>
                         <div className="min-w-0">
-                          <p className="theme-heading truncate font-medium">{module.title}</p>
-                          <p className="theme-muted mt-1 text-xs">
-                            {module.type} - {module.duration}
-                          </p>
+                          <p className="theme-heading truncate text-sm font-medium">{module.title}</p>
+                          <p className="theme-muted mt-1 text-xs">{module.type} - {module.duration}</p>
                         </div>
                       </div>
-                      <InfoBadge tone={module.completed ? 'success' : 'warning'}>
+                      <StatusBadge tone={module.completed ? 'success' : 'warning'}>
                         {module.completed ? t('common.completed') : t('common.upcoming')}
-                      </InfoBadge>
+                      </StatusBadge>
                     </div>
-                  </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             ) : (
-              <p className="theme-muted mt-4 text-sm">{copy.noLessons}</p>
+              <p className="theme-muted text-sm">{copy.noLessons}</p>
             )}
-          </Card>
+          </DashboardSection>
 
-          <section className="grid gap-6 xl:grid-cols-[0.95fr_1.35fr]">
-            <CourseReviewSummary isLoading={isReviewSummaryLoading} summary={reviewSummary} />
+          <DashboardSection title={copy.reviewTitle}>
+            <div className="space-y-5">
+              <div className="grid gap-4 lg:grid-cols-[320px_minmax(0,1fr)]">
+                <CourseReviewSummary isLoading={isReviewSummaryLoading} summary={reviewSummary} />
 
-            <Card>
-              <SectionHeader
-                action={
-                  reviewSummary?.totalReviews ? (
-                    <InfoBadge>
-                      {reviewSummary.totalReviews} {copy.reviewCount}
-                    </InfoBadge>
-                  ) : null
-                }
-                title={copy.reviewTitle}
-              />
+                <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-4">
+                  <div className="flex items-center justify-between gap-3 border-b border-[color:var(--border)] pb-3">
+                    <h3 className="theme-heading text-sm font-semibold">{copy.reviewWriteTitle}</h3>
+                    {reviewSummary?.totalReviews ? (
+                      <StatusBadge>{reviewSummary.totalReviews} {copy.reviewCount}</StatusBadge>
+                    ) : null}
+                  </div>
 
-              {successMessage ? (
-                <div className="mt-4 rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] px-4 py-3 text-sm theme-heading">
-                  {successMessage}
-                </div>
-              ) : null}
-
-              {isAuthenticated ? (
-                <div className="mt-5">
-                  {visibleEditReview ? (
-                    <p className="theme-heading mb-3 text-sm font-semibold">{copy.yourReview}</p>
-                  ) : null}
-                  <ReviewForm
-                    initialValue={visibleEditReview ? { rating: visibleEditReview.rating, comment: visibleEditReview.comment } : undefined}
-                    isSubmitting={createReviewMutation.isPending || updateReviewMutation.isPending}
-                    mode={reviewFormMode}
-                    onSubmit={handleReviewSubmit}
-                    submitError={submitError}
-                  />
-                  {visibleEditReview ? (
-                    <div className="mt-3">
-                      <Button
-                        disabled={deleteReviewMutation.isPending}
-                        onClick={() => handleDeleteReview(visibleEditReview)}
-                        type="button"
-                        variant="ghost"
-                      >
-                        {copy.deleteReview}
-                      </Button>
+                  {successMessage ? (
+                    <div className="mt-4 rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] px-4 py-3 text-sm theme-heading">
+                      {successMessage}
                     </div>
                   ) : null}
-                </div>
-              ) : (
-                <p className="theme-muted mt-4 text-sm">{copy.reviewLoginRequired}</p>
-              )}
+
+                  {isAuthenticated && purchased ? (
+                    <div className="mt-4">
+                      {visibleEditReview ? (
+                        <p className="theme-heading mb-3 text-sm font-semibold">{copy.yourReview}</p>
+                      ) : null}
+                      <ReviewForm
+                        initialValue={visibleEditReview ? { rating: visibleEditReview.rating, comment: visibleEditReview.comment } : undefined}
+                        isSubmitting={createReviewMutation.isPending || updateReviewMutation.isPending}
+                        mode={reviewFormMode}
+                        onSubmit={handleReviewSubmit}
+                        submitError={submitError}
+                      />
+                      {visibleEditReview ? (
+                        <div className="mt-3">
+                          <Button
+                            disabled={deleteReviewMutation.isPending}
+                            onClick={() => handleDeleteReview(visibleEditReview)}
+                            type="button"
+                            variant="ghost"
+                          >
+                            {copy.deleteReview}
+                          </Button>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="theme-muted mt-4 text-sm">
+                      {isAuthenticated ? copy.reviewPurchaseRequired : copy.reviewLoginRequired}
+                    </p>
+                  )}
+                </section>
+              </div>
 
               {reviewSummaryError || reviewListError ? (
-                <div className="mt-6 rounded-[var(--radius-cards)] border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
+                <div className="rounded-sm border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
                   {resolveErrorMessageFromPayload(reviewSummaryError ?? reviewListError)}
                 </div>
               ) : (
-                <div className="mt-6">
+                <div className="border-t border-[color:var(--border)] pt-4">
+                  <p className="theme-heading mb-3 text-sm font-semibold">{copy.reviewListTitle}</p>
                   <CourseReviewList
                     canDeleteReview={canDeleteReview}
                     canEditReview={canEditReview}
@@ -516,73 +677,87 @@ const CourseDetailPage = () => {
                   />
                 </div>
               )}
-            </Card>
-          </section>
+            </div>
+          </DashboardSection>
         </div>
 
-        <aside className="space-y-4">
-          <Card>
-            <SectionHeader
-              description={copy.statusDescription}
-              title={copy.statusTitle}
-            />
+        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+          <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
+            <h3 className="theme-heading text-base font-semibold">{copy.statusTitle}</h3>
+            <p className="theme-muted mt-1 text-sm">{copy.statusDescription}</p>
 
             <div className="mt-5 flex items-start justify-between gap-4">
               <div>
                 <p className="theme-muted text-sm">{t('common.price')}</p>
-                <p className="theme-heading mt-1 text-3xl font-semibold">{formatCurrency(data.price)}</p>
+                <p className="theme-heading mt-1 text-3xl font-semibold">
+                  {formatCoursePrice(data.price, data.currency, { locale, freeLabel })}
+                </p>
               </div>
-              <InfoBadge>{data.level}</InfoBadge>
+              <StatusBadge>{data.level.levelName}</StatusBadge>
             </div>
 
             <div className="mt-4">
-              <InfoBadge tone={purchased ? 'success' : 'warning'}>
+              <StatusBadge tone={purchased ? 'success' : 'warning'}>
                 {purchased ? copy.purchased : copy.notPurchased}
-              </InfoBadge>
+              </StatusBadge>
             </div>
 
-            <div className="mt-5 flex flex-wrap gap-3">
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {purchased ? (
-                <Link to={ROUTES.coursePlayer(data.slug)}>
-                  <Button asChild>
+                <Link className="sm:col-span-2" to={ROUTES.coursePlayer(data.slug)}>
+                  <Button asChild className="w-full justify-center">
                     <PlayCircle className="h-4 w-4" />
                     {t('common.watchCourse')}
                   </Button>
                 </Link>
-              ) : isInCart(data.id) ? (
-                <Link to={ROUTES.cart}>
-                  <Button asChild variant="secondary">
-                    <CheckCircle2 className="h-4 w-4" />
-                    {t('common.goToCart')}
-                  </Button>
-                </Link>
               ) : (
-                <Button onClick={() => addCourse(data.id)}>
-                  <ShoppingCart className="h-4 w-4" />
-                  {t('common.addToCart')}
-                </Button>
+                <>
+                  {isPaidCourse ? (
+                    <Button
+                      className="w-full justify-center sm:col-span-2"
+                      disabled={Boolean(purchaseStage)}
+                      onClick={() => setCheckoutOpen(true)}
+                    >
+                      {copy.buyAndEnroll}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="w-full justify-center sm:col-span-2"
+                      disabled={Boolean(purchaseStage)}
+                      onClick={() => {
+                        void handleFreeEnrollment()
+                      }}
+                    >
+                      {purchaseStage === 'enrollment' ? copy.enrollmentCreating : copy.enrollFree}
+                    </Button>
+                  )}
+                </>
               )}
-              {!purchased ? (
-                <Link to={ROUTES.payment}>
-                  <Button asChild variant="ghost">
-                    {t('common.continueToPayment')}
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
-              ) : null}
             </div>
-          </Card>
 
-          <Card>
-            <SectionHeader title={copy.instructorTitle} />
-            <h3 className="theme-heading mt-3 text-xl font-semibold">{data.instructor.name}</h3>
+            {(purchaseError || purchaseSuccess) ? (
+              <div
+                className={`mt-4 rounded-sm border px-3 py-2 text-sm ${
+                  purchaseError
+                    ? 'border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] text-[color:var(--danger)]'
+                    : 'border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] theme-heading'
+                }`}
+              >
+                {purchaseError ?? purchaseSuccess}
+              </div>
+            ) : null}
+          </section>
+
+          <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
+            <h3 className="theme-heading text-base font-semibold">{copy.instructorTitle}</h3>
+            <p className="theme-heading mt-3 text-lg font-semibold">{data.instructor.name}</p>
             <p className="theme-muted mt-1 text-sm">{data.instructor.role}</p>
             <p className="theme-text mt-4 text-sm leading-7">{data.instructor.bio}</p>
-          </Card>
+          </section>
 
           {purchased ? (
-            <Card>
-              <SectionHeader title={copy.progressTitle} />
+            <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
+              <h3 className="theme-heading text-base font-semibold">{copy.progressTitle}</h3>
               <div className="mt-3 flex items-center justify-between gap-3">
                 <p className="theme-heading text-2xl font-semibold">%{data.progress}</p>
                 <p className="theme-muted text-sm">{t('dashboard.progressComplete', { progress: data.progress })}</p>
@@ -593,13 +768,87 @@ const CourseDetailPage = () => {
                   style={{ width: `${data.progress}%` }}
                 />
               </div>
-            </Card>
+            </section>
           ) : null}
         </aside>
       </section>
+
+      <Modal
+        description={copy.checkoutDescription}
+        onClose={() => {
+          if (!purchaseStage) {
+            setCheckoutOpen(false)
+          }
+        }}
+        open={checkoutOpen && isPaidCourse && !purchased}
+        title={copy.checkoutTitle}
+      >
+        <div className="space-y-4">
+          <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+            <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="theme-subtle text-xs uppercase tracking-[0.08em]">{language === 'tr' ? 'Kurs' : 'Course'}</dt>
+                <dd className="theme-heading mt-1 font-medium">{data.title}</dd>
+              </div>
+              <div>
+                <dt className="theme-subtle text-xs uppercase tracking-[0.08em]">{t('common.price')}</dt>
+                <dd className="theme-heading mt-1 font-medium">
+                  {formatCoursePrice(data.price, data.currency, { locale, freeLabel })}
+                </dd>
+              </div>
+              <div>
+                <dt className="theme-subtle text-xs uppercase tracking-[0.08em]">{copy.paymentProvider}</dt>
+                <dd className="theme-heading mt-1 font-medium">MOCK_GATEWAY</dd>
+              </div>
+              <div>
+                <dt className="theme-subtle text-xs uppercase tracking-[0.08em]">{copy.paymentMethod}</dt>
+                <dd className="theme-heading mt-1 font-medium">CARD</dd>
+              </div>
+            </dl>
+          </div>
+
+          {purchaseError ? (
+            <p className="rounded-sm border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-3 py-2 text-sm text-[color:var(--danger)]">
+              {purchaseError}
+            </p>
+          ) : null}
+
+          <Button
+            className="w-full justify-center"
+            disabled={Boolean(purchaseStage)}
+            onClick={() => {
+              void handlePaidEnrollment(true)
+            }}
+          >
+            {purchaseStage === 'payment'
+              ? copy.paymentPreparing
+              : purchaseStage === 'confirm'
+                ? copy.paymentConfirming
+                : purchaseStage === 'enrollment'
+                  ? copy.enrollmentCreating
+                  : copy.completePayment}
+          </Button>
+
+          <Button
+            className="w-full justify-center"
+            disabled={Boolean(purchaseStage)}
+            onClick={() => {
+              void handlePaidEnrollment(false)
+            }}
+            variant="secondary"
+          >
+            {purchaseStage === 'payment'
+              ? copy.paymentPreparing
+              : purchaseStage === 'confirm'
+                ? copy.paymentConfirming
+              : purchaseStage === 'enrollment'
+                ? copy.enrollmentCreating
+                : (language === 'tr' ? 'Reddet (Fail)' : 'Decline (Fail)')}
+          </Button>
+        </div>
+      </Modal>
     </div>
   )
 }
 
 export default CourseDetailPage
-

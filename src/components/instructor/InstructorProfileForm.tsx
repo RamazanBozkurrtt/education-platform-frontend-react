@@ -249,7 +249,7 @@ const InstructorProfileForm = ({
   const biographyLength = form.biography.trim().length
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form className="space-y-5" onSubmit={handleSubmit}>
       <Input
         error={errors.displayName}
         icon={<UserRound className="h-4 w-4" />}
@@ -262,7 +262,7 @@ const InstructorProfileForm = ({
 
       <label className="flex w-full flex-col gap-2" htmlFor="instructor-biography">
         <span className="theme-heading text-sm font-semibold">{copy.biography}</span>
-        <span className="flex rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
+        <span className="flex rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
           <textarea
             aria-invalid={Boolean(errors.biography)}
             className="theme-text theme-placeholder min-h-[120px] w-full resize-none bg-transparent text-sm leading-6 outline-none"
@@ -273,7 +273,7 @@ const InstructorProfileForm = ({
           />
         </span>
         {errors.biography ? (
-          <span className="text-xs text-rose-300">{errors.biography}</span>
+          <span className="text-xs text-[color:var(--danger)]">{errors.biography}</span>
         ) : (
           <span className="theme-subtle text-xs">
             {copy.biographyHelper} ({biographyLength}/{BIOGRAPHY_MAX_LENGTH})

@@ -26,12 +26,12 @@ const DashboardLayout = () => {
 
   const customTitles = language === 'tr'
     ? {
-      becomeInstructor: 'Egitmen Ol',
-      unauthorized: 'Yetkisiz Erisim',
-      instructorDashboard: 'Egitmen Paneli',
-      instructorProfile: 'Egitmen Profilim',
-      instructorNewCourse: 'Yeni Kurs Olustur',
-      instructorVideo: 'Video Yukle',
+      becomeInstructor: 'Eğitmen Ol',
+      unauthorized: 'Yetkisiz Erişim',
+      instructorDashboard: 'Eğitmen Paneli',
+      instructorProfile: 'Eğitmen Profilim',
+      instructorNewCourse: 'Yeni Kurs Oluştur',
+      instructorVideo: 'Video Yükle',
     }
     : {
       becomeInstructor: 'Become Instructor',
@@ -64,16 +64,17 @@ const DashboardLayout = () => {
         {
           [ROUTES.dashboard]: t('routes.dashboard'),
           [ROUTES.myCourses]: t('routes.myCourses'),
-          '/courses': t('routes.courses'),
-          '/cart': t('routes.cart'),
-          '/payment': t('routes.payment'),
-          '/search': t('routes.search'),
+          [ROUTES.courses]: t('routes.courses'),
+          [ROUTES.cart]: t('routes.cart'),
+          [ROUTES.payment]: t('routes.payment'),
+          [ROUTES.payments]: language === 'tr' ? 'Ödemelerim' : 'My Payments',
+          [ROUTES.search]: t('routes.search'),
         }[pathname] ?? t('routes.workspace')
       )
 
   return (
-    <div className="theme-app min-h-screen">
-      <div className="page-shell mx-auto flex max-w-[1600px] gap-6 px-4 py-4 lg:px-8 lg:py-6">
+    <div className="theme-app min-h-screen overflow-x-clip">
+      <div className="dashboard-shell mx-auto flex min-h-screen w-full max-w-[1680px] gap-3 px-2 py-2 sm:px-3 lg:gap-4 lg:px-4 lg:py-4">
         <Sidebar
           collapsed={collapsed}
           mobileOpen={mobileOpen}
@@ -81,10 +82,12 @@ const DashboardLayout = () => {
           onToggleCollapsed={() => setCollapsed((current) => !current)}
         />
 
-        <div className="flex min-h-[calc(100vh-2rem)] flex-1 flex-col pb-8 lg:pb-10">
+        <div className="flex min-h-0 flex-1 flex-col pb-6 lg:pb-8">
           <TopNavbar onOpenMobileMenu={() => setMobileOpen(true)} title={pageTitle} user={user} />
-          <main className="mt-8 flex-1 pb-2">
-            <Outlet />
+          <main className="dashboard-content min-w-0 flex-1 pt-4 lg:pt-5">
+            <div className="mx-auto w-full max-w-[1380px]">
+              <Outlet />
+            </div>
           </main>
         </div>
       </div>

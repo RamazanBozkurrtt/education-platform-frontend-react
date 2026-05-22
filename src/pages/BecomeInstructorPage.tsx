@@ -1,9 +1,8 @@
 ﻿import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
 import InstructorProfileForm from '../components/instructor/InstructorProfileForm'
-import PageHeader from '../components/PageHeader'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../hooks/useLanguage'
 import { instructorService } from '../services/instructorService'
@@ -25,8 +24,8 @@ const BecomeInstructorPage = () => {
       alreadyInstructorTitle: 'Egitmen hesabin aktif',
       alreadyInstructorDescription: 'Kurslarini ve derslerini yonetmek icin paneli acabilirsin.',
       alreadyInstructorButton: 'Egitmen paneline git',
-      submitLabel: 'Başvuruyu tamamla',
-      submittingLabel: 'Gönderiliyor...',
+      submitLabel: 'Basvuruyu tamamla',
+      submittingLabel: 'Gonderiliyor...',
     }
     : {
       eyebrow: 'Instructor application',
@@ -68,23 +67,23 @@ const BecomeInstructorPage = () => {
 
   if (isCurrentUserInstructor) {
     return (
-      <div className="space-y-6">
-        <PageHeader description={copy.description} eyebrow={copy.eyebrow} title={copy.title} />
-        <Card>
-          <h2 className="theme-heading text-lg font-semibold">{copy.alreadyInstructorTitle}</h2>
+      <div className="space-y-8">
+        <DashboardPageHeader description={copy.description} eyebrow={copy.eyebrow} title={copy.title} />
+        <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
+          <h2 className="theme-heading text-base font-semibold">{copy.alreadyInstructorTitle}</h2>
           <p className="theme-muted mt-2 text-sm leading-6">{copy.alreadyInstructorDescription}</p>
           <Button className="mt-4" onClick={() => navigate(ROUTES.instructorDashboard)}>
             {copy.alreadyInstructorButton}
           </Button>
-        </Card>
+        </section>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader description={copy.description} eyebrow={copy.eyebrow} title={copy.title} />
-      <Card>
+    <div className="space-y-8">
+      <DashboardPageHeader description={copy.description} eyebrow={copy.eyebrow} title={copy.title} />
+      <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
         <InstructorProfileForm
           forcedProfileImageUrl={user?.avatarUrl}
           onSubmit={handleSubmit}
@@ -92,7 +91,7 @@ const BecomeInstructorPage = () => {
           submitLabel={copy.submitLabel}
           submittingLabel={copy.submittingLabel}
         />
-      </Card>
+      </section>
     </div>
   )
 }

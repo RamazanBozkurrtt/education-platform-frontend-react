@@ -1,7 +1,11 @@
+import { Image as ImageIcon } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
+import { resolveServiceUrl } from '../config/api'
 import LessonVideoActions from '../components/instructor/video/LessonVideoActions'
+import CourseCategorySelector from '../components/instructor/CourseCategorySelector'
+import CourseLevelSelector from '../components/instructor/CourseLevelSelector'
 import PageHeader from '../components/PageHeader'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -10,6 +14,7 @@ import Loader from '../components/ui/Loader'
 import Modal from '../components/ui/Modal'
 import QueryErrorState from '../components/ui/QueryErrorState'
 import SectionHeader from '../components/ui/SectionHeader'
+import { API_ENDPOINTS } from '../services/endpoints'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { emitAppToast } from '../shared/notifications/appToast'
 import {
@@ -22,8 +27,12 @@ import { ROUTES } from '../utils/constants'
 const MAX_VIDEO_SIZE_BYTES = 2 * 1024 * 1024 * 1024
 const MP4_MIME_TYPE = 'video/mp4'
 const LEARNING_OUTCOME_COUNT = 4
+const MIN_CATEGORY_COUNT = 1
+const MAX_CATEGORY_COUNT = 5
 const DEFAULT_TAG_FIELD_COUNT = 3
 const MAX_TAG_COUNT = 6
+const ALLOWED_IMAGE_TYPES = new Set(['image/png', 'image/jpg', 'image/jpeg', 'image/webp', 'image/svg+xml'])
+const ALLOWED_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.svg']
 
 type MessageState = {
   type: 'success' | 'error'
@@ -35,12 +44,13 @@ type CourseFormState = {
   title: string
   description: string
   price: string
-  categoryId: string
+  levelId: string
+  categoryIds: string[]
   learningOutcomes: string[]
   tags: string[]
 }
 
-type CourseFormErrors = Partial<Record<'title' | 'description' | 'price' | 'categoryId' | 'learningOutcomes' | 'tags', string>>
+type CourseFormErrors = Partial<Record<'title' | 'description' | 'price' | 'levelId' | 'categoryIds' | 'learningOutcomes' | 'tags' | 'image', string>>
 
 type LessonDraftState = {
   title: string
@@ -54,6 +64,15 @@ const isMp4File = (file: File) => {
   const fileType = file.type?.toLocaleLowerCase('en-US') ?? ''
   const fileName = file.name.toLocaleLowerCase('en-US')
   return fileType === MP4_MIME_TYPE || fileName.endsWith('.mp4')
+}
+
+const isAllowedImageFile = (file: File) => {
+  if (ALLOWED_IMAGE_TYPES.has(file.type)) {
+    return true
+  }
+
+  const normalizedName = file.name.toLocaleLowerCase('en-US')
+  return ALLOWED_IMAGE_EXTENSIONS.some((extension) => normalizedName.endsWith(extension))
 }
 
 const extractErrorMessage = (error: unknown, fallbackMessage: string) => {
@@ -70,6 +89,11 @@ const isCategoryNotFoundError = (error: ReturnType<typeof normalizeApiError>) =>
   error.httpStatus === 404 && (
     error.code === 'COURSE_CATEGORY_NOT_FOUND' ||
     error.message.toLocaleLowerCase('en-US').includes('category')
+  )
+const isLevelNotFoundError = (error: ReturnType<typeof normalizeApiError>) =>
+  error.httpStatus === 404 && (
+    error.code === 'COURSE_LEVEL_NOT_FOUND' ||
+    error.message.toLocaleLowerCase('en-US').includes('level')
   )
 
 const ensureMinimumCount = (items: string[], minCount: number) => {
@@ -99,12 +123,20 @@ const INITIAL_COURSE_FORM: CourseFormState = {
   title: '',
   description: '',
   price: '0',
-  categoryId: '',
+  levelId: '',
+  categoryIds: [],
   learningOutcomes: Array.from({ length: LEARNING_OUTCOME_COUNT }, () => ''),
   tags: Array.from({ length: DEFAULT_TAG_FIELD_COUNT }, () => ''),
 }
 
 const COURSE_CATEGORY_NOT_FOUND_MESSAGE = 'Secilen kategori gecersiz. Lutfen tekrar secin.'
+const COURSE_LEVEL_NOT_FOUND_MESSAGE = 'Gecersiz kurs seviyesi secildi.'
+const normalizeCategoryIds = (categoryIds: string[]) =>
+  [...new Set(
+    categoryIds
+      .map((item) => item.trim())
+      .filter(Boolean),
+  )]
 
 const InstructorCourseVideoUploadPage = () => {
   const { courseId = '' } = useParams()
@@ -128,6 +160,8 @@ const InstructorCourseVideoUploadPage = () => {
   const [openPreviewByLesson, setOpenPreviewByLesson] = useState<Record<string, boolean>>({})
   const [courseForm, setCourseForm] = useState<CourseFormState>(INITIAL_COURSE_FORM)
   const [courseFormErrors, setCourseFormErrors] = useState<CourseFormErrors>({})
+  const [selectedCourseImageFile, setSelectedCourseImageFile] = useState<File | null>(null)
+  const [courseImagePreviewUrl, setCourseImagePreviewUrl] = useState<string | null>(null)
   const [lessonDraftsById, setLessonDraftsById] = useState<Record<string, LessonDraftState>>({})
   const [isCourseEditOpen, setIsCourseEditOpen] = useState(false)
   const [isUnpublishConfirmOpen, setIsUnpublishConfirmOpen] = useState(false)
@@ -148,6 +182,37 @@ const InstructorCourseVideoUploadPage = () => {
     setMessage(null)
   }, [message])
 
+  useEffect(() => {
+    if (!selectedCourseImageFile) {
+      setCourseImagePreviewUrl(null)
+      return
+    }
+
+    const objectUrl = URL.createObjectURL(selectedCourseImageFile)
+    setCourseImagePreviewUrl(objectUrl)
+
+    return () => {
+      URL.revokeObjectURL(objectUrl)
+    }
+  }, [selectedCourseImageFile])
+
+  useEffect(() => {
+    if (isCourseEditOpen) {
+      return
+    }
+
+    setSelectedCourseImageFile(null)
+    setCourseFormErrors((current) => {
+      if (!current.image) {
+        return current
+      }
+
+      const next = { ...current }
+      delete next.image
+      return next
+    })
+  }, [isCourseEditOpen])
+
   const {
     data: courseDetail,
     error,
@@ -157,6 +222,15 @@ const InstructorCourseVideoUploadPage = () => {
     queryKey: ['instructor-course-lessons', courseId],
     queryFn: () => instructorCourseService.getCourseById(courseId),
     enabled: Boolean(courseId),
+  })
+  const {
+    data: courseLevels = [],
+    isLoading: levelsLoading,
+    error: levelsError,
+    refetch: refetchLevels,
+  } = useQuery({
+    queryKey: ['instructor-course-levels'],
+    queryFn: () => instructorCourseService.getPublicLevels(),
   })
   const {
     data: courseCategories = [] as InstructorCourseCategoryOption[],
@@ -200,7 +274,8 @@ const InstructorCourseVideoUploadPage = () => {
       title: courseDetail.title,
       description: courseDetail.description,
       price: String(courseDetail.price),
-      categoryId: courseDetail.categoryId,
+      levelId: courseDetail.levelId,
+      categoryIds: courseDetail.categoryIds,
       learningOutcomes: ensureMinimumCount(courseDetail.learningOutcomes, LEARNING_OUTCOME_COUNT).slice(0, LEARNING_OUTCOME_COUNT),
       tags: ensureMinimumCount(courseDetail.tags, DEFAULT_TAG_FIELD_COUNT).slice(0, MAX_TAG_COUNT),
     })
@@ -282,7 +357,7 @@ const InstructorCourseVideoUploadPage = () => {
     }))
   }
 
-  const handleCourseFieldChange = (field: keyof CourseFormState, value: string) => {
+  const handleCourseFieldChange = (field: 'title' | 'description' | 'price', value: string) => {
     setCourseForm((current) => ({
       ...current,
       [field]: value,
@@ -294,6 +369,38 @@ const InstructorCourseVideoUploadPage = () => {
 
       const next = { ...current }
       delete next[field as keyof CourseFormErrors]
+      return next
+    })
+  }
+
+  const handleCategoryIdsChange = (categoryIds: string[]) => {
+    setCourseForm((current) => ({
+      ...current,
+      categoryIds: normalizeCategoryIds(categoryIds),
+    }))
+    setCourseFormErrors((current) => {
+      if (!current.categoryIds) {
+        return current
+      }
+
+      const next = { ...current }
+      delete next.categoryIds
+      return next
+    })
+  }
+
+  const handleLevelIdChange = (levelId: string) => {
+    setCourseForm((current) => ({
+      ...current,
+      levelId: levelId.trim(),
+    }))
+    setCourseFormErrors((current) => {
+      if (!current.levelId) {
+        return current
+      }
+
+      const next = { ...current }
+      delete next.levelId
       return next
     })
   }
@@ -359,6 +466,41 @@ const InstructorCourseVideoUploadPage = () => {
     })
   }
 
+  const handleCourseImageChange = (file: File | null) => {
+    setMessage(null)
+
+    if (!file) {
+      setSelectedCourseImageFile(null)
+      setCourseFormErrors((current) => {
+        if (!current.image) {
+          return current
+        }
+
+        const next = { ...current }
+        delete next.image
+        return next
+      })
+      return
+    }
+
+    if (!isAllowedImageFile(file)) {
+      setSelectedCourseImageFile(null)
+      setCourseFormErrors((current) => ({ ...current, image: 'Kurs gorseli PNG, JPG, JPEG, WEBP veya SVG formatinda olmalidir.' }))
+      return
+    }
+
+    setSelectedCourseImageFile(file)
+    setCourseFormErrors((current) => {
+      if (!current.image) {
+        return current
+      }
+
+      const next = { ...current }
+      delete next.image
+      return next
+    })
+  }
+
   const refreshCourseDetail = async () => {
     await refetchCourseDetail()
   }
@@ -370,7 +512,8 @@ const InstructorCourseVideoUploadPage = () => {
 
     const title = courseForm.title.trim()
     const description = courseForm.description.trim()
-    const categoryId = courseForm.categoryId.trim()
+    const levelId = courseForm.levelId.trim()
+    const categoryIds = normalizeCategoryIds(courseForm.categoryIds)
     const price = Number(courseForm.price)
     const learningOutcomes = courseForm.learningOutcomes.map((item) => item.trim()).filter(Boolean)
     const tags = courseForm.tags.map((item) => item.trim()).filter(Boolean)
@@ -384,8 +527,16 @@ const InstructorCourseVideoUploadPage = () => {
       nextErrors.description = 'Kurs aciklamasi zorunludur.'
     }
 
-    if (!categoryId) {
-      nextErrors.categoryId = 'Kategori alani zorunludur.'
+    if (!levelId) {
+      nextErrors.levelId = 'Kurs seviyesi secimi zorunludur.'
+    }
+
+    if (categoryIds.length < MIN_CATEGORY_COUNT) {
+      nextErrors.categoryIds = `En az ${MIN_CATEGORY_COUNT} kategori secmelisin.`
+    }
+
+    if (categoryIds.length > MAX_CATEGORY_COUNT) {
+      nextErrors.categoryIds = `En fazla ${MAX_CATEGORY_COUNT} kategori secebilirsin.`
     }
 
     if (!Number.isFinite(price) || price < 0) {
@@ -398,6 +549,10 @@ const InstructorCourseVideoUploadPage = () => {
 
     if (tags.length === 0) {
       nextErrors.tags = 'En az bir etiket girilmelidir.'
+    }
+
+    if (selectedCourseImageFile && !isAllowedImageFile(selectedCourseImageFile)) {
+      nextErrors.image = 'Kurs gorseli PNG, JPG, JPEG, WEBP veya SVG formatinda olmalidir.'
     }
 
     if (Object.keys(nextErrors).length > 0) {
@@ -418,17 +573,42 @@ const InstructorCourseVideoUploadPage = () => {
         title,
         description,
         price,
-        categoryId,
+        levelId,
+        categoryIds,
         learningOutcomes,
         tags,
       })
 
+      let imageUploadFailure: ReturnType<typeof extractErrorMessage> | null = null
+
+      if (selectedCourseImageFile) {
+        try {
+          await instructorCourseService.uploadCourseImage(courseId, selectedCourseImageFile)
+        } catch (uploadError: unknown) {
+          imageUploadFailure = extractErrorMessage(uploadError, 'Kurs gorseli guncellenemedi.')
+        }
+      }
+
       await refreshCourseDetail()
-      setIsCourseEditOpen(false)
-      setMessage({
-        type: 'success',
-        text: 'Kurs bilgileri basariyla guncellendi.',
-      })
+
+      if (imageUploadFailure) {
+        setCourseFormErrors((current) => ({
+          ...current,
+          image: imageUploadFailure?.text ?? 'Kurs gorseli guncellenemedi.',
+        }))
+        setMessage({
+          type: 'error',
+          text: 'Kurs bilgileri guncellendi fakat kurs gorseli yuklenemedi.',
+          details: imageUploadFailure.details.length > 0 ? imageUploadFailure.details : [imageUploadFailure.text],
+        })
+      } else {
+        setSelectedCourseImageFile(null)
+        setIsCourseEditOpen(false)
+        setMessage({
+          type: 'success',
+          text: 'Kurs bilgileri basariyla guncellendi.',
+        })
+      }
     } catch (updateError: unknown) {
       const appError = normalizeApiError(updateError)
       const serverErrors: CourseFormErrors = {}
@@ -436,18 +616,28 @@ const InstructorCourseVideoUploadPage = () => {
       serverErrors.title = appError.fieldErrors?.title?.[0] ?? serverErrors.title
       serverErrors.description = appError.fieldErrors?.description?.[0] ?? serverErrors.description
       serverErrors.price = appError.fieldErrors?.price?.[0] ?? serverErrors.price
-      serverErrors.categoryId = appError.fieldErrors?.categoryId?.[0]
+      serverErrors.levelId = appError.fieldErrors?.levelId?.[0]
+        ?? appError.fieldErrors?.level?.[0]
+        ?? appError.fieldErrors?.['level.id']?.[0]
+        ?? serverErrors.levelId
+      serverErrors.categoryIds = appError.fieldErrors?.categoryIds?.[0]
+        ?? appError.fieldErrors?.categoryId?.[0]
         ?? appError.fieldErrors?.category?.[0]
+        ?? appError.fieldErrors?.['categoryIds[0]']?.[0]
         ?? appError.fieldErrors?.['category.id']?.[0]
-        ?? serverErrors.categoryId
+        ?? serverErrors.categoryIds
       serverErrors.learningOutcomes = appError.fieldErrors?.learningOutcomes?.[0]
         ?? appError.fieldErrors?.outcomes?.[0]
         ?? serverErrors.learningOutcomes
       serverErrors.tags = appError.fieldErrors?.tags?.[0] ?? serverErrors.tags
 
       if (isCategoryNotFoundError(appError)) {
-        serverErrors.categoryId = COURSE_CATEGORY_NOT_FOUND_MESSAGE
+        serverErrors.categoryIds = COURSE_CATEGORY_NOT_FOUND_MESSAGE
         void refetchCategories()
+      }
+      if (isLevelNotFoundError(appError)) {
+        serverErrors.levelId = COURSE_LEVEL_NOT_FOUND_MESSAGE
+        void refetchLevels()
       }
 
       const hasServerFieldErrors = Object.values(serverErrors).some(Boolean)
@@ -930,30 +1120,102 @@ const InstructorCourseVideoUploadPage = () => {
   }
 
   const isPublished = courseDetail.status === 'PUBLISHED'
+  const lessons = [...courseDetail.lessons].sort((left, right) => left.orderIndex - right.orderIndex)
+  const totalLessons = lessons.length
+  const lessonsWithVideo = lessons.filter((lesson) => Boolean(lesson.videoUrl)).length
+  const completedLessons = lessons.filter((lesson) => lesson.completed).length
+  const missingVideoLessons = totalLessons - lessonsWithVideo
+  const completionRate = totalLessons === 0 ? 0 : Math.round((completedLessons * 100) / totalLessons)
+  const videoCoverageRate = totalLessons === 0 ? 0 : Math.round((lessonsWithVideo * 100) / totalLessons)
+  const categoryOptions = [
+    ...courseCategories,
+    ...courseForm.categoryIds
+      .filter((categoryId) => !courseCategories.some((item) => item.id === categoryId))
+      .map((categoryId) => ({
+        id: categoryId,
+        categoryName: `Mevcut degil: ${categoryId}`,
+      })),
+  ]
+  const levelOptions = [
+    ...courseLevels,
+    ...(
+      courseForm.levelId && !courseLevels.some((item) => item.id === courseForm.levelId)
+        ? [{ id: courseForm.levelId, levelName: `Mevcut degil: ${courseForm.levelId}` }]
+        : []
+    ),
+  ]
+  const selectedCategoryLabels = courseDetail.categoryIds
+    .map((categoryId) => courseCategories.find((item) => item.id === categoryId)?.categoryName ?? categoryId)
+    .filter(Boolean)
+  const selectedLevelLabel = courseDetail.level.levelName
+  const hasDraftGaps = totalLessons === 0 || missingVideoLessons > 0
+  const fallbackCourseImageUrl = resolveServiceUrl(API_ENDPOINTS.courses.image.public(courseDetail.id))
+  const courseImageDisplayUrl = courseImagePreviewUrl ?? courseDetail.imageUrl ?? fallbackCourseImageUrl
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-7">
       <PageHeader
-        description="Dersleri ekle, videolari yukle veya gerekirse sil."
+        description="Akisi adim adim takip ederek kurs ayarlarini, ders planini ve video yayinini tek yerden yonet."
         eyebrow="Ders ve video yonetimi"
-        title={`${courseDetail.title} · Ders yonetimi`}
+        title={`${courseDetail.title} - Ders yonetimi`}
       />
 
-      <Card>
+      <Card className="border-[color:var(--border-strong)] bg-[color:var(--surface-strong)]">
         <SectionHeader
-          description="Yayin durumunu buradan yonetebilirsin."
-          title="Kurs durumu"
+          description="Ilk bakista kursun yayin hazirligini gor."
+          title="Yonetim ozeti"
+        />
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+          <div className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 text-center">
+            <p className="theme-subtle text-xs uppercase tracking-[0.12em]">Yayin durumu</p>
+            <div className="mt-2 flex flex-col items-center gap-2">
+              <p className="theme-heading text-lg font-semibold">{isPublished ? 'Yayinda' : 'Taslak'}</p>
+              <InfoBadge tone={isPublished ? 'success' : 'warning'}>
+                {isPublished ? 'Aktif' : 'Yayin bekliyor'}
+              </InfoBadge>
+            </div>
+          </div>
+          <div className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 text-center">
+            <p className="theme-subtle text-xs uppercase tracking-[0.12em]">Ders tamamlama</p>
+            <p className="theme-heading mt-2 text-lg font-semibold">%{completionRate}</p>
+            <p className="theme-muted mt-1 text-sm">{completedLessons} / {totalLessons} ders tamamlandi</p>
+          </div>
+          <div className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 text-center">
+            <p className="theme-subtle text-xs uppercase tracking-[0.12em]">Video kapsami</p>
+            <p className="theme-heading mt-2 text-lg font-semibold">%{videoCoverageRate}</p>
+            <p className="theme-muted mt-1 text-sm">{lessonsWithVideo} / {totalLessons} derste video var</p>
+          </div>
+        </div>
+        <div className="mt-4 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-center">
+          <p className="theme-text text-sm">
+            {hasDraftGaps
+              ? 'Sonraki adim: Eksik ders veya video alanlarini tamamlayip kursu yayina alin.'
+              : 'Kurs yapisi hazir gorunuyor. Dilersen yayina alip ogrenci erisimini acabilirsin.'}
+          </p>
+        </div>
+      </Card>
+
+      <Card className="border-l-4 border-l-[color:var(--primary)]" id="course-status">
+        <SectionHeader
+          description="Yayin acma veya yayindan kaldirma islemlerini buradan guvenli sekilde yonet."
+          title="1. Kurs durumu"
         />
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <InfoBadge tone={isPublished ? 'success' : 'warning'}>
               {isPublished ? 'Yayinda' : 'Taslak'}
             </InfoBadge>
-            <p className="theme-muted text-sm">Toplam ders: {courseDetail.lessons.length}</p>
+            <p className="theme-muted text-sm">Toplam ders: {totalLessons}</p>
+            {missingVideoLessons > 0 ? (
+              <InfoBadge tone="warning">{missingVideoLessons} derste video eksik</InfoBadge>
+            ) : (
+              <InfoBadge tone="success">Tum derslerde video hazir</InfoBadge>
+            )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             {isPublished ? (
               <Button
+                className="border-[color:var(--border)] hover:border-[color:var(--border-strong)]"
                 disabled={unpublishingCourse}
                 onClick={() => setIsUnpublishConfirmOpen(true)}
                 variant="ghost"
@@ -973,11 +1235,11 @@ const InstructorCourseVideoUploadPage = () => {
         </div>
       </Card>
 
-      <Card>
+      <Card className="border-l-4 border-l-[color:var(--border-strong)]" id="course-info">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SectionHeader
-            description="Kurs alanlarini guncellemek icin paneli ac."
-            title="Kurs bilgileri"
+            description="Baslik, aciklama, fiyat, kategori ve ogrenim ciktisi gibi temel bilgileri duzenle."
+            title="2. Kurs bilgileri"
           />
           <div className="flex flex-wrap items-center gap-2">
             <Button
@@ -988,6 +1250,7 @@ const InstructorCourseVideoUploadPage = () => {
               {isCourseEditOpen ? 'Guncellemeyi kapat' : 'Guncelle'}
             </Button>
             <Button
+              className="border-[color:var(--border)] hover:border-[color:var(--border-strong)]"
               disabled={deletingCourse}
               onClick={() => void handleDeleteCourse()}
               type="button"
@@ -999,7 +1262,7 @@ const InstructorCourseVideoUploadPage = () => {
         </div>
 
         {isCourseEditOpen ? (
-          <div className="mt-4 space-y-3 border-t border-[color:var(--border)] pt-4">
+          <div className="mt-4 space-y-4 border-t border-[color:var(--border)] pt-4">
             <label className="flex flex-col gap-1">
               <span className="theme-subtle text-xs">Kurs basligi</span>
               <input
@@ -1015,7 +1278,7 @@ const InstructorCourseVideoUploadPage = () => {
               <span className="theme-subtle text-xs">Kurs aciklamasi</span>
               <textarea
                 aria-invalid={Boolean(courseFormErrors.description)}
-                className="theme-text theme-placeholder min-h-[84px] rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-2 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
+                className="theme-text theme-placeholder min-h-[84px] rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-2 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
                 onChange={(event) => handleCourseFieldChange('description', event.target.value)}
                 value={courseForm.description}
               />
@@ -1036,35 +1299,104 @@ const InstructorCourseVideoUploadPage = () => {
                 />
                 {courseFormErrors.price ? <span className="text-xs text-[color:var(--danger)]">{courseFormErrors.price}</span> : null}
               </label>
-              <label className="flex flex-col gap-1">
-                <span className="theme-subtle text-xs">Kategori</span>
-                <select
-                  aria-invalid={Boolean(courseFormErrors.categoryId)}
-                  className="theme-text h-10 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
-                  disabled={categoriesLoading}
-                  onChange={(event) => handleCourseFieldChange('categoryId', event.target.value)}
-                  value={courseForm.categoryId}
-                >
-                  <option value="">{categoriesLoading ? 'Kategoriler yukleniyor...' : 'Kategori secin'}</option>
-                  {courseCategories.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.categoryName}
-                    </option>
-                  ))}
-                  {courseForm.categoryId && !courseCategories.some((item) => item.id === courseForm.categoryId) ? (
-                    <option value={courseForm.categoryId}>{courseForm.categoryId}</option>
-                  ) : null}
-                </select>
-                {courseFormErrors.categoryId ? <span className="text-xs text-[color:var(--danger)]">{courseFormErrors.categoryId}</span> : null}
-                {categoriesError ? (
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs text-[color:var(--danger)]">Kategori listesi alinamadi.</span>
-                    <Button onClick={() => void refetchCategories()} type="button" variant="ghost">
-                      Tekrar yukle
+              <CourseLevelSelector
+                emptyStateText="Secim icin uygun seviye bulunamadi."
+                errorMessage={courseFormErrors.levelId}
+                hasLoadError={Boolean(levelsError)}
+                helperText="Kurs seviyesi secimi zorunludur."
+                label="Seviye"
+                levels={levelOptions}
+                loadFailedText="Seviye listesi alinamadi."
+                loading={levelsLoading}
+                loadingText="Seviyeler yukleniyor..."
+                onChange={handleLevelIdChange}
+                onRetry={() => void refetchLevels()}
+                placeholder="Seviye secin"
+                retryLabel="Tekrar yukle"
+                selectedId={courseForm.levelId}
+              />
+            </div>
+            <div>
+              <CourseCategorySelector
+                categories={categoryOptions}
+                clearLabel="Secimi temizle"
+                emptyStateText="Secim icin uygun kategori bulunamadi."
+                errorMessage={courseFormErrors.categoryIds}
+                hasLoadError={Boolean(categoriesError)}
+                helperText={`En az ${MIN_CATEGORY_COUNT}, en fazla ${MAX_CATEGORY_COUNT} kategori sec.`}
+                label="Kategoriler"
+                loadFailedText="Kategori listesi alinamadi."
+                loading={categoriesLoading}
+                loadingText="Kategoriler yukleniyor..."
+                onChange={handleCategoryIdsChange}
+                onRetry={() => void refetchCategories()}
+                retryLabel="Tekrar yukle"
+                selectedIds={courseForm.categoryIds}
+                selectedSummary={`Secilen: ${courseForm.categoryIds.length}/${MAX_CATEGORY_COUNT}`}
+              />
+            </div>
+
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)]">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="theme-subtle text-xs">Kurs gorseli (opsiyonel)</span>
+                  {selectedCourseImageFile ? (
+                    <Button
+                      onClick={() => handleCourseImageChange(null)}
+                      size="sm"
+                      type="button"
+                      variant="ghost"
+                    >
+                      Secimi temizle
                     </Button>
-                  </div>
-                ) : null}
-              </label>
+                  ) : null}
+                </div>
+                <input
+                  accept=".png,.jpg,.jpeg,.webp,.svg,image/png,image/jpeg,image/webp,image/svg+xml"
+                  className="theme-text file:theme-text h-11 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-2 text-sm file:mr-3 file:cursor-pointer file:rounded-[var(--radius-navigation)] file:border file:border-[color:var(--border)] file:bg-[color:var(--surface-soft)] file:px-3 file:py-1.5 file:text-xs file:font-medium file:hover:bg-[color:var(--surface-hover)]"
+                  onChange={(event) => handleCourseImageChange(event.target.files?.[0] ?? null)}
+                  type="file"
+                />
+                <span className="theme-subtle text-xs">
+                  Gorsel secmezsen mevcut kurs gorseli korunur.
+                </span>
+                {courseFormErrors.image ? <span className="text-xs text-[color:var(--danger)]">{courseFormErrors.image}</span> : null}
+              </div>
+
+              <div className="space-y-3 rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="theme-text text-sm font-medium">Kurs karti onizlemesi</span>
+                  <span className="theme-subtle text-xs">{selectedCourseImageFile?.name ?? 'Mevcut gorsel'}</span>
+                </div>
+                <div className="overflow-hidden rounded-[var(--radius-navigation)] border border-[color:var(--border)]">
+                  {courseImageDisplayUrl ? (
+                    <img
+                      alt="Kurs gorseli onizlemesi"
+                      className="h-44 w-full object-cover"
+                      onError={(event) => {
+                        const target = event.currentTarget
+
+                        if (target.dataset.fallbackApplied === 'true') {
+                          return
+                        }
+
+                        target.dataset.fallbackApplied = 'true'
+                        target.src = fallbackCourseImageUrl
+                      }}
+                      src={courseImageDisplayUrl}
+                    />
+                  ) : (
+                    <div className="flex h-44 w-full flex-col items-center justify-center gap-2 bg-[color:var(--surface-strong)] text-center">
+                      <ImageIcon aria-hidden className="h-6 w-6 text-[color:var(--text-muted)]" />
+                      <p className="theme-subtle text-xs">Kurs gorseli bulunamadi</p>
+                    </div>
+                  )}
+                </div>
+                <p className="text-clamp-2 theme-heading text-sm font-semibold">
+                  {courseForm.title.trim() || 'Kurs basligi'}
+                </p>
+                <span className="theme-subtle block text-xs">Gorselin kurs kartinda kirpilmis gorunumu.</span>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -1104,7 +1436,12 @@ const InstructorCourseVideoUploadPage = () => {
                       placeholder={`Etiket ${index + 1}`}
                       value={item}
                     />
-                    <Button onClick={() => handleRemoveTagField(index)} type="button" variant="ghost">
+                    <Button
+                      className="border-[color:var(--border)] hover:border-[color:var(--border-strong)]"
+                      onClick={() => handleRemoveTagField(index)}
+                      type="button"
+                      variant="ghost"
+                    >
                       Sil
                     </Button>
                   </div>
@@ -1124,12 +1461,48 @@ const InstructorCourseVideoUploadPage = () => {
               </Button>
             </div>
           </div>
-        ) : null}
+        ) : (
+          <div className="mt-4 grid gap-3 border-t border-[color:var(--border)] pt-4 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
+              <p className="theme-subtle text-xs">Baslik</p>
+              <p className="theme-heading mt-1 line-clamp-2 text-sm font-medium">{courseDetail.title}</p>
+            </div>
+            <div className="border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
+              <p className="theme-subtle text-xs">Seviye</p>
+              <p className="theme-heading mt-1 text-sm font-medium">{selectedLevelLabel}</p>
+            </div>
+            <div className="border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
+              <p className="theme-subtle text-xs">Kategoriler</p>
+              {selectedCategoryLabels.length > 0 ? (
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {selectedCategoryLabels.map((label) => (
+                    <span
+                      key={label}
+                      className="rounded-full border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-2 py-0.5 text-xs font-medium theme-heading"
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="theme-subtle mt-1 text-sm">Kategori secilmedi</p>
+              )}
+            </div>
+            <div className="border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
+              <p className="theme-subtle text-xs">Fiyat</p>
+              <p className="theme-heading mt-1 text-sm font-medium">{courseDetail.price.toFixed(2)}</p>
+            </div>
+            <div className="border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
+              <p className="theme-subtle text-xs">Etiket sayisi</p>
+              <p className="theme-heading mt-1 text-sm font-medium">{courseDetail.tags.length}</p>
+            </div>
+          </div>
+        )}
       </Card>
 
-      <Card>
-        <SectionHeader description="Baslik, sira ve aciklama bilgileriyle yeni ders olustur." title="Ders ekle" />
-        <div className="mt-4 space-y-3">
+      <Card className="border-l-4 border-l-[color:var(--warning)]" id="add-lesson">
+        <SectionHeader description="Yeni dersleri duzenli bir sira ile ekleyip kurs akisina dahil et." title="3. Ders ekle" />
+        <div className="mt-4 space-y-4">
           <div className="grid gap-3 md:grid-cols-3">
             <label className="flex flex-col gap-1 md:col-span-2">
               <span className="theme-subtle text-xs">Ders basligi</span>
@@ -1154,7 +1527,7 @@ const InstructorCourseVideoUploadPage = () => {
           <label className="flex flex-col gap-1">
             <span className="theme-subtle text-xs">Ders aciklamasi (opsiyonel)</span>
             <textarea
-              className="theme-text theme-placeholder min-h-[84px] rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-2 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
+              className="theme-text theme-placeholder min-h-[84px] rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-2 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
               onChange={(event) => setNewLessonDescription(event.target.value)}
               placeholder="Dersin icerigini kisa sekilde yazabilirsin."
               value={newLessonDescription}
@@ -1173,15 +1546,18 @@ const InstructorCourseVideoUploadPage = () => {
         </div>
       </Card>
 
-      <Card>
+      <Card className="border-l-4 border-l-[color:var(--success)]" id="lesson-list">
         <SectionHeader
-          description="Ders kartindan islem acarak guncelleme veya video yukleme yapabilirsin."
-          title="Dersler"
+          description="Her ders kartindan bilgileri guncelle, video yukle, onizle veya gerekirse sil."
+          title="4. Dersler ve video islemleri"
         />
-        <div className="mt-4 space-y-3">
-          {courseDetail.lessons.length === 0 ? (
-            <p className="theme-muted text-sm">Bu kurs icin henuz ders eklenmemis.</p>
-          ) : courseDetail.lessons.map((lesson) => {
+        <div className="mt-4 space-y-4">
+          {lessons.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-4 py-6 text-center">
+              <p className="theme-heading text-base font-semibold">Bu kurs icin henuz ders eklenmemis.</p>
+              <p className="theme-muted mt-2 text-sm">Once "Ders ekle" bolumunden ilk dersi olusturarak devam edebilirsin.</p>
+            </div>
+          ) : lessons.map((lesson) => {
             const hasVideo = Boolean(lesson.videoUrl)
             const isUploading = activeUploadLessonId === lesson.id
             const isUpdating = updatingLessonId === lesson.id
@@ -1197,30 +1573,42 @@ const InstructorCourseVideoUploadPage = () => {
 
             return (
               <div
-                className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)]"
+                className={`rounded-lg border bg-[color:var(--surface-soft)] transition hover:border-[color:var(--border-strong)] ${
+                  isExpanded
+                    ? 'border-[color:var(--primary)] shadow-[0_0_0_2px_var(--focus-ring)]'
+                    : 'border-[color:var(--border)]'
+                }`}
                 key={lesson.id}
               >
                 <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                   <div className="min-w-0">
                     <p className="theme-subtle text-xs uppercase tracking-[0.12em]">Ders #{lesson.orderIndex}</p>
                     <p className="theme-heading truncate text-sm font-semibold">{lesson.title}</p>
+                    <p className="theme-muted mt-1 text-xs">
+                      Sure: {lesson.duration ?? 0} sn | {lesson.completed ? 'Tamamlandi' : 'Devam ediyor'}
+                    </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row sm:items-center">
                     <InfoBadge tone={hasVideo ? 'success' : 'warning'}>{statusText}</InfoBadge>
+                    <InfoBadge tone={lesson.completed ? 'success' : 'warning'}>
+                      {lesson.completed ? 'Tamamlandi' : 'Tamamlanmadi'}
+                    </InfoBadge>
                     <Button
+                      className="w-full sm:w-auto"
                       onClick={() => setExpandedLessonId((current) => (current === lesson.id ? null : lesson.id))}
+                      aria-expanded={isExpanded}
                       size="sm"
                       type="button"
                       variant="secondary"
                     >
-                      {isExpanded ? 'Kapat' : 'Guncelle veya Video Yukle'}
+                      {isExpanded ? 'Duzenlemeyi kapat' : 'Duzenle ve video yonet'}
                     </Button>
                   </div>
                 </div>
 
                 {isExpanded ? (
                   <div className="space-y-4 border-t border-[color:var(--border)] px-4 py-4">
-                    <div className="space-y-3 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4">
+                    <div className="space-y-3 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4">
                       <p className="theme-subtle text-xs uppercase tracking-[0.12em]">Ders bilgilerini guncelle</p>
                       <div className="grid gap-3 md:grid-cols-2">
                         <label className="flex flex-col gap-1">
@@ -1274,6 +1662,7 @@ const InstructorCourseVideoUploadPage = () => {
 
                       <div className="flex flex-wrap justify-end gap-3 border-t border-[color:var(--border)] pt-4">
                         <Button
+                          className="w-full border-[color:var(--border)] hover:border-[color:var(--border-strong)] sm:w-auto"
                           disabled={isDeletingLesson}
                           onClick={() => void handleDeleteLesson(lesson)}
                           type="button"
@@ -1282,6 +1671,7 @@ const InstructorCourseVideoUploadPage = () => {
                           {isDeletingLesson ? 'Ders siliniyor...' : 'Dersi sil'}
                         </Button>
                         <Button
+                          className="w-full sm:w-auto"
                           disabled={isUpdating}
                           onClick={() => void handleUpdateLesson(lesson)}
                           type="button"
@@ -1292,21 +1682,24 @@ const InstructorCourseVideoUploadPage = () => {
                       </div>
                     </div>
 
-                    <LessonVideoActions
-                      hasVideo={hasVideo}
-                      isUploading={isUploading}
-                      lessonId={lesson.id}
-                      onDelete={() => void handleDeleteVideo(lesson)}
-                      onSelectFile={(file) => handleFileSelection(lesson.id, file)}
-                      onTogglePreview={() => void handleTogglePreview(lesson)}
-                      onUpload={() => void handleUpload(lesson)}
-                      previewError={previewErrorsByLesson[lesson.id]}
-                      previewLoading={Boolean(previewLoadingByLesson[lesson.id])}
-                      previewOpen={Boolean(openPreviewByLesson[lesson.id])}
-                      previewSrc={previewUrlsByLesson[lesson.id]}
-                      selectedFile={selectedFilesByLesson[lesson.id] ?? null}
-                      uploadProgress={uploadProgress}
-                    />
+                    <div className="space-y-3 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4">
+                      <p className="theme-subtle text-xs uppercase tracking-[0.12em]">Video islemleri</p>
+                      <LessonVideoActions
+                        hasVideo={hasVideo}
+                        isUploading={isUploading}
+                        lessonId={lesson.id}
+                        onDelete={() => void handleDeleteVideo(lesson)}
+                        onSelectFile={(file) => handleFileSelection(lesson.id, file)}
+                        onTogglePreview={() => void handleTogglePreview(lesson)}
+                        onUpload={() => void handleUpload(lesson)}
+                        previewError={previewErrorsByLesson[lesson.id]}
+                        previewLoading={Boolean(previewLoadingByLesson[lesson.id])}
+                        previewOpen={Boolean(openPreviewByLesson[lesson.id])}
+                        previewSrc={previewUrlsByLesson[lesson.id]}
+                        selectedFile={selectedFilesByLesson[lesson.id] ?? null}
+                        uploadProgress={uploadProgress}
+                      />
+                    </div>
                   </div>
                 ) : null}
               </div>
@@ -1335,6 +1728,7 @@ const InstructorCourseVideoUploadPage = () => {
           </div>
           <div className="flex flex-wrap justify-end gap-3">
             <Button
+              className="border-[color:var(--border)] hover:border-[color:var(--border-strong)]"
               disabled={unpublishingCourse}
               onClick={() => setIsUnpublishConfirmOpen(false)}
               variant="ghost"

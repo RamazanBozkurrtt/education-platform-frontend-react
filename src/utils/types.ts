@@ -30,6 +30,20 @@ export interface ChangePasswordPayload {
   newPassword: string
 }
 
+export interface ForgotPasswordPayload {
+  email: string
+}
+
+export interface ReactivationRequestPayload {
+  email: string
+}
+
+export interface ResetPasswordPayload {
+  token: string
+  newPassword: string
+  confirmPassword: string
+}
+
 export interface ApiEnvelope<T> {
   success: boolean
   status: number
@@ -149,15 +163,23 @@ export interface CourseCategoryOption {
   categoryName: string
 }
 
+export interface CourseLevelOption {
+  id: string
+  levelName: string
+}
+
 export interface Course {
   id: string
   slug: string
   title: string
   imageUrl: string
+  categoryIds?: string[]
+  categories?: CourseCategoryOption[]
   categoryId?: string
   category: string
   categoryKey: string
-  level: string
+  levelId?: string
+  level: CourseLevelOption
   levelKey: string
   duration: string
   lessons: number
@@ -165,6 +187,7 @@ export interface Course {
   students: string
   rating: number
   price: number
+  currency?: string
   accent: string
   summary: string
   description: string

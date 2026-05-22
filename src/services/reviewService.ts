@@ -67,13 +67,115 @@ const requireEnvelopeData = <T>(envelope: ApiEnvelope<T>, fallbackMessage: strin
   throw new Error(envelope.message || fallbackMessage)
 }
 
-const normalizeCourseId = (courseId: string) => courseId.trim()
-const normalizeReviewId = (reviewId: string) => reviewId.trim()
+const normalizeIdentifier = (value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(Math.trunc(value))
+  }
+
+  if (typeof value === 'string') {
+    return value.trim()
+  }
+
+  return ''
+}
+
+const normalizeCourseId = (courseId: string) => normalizeIdentifier(courseId)
+const normalizeReviewId = (reviewId: unknown) => {
+  const normalized = normalizeIdentifier(reviewId)
+
+  if (!normalized) {
+    throw new Error('Review id is required.')
+  }
+
+  return normalized
+}
 
 const normalizeReviewPayload = (payload: CreateReviewRequest | UpdateReviewRequest) => ({
   rating: payload.rating,
   comment: payload.comment.trim(),
 })
+
+const toNumber = (value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+
+  return undefined
+}
+
+const toBoolean = (value: unknown) => {
+  if (typeof value === 'boolean') {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLocaleLowerCase('en-US')
+
+    if (normalized === 'true') {
+      return true
+    }
+
+    if (normalized === 'false') {
+      return false
+    }
+  }
+
+  return undefined
+}
+
+const toText = (value: unknown) => {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
+
+const normalizeReview = (value: unknown): Review => {
+  const payload = toRecord(value)
+  const rating = toNumber(payload.rating) ?? 0
+  const normalizedId = normalizeIdentifier(payload.id ?? payload.reviewId)
+  const fallbackIdSource = [
+    normalizeIdentifier(payload.userId ?? payload.user_id),
+    toText(payload.createdAt),
+  ].filter(Boolean).join('-')
+
+  return {
+    id: normalizedId || `review-${fallbackIdSource || 'unknown'}`,
+    courseId: normalizeIdentifier(payload.courseId ?? payload.course_id),
+    userId: normalizeIdentifier(payload.userId ?? payload.user_id),
+    userDisplayName: toText(payload.userDisplayName ?? payload.userName ?? payload.fullName),
+    userProfileImageUrl: toText(payload.userProfileImageUrl ?? payload.profileImageUrl),
+    rating: Math.max(0, Math.min(5, Math.round(rating))),
+    comment: toText(payload.comment) ?? '',
+    createdAt: toText(payload.createdAt) ?? '',
+    updatedAt: toText(payload.updatedAt) ?? toText(payload.createdAt) ?? '',
+    ownedByCurrentUser: toBoolean(payload.ownedByCurrentUser ?? payload.ownedByUser),
+  }
+}
+
+const normalizeReviewSummary = (value: unknown): ReviewSummary => {
+  const payload = toRecord(value)
+  const distributionPayload = toRecord(payload.ratingDistribution ?? payload.distribution)
+  const normalizedDistribution: Record<string, number> = {}
+
+  for (const rating of [1, 2, 3, 4, 5]) {
+    normalizedDistribution[String(rating)] = Math.max(0, Math.round(toNumber(distributionPayload[String(rating)]) ?? 0))
+  }
+
+  return {
+    courseId: normalizeIdentifier(payload.courseId ?? payload.course_id),
+    averageRating: Math.max(0, Math.min(5, toNumber(payload.averageRating ?? payload.avgRating) ?? 0)),
+    totalReviews: Math.max(0, Math.round(toNumber(payload.totalReviews ?? payload.reviewCount) ?? 0)),
+    ratingDistribution: normalizedDistribution,
+  }
+}
 
 export const reviewService = {
   async getCourseReviewSummary(courseId: string) {
@@ -82,7 +184,7 @@ export const reviewService = {
       { skipGlobalErrorHandling: true },
     )
 
-    return requireEnvelopeData(response.data, 'Course review summary response is missing data.')
+    return normalizeReviewSummary(requireEnvelopeData(response.data, 'Course review summary response is missing data.'))
   },
 
   async getCourseReviews(courseId: string, params: ReviewListQuery = {}) {
@@ -101,7 +203,12 @@ export const reviewService = {
     )
 
     const data = requireEnvelopeData(response.data, 'Course review list response is missing data.')
-    return normalizePagedResponse<Review>(data, page, size)
+    const normalized = normalizePagedResponse<Review>(data, page, size)
+
+    return {
+      ...normalized,
+      content: normalized.content.map((item) => normalizeReview(item)),
+    }
   },
 
   async createCourseReview(courseId: string, payload: CreateReviewRequest) {
@@ -111,7 +218,7 @@ export const reviewService = {
       { skipGlobalErrorHandling: true },
     )
 
-    return requireEnvelopeData(response.data, 'Review create response is missing data.')
+    return normalizeReview(requireEnvelopeData(response.data, 'Review create response is missing data.'))
   },
 
   async updateReview(reviewId: string, payload: UpdateReviewRequest) {
@@ -121,7 +228,7 @@ export const reviewService = {
       { skipGlobalErrorHandling: true },
     )
 
-    return requireEnvelopeData(response.data, 'Review update response is missing data.')
+    return normalizeReview(requireEnvelopeData(response.data, 'Review update response is missing data.'))
   },
 
   async deleteReview(reviewId: string) {
@@ -157,6 +264,11 @@ export const reviewService = {
     })
 
     const data = requireEnvelopeData(response.data, 'My reviews response is missing data.')
-    return normalizePagedResponse<Review>(data, page, size)
+    const normalized = normalizePagedResponse<Review>(data, page, size)
+
+    return {
+      ...normalized,
+      content: normalized.content.map((item) => normalizeReview(item)),
+    }
   },
 }

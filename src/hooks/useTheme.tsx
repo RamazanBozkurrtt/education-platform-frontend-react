@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useState,
   type ReactNode,
 } from 'react'
@@ -17,11 +18,25 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
-const getPreferredTheme = (): ThemeMode => {
-  const storedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+const isThemeMode = (value: string | null): value is ThemeMode => value === 'light' || value === 'dark'
 
-  if (storedTheme === 'light') {
-    return storedTheme
+const getPreferredTheme = (): ThemeMode => {
+  if (typeof window === 'undefined') {
+    return 'light'
+  }
+
+  try {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+
+    if (isThemeMode(storedTheme)) {
+      return storedTheme
+    }
+  } catch {
+    // Ignore storage errors and fallback to system preference.
+  }
+
+  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+    return 'dark'
   }
 
   return 'light'
@@ -30,10 +45,17 @@ const getPreferredTheme = (): ThemeMode => {
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<ThemeMode>(() => getPreferredTheme())
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme
     document.documentElement.style.colorScheme = theme
-    localStorage.setItem(THEME_STORAGE_KEY, theme)
+  }, [theme])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme)
+    } catch {
+      // Ignore storage write errors.
+    }
   }, [theme])
 
   return (

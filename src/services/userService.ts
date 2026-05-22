@@ -10,6 +10,8 @@ import type { ApiEnvelope, User, UserProfilePayload, UserProfileResponse } from 
 type ProfileResponseWithAliases = UserProfileResponse & {
   first_name?: string | null
   last_name?: string | null
+  title?: string | null
+  role?: string | null
   avatar_url?: string | null
   social_links?: Record<string, string> | null
   profileCompleted?: boolean
@@ -99,7 +101,7 @@ const mergeUserWithProfile = (currentUser: User, profile: UserProfileResponse): 
   const profileWithAliases = profile as ProfileResponseWithAliases
   const firstName = resolveProfileField(profileWithAliases.firstName ?? profileWithAliases.first_name, currentUser.firstName)
   const lastName = resolveProfileField(profileWithAliases.lastName ?? profileWithAliases.last_name, currentUser.lastName)
-  const headline = resolveProfileField(profileWithAliases.headline, currentUser.headline)
+  const headline = resolveProfileField(profileWithAliases.headline ?? profileWithAliases.title ?? profileWithAliases.role, currentUser.headline)
   const biography = resolveProfileField(profileWithAliases.biography, currentUser.biography)
   const avatarUrl = resolveProfileField(profileWithAliases.avatarUrl ?? profileWithAliases.avatar_url, currentUser.avatarUrl)
   const socialLinksSource = profileWithAliases.socialLinks ?? profileWithAliases.social_links ?? undefined
