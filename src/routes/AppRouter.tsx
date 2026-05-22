@@ -10,6 +10,7 @@ import LoginPage from '../pages/LoginPage'
 import RegisterPage from '../pages/RegisterPage'
 import ForgotPasswordPage from '../pages/ForgotPasswordPage'
 import ResetPasswordPage from '../pages/ResetPasswordPage'
+import ReactivateAccountPage from '../pages/ReactivateAccountPage'
 import CompleteProfilePage from '../pages/CompleteProfilePage'
 import DashboardPage from '../pages/DashboardPage'
 import MyCoursesPage from '../pages/MyCoursesPage'
@@ -40,6 +41,7 @@ const AppRouter = () => (
       <Route path={ROUTES.register} element={<RegisterPage />} />
       <Route path={ROUTES.forgotPassword} element={<ForgotPasswordPage />} />
       <Route path={ROUTES.resetPassword} element={<ResetPasswordPage />} />
+      <Route path={ROUTES.reactivateAccount} element={<ReactivateAccountPage />} />
     </Route>
 
     <Route element={<ProtectedRoute />}>

@@ -1,9 +1,12 @@
 import { ArrowRight, CheckCircle2, Clock3, PlayCircle, ShoppingCart, Star, UserRound, UsersRound } from 'lucide-react'
+import type { SyntheticEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
+import { resolveServiceUrl } from '../../config/api'
 import { useCart } from '../../hooks/useCart'
 import { useLanguage } from '../../hooks/useLanguage'
 import { useLibrary } from '../../hooks/useLibrary'
+import { API_ENDPOINTS } from '../../services/endpoints'
 import { ROUTES } from '../../utils/constants'
 import { getCourseCategoryLabel } from '../../utils/courseCategory'
 import { formatCoursePrice } from '../../utils/helpers'
@@ -29,44 +32,69 @@ const CourseCatalogList = ({ courses }: CourseCatalogListProps) => {
     navigate(ROUTES.cart)
   }
 
+  const handleImageError = (event: SyntheticEvent<HTMLImageElement>, fallbackImageUrl: string) => {
+    const target = event.currentTarget
+
+    if (target.dataset.fallbackApplied === 'true') {
+      return
+    }
+
+    target.dataset.fallbackApplied = 'true'
+    target.src = fallbackImageUrl
+  }
+
   return (
     <ul className="divide-y divide-[color:var(--border)] rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
       {courses.map((course) => {
         const inCart = isInCart(course.id)
         const purchased = isPurchased(course.id)
+        const fallbackImageUrl = resolveServiceUrl(API_ENDPOINTS.courses.image.public(course.id))
+        const courseImageUrl = course.imageUrl || fallbackImageUrl
 
         return (
           <li className="px-4 py-4 md:px-5" key={course.id}>
             <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <StatusBadge>{getCourseCategoryLabel(course)}</StatusBadge>
-                  <StatusBadge>{course.level.levelName}</StatusBadge>
-                </div>
-                <h3 className="theme-heading mt-3 text-base font-semibold leading-6">
-                  <Link className="transition-colors hover:text-[color:var(--primary)]" to={ROUTES.courseDetail(course.slug)}>
-                    {course.title}
-                  </Link>
-                </h3>
-                <p className="theme-muted mt-1.5 flex items-center gap-2 text-sm">
-                  <UserRound className="h-4 w-4" />
-                  {course.instructor.name}
-                </p>
-                <p className="theme-muted mt-2 text-sm leading-6">{course.summary}</p>
-                <div className="theme-subtle mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-                  <span className="inline-flex items-center gap-1.5">
-                    <Clock3 className="h-3.5 w-3.5" />
-                    {course.duration}
-                  </span>
-                  <span>{t('courseCard.lessonsValue', { count: course.lessons })}</span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <Star className="h-3.5 w-3.5" />
-                    {course.rating}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5">
-                    <UsersRound className="h-3.5 w-3.5" />
-                    {course.students}
-                  </span>
+              <div className="min-w-0 flex flex-1 gap-3">
+                <Link className="shrink-0" to={ROUTES.courseDetail(course.slug)}>
+                  <img
+                    alt={course.title}
+                    className="h-14 w-[88px] rounded-sm border border-[color:var(--border)] object-cover"
+                    loading="lazy"
+                    onError={(event) => handleImageError(event, fallbackImageUrl)}
+                    src={courseImageUrl}
+                  />
+                </Link>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusBadge>{getCourseCategoryLabel(course)}</StatusBadge>
+                    <StatusBadge>{course.level.levelName}</StatusBadge>
+                  </div>
+                  <h3 className="theme-heading mt-3 text-base font-semibold leading-6">
+                    <Link className="transition-colors hover:text-[color:var(--primary)]" to={ROUTES.courseDetail(course.slug)}>
+                      {course.title}
+                    </Link>
+                  </h3>
+                  <p className="theme-muted mt-1.5 flex items-center gap-2 text-sm">
+                    <UserRound className="h-4 w-4" />
+                    {course.instructor.name}
+                  </p>
+                  <p className="theme-muted mt-2 text-sm leading-6">{course.summary}</p>
+                  <div className="theme-subtle mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                    <span className="inline-flex items-center gap-1.5">
+                      <Clock3 className="h-3.5 w-3.5" />
+                      {course.duration}
+                    </span>
+                    <span>{t('courseCard.lessonsValue', { count: course.lessons })}</span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <Star className="h-3.5 w-3.5" />
+                      {course.rating}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <UsersRound className="h-3.5 w-3.5" />
+                      {course.students}
+                    </span>
+                  </div>
                 </div>
               </div>
 

@@ -19,7 +19,7 @@ import { useLanguage } from '../hooks/useLanguage'
 import { useCart } from '../hooks/useCart'
 import { useLibrary } from '../hooks/useLibrary'
 import { useAuth } from '../hooks/useAuth'
-import { useCreatePaymentMutation } from '../hooks/usePayments'
+import { useConfirmPaymentMutation, useCreatePaymentMutation } from '../hooks/usePayments'
 import { courseService } from '../services/courseService'
 import { enrollmentService } from '../services/enrollmentService'
 import { reviewService } from '../services/reviewService'
@@ -136,8 +136,9 @@ const CourseDetailPage = () => {
   const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [purchaseError, setPurchaseError] = useState<string | null>(null)
   const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null)
-  const [purchaseStage, setPurchaseStage] = useState<'payment' | 'enrollment' | null>(null)
+  const [purchaseStage, setPurchaseStage] = useState<'payment' | 'confirm' | 'enrollment' | null>(null)
   const createPaymentMutation = useCreatePaymentMutation()
+  const confirmPaymentMutation = useConfirmPaymentMutation()
 
   const copy = language === 'tr'
     ? {
@@ -174,8 +175,10 @@ const CourseDetailPage = () => {
       paymentMethod: 'Ödeme yöntemi',
       completePayment: 'Ödemeyi Tamamla',
       paymentPreparing: 'Ödeme hazırlanıyor...',
+      paymentConfirming: 'Ödeme doğrulanıyor...',
       enrollmentCreating: 'Kayıt oluşturuluyor...',
       paymentSuccess: 'Ödeme başarılı. Kurs kaydınız oluşturuldu.',
+      paymentDeclined: 'Odeme basarisiz. Yeni bir odeme denemesi baslatabilirsiniz.',
       enrollmentSuccess: 'Kurs kaydınız oluşturuldu.',
       paymentRequiredMessage: 'Bu kursa kayıt olmak için önce ödeme işlemini tamamlamalısınız.',
       paymentFailedMessage: 'Ödeme işlemi tamamlanamadı. Lütfen tekrar deneyin.',
@@ -216,8 +219,10 @@ const CourseDetailPage = () => {
       paymentMethod: 'Payment method',
       completePayment: 'Complete Payment',
       paymentPreparing: 'Preparing payment...',
+      paymentConfirming: 'Confirming payment...',
       enrollmentCreating: 'Creating enrollment...',
       paymentSuccess: 'Payment succeeded. Your enrollment has been created.',
+      paymentDeclined: 'Payment failed. You can start a new payment attempt.',
       enrollmentSuccess: 'Your enrollment has been created.',
       paymentRequiredMessage: 'You need to complete payment before enrolling in this course.',
       paymentFailedMessage: 'Payment could not be completed. Please try again.',
@@ -426,7 +431,7 @@ const CourseDetailPage = () => {
     }
   }
 
-  const handlePaidEnrollment = async () => {
+  const handlePaidEnrollment = async (approved: boolean) => {
     if (!data || purchased || purchaseStage) {
       return
     }
@@ -436,12 +441,32 @@ const CourseDetailPage = () => {
     setPurchaseStage('payment')
 
     try {
-      await createPaymentMutation.mutateAsync({
+      const createdPayment = await createPaymentMutation.mutateAsync({
         courseId: data.id,
         provider: 'MOCK_GATEWAY',
         paymentMethod: 'CARD',
         idempotencyKey: createIdempotencyKey(),
+        autoConfirm: false,
+        buyerFullName: user?.name,
+        buyerEmail: user?.email,
       })
+
+      setPurchaseStage('confirm')
+
+      const confirmedPayment = await confirmPaymentMutation.mutateAsync({
+        paymentId: createdPayment.id,
+        payload: {
+          approved,
+          failureReason: approved ? undefined : copy.paymentDeclined,
+          buyerFullName: user?.name,
+          buyerEmail: user?.email,
+        },
+      })
+
+      if (confirmedPayment.status !== 'SUCCEEDED') {
+        setPurchaseError(confirmedPayment.failureReason ?? copy.paymentDeclined)
+        return
+      }
 
       setPurchaseStage('enrollment')
 
@@ -792,14 +817,33 @@ const CourseDetailPage = () => {
             className="w-full justify-center"
             disabled={Boolean(purchaseStage)}
             onClick={() => {
-              void handlePaidEnrollment()
+              void handlePaidEnrollment(true)
             }}
           >
             {purchaseStage === 'payment'
               ? copy.paymentPreparing
+              : purchaseStage === 'confirm'
+                ? copy.paymentConfirming
+                : purchaseStage === 'enrollment'
+                  ? copy.enrollmentCreating
+                  : copy.completePayment}
+          </Button>
+
+          <Button
+            className="w-full justify-center"
+            disabled={Boolean(purchaseStage)}
+            onClick={() => {
+              void handlePaidEnrollment(false)
+            }}
+            variant="secondary"
+          >
+            {purchaseStage === 'payment'
+              ? copy.paymentPreparing
+              : purchaseStage === 'confirm'
+                ? copy.paymentConfirming
               : purchaseStage === 'enrollment'
                 ? copy.enrollmentCreating
-                : copy.completePayment}
+                : (language === 'tr' ? 'Reddet (Fail)' : 'Decline (Fail)')}
           </Button>
         </div>
       </Modal>

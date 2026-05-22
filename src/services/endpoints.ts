@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
     changePassword: '/api/v1/auth/change-password',
     me: '/api/v1/auth/me',
     reactivateAccount: '/api/v1/auth/reactivate-account',
+    requestReactivation: '/api/v1/auth/reactivate-account/request',
   },
   courses: {
     publicList: '/api/v1/courses/public',
@@ -44,6 +45,8 @@ export const API_ENDPOINTS = {
   payments: {
     create: '/api/v1/payments',
     me: '/api/v1/payments/me',
+    byId: (paymentId: string) => `/api/v1/payments/${paymentId}`,
+    confirm: (paymentId: string) => `/api/v1/payments/${paymentId}/confirm`,
     invoice: (paymentId: string) => `/api/v1/payments/${paymentId}/invoice`,
   },
   users: {

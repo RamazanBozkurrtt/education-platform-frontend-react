@@ -6,6 +6,7 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Loader from '../components/ui/Loader'
 import { useAuth } from '../hooks/useAuth'
+import { authApi } from '../services/authApi'
 import { authFlowLog } from '../shared/authFlowDebug'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { getFirstFieldErrorMap } from '../shared/errors/types'
@@ -21,8 +22,9 @@ const LoginPage = () => {
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  const [reactivationLink, setReactivationLink] = useState<string | null>(null)
-  const [reactivationMessage, setReactivationMessage] = useState<string | null>(null)
+  const [reactivationPrompt, setReactivationPrompt] = useState<{ email: string; message: string } | null>(null)
+  const [reactivationRequesting, setReactivationRequesting] = useState(false)
+  const [reactivationFeedback, setReactivationFeedback] = useState<{ message: string; tone: 'success' | 'error' } | null>(null)
 
   const redirectPath =
     (location.state as { from?: { pathname?: string } } | null)?.from?.pathname ?? ROUTES.dashboard
@@ -44,8 +46,8 @@ const LoginPage = () => {
     setSubmitting(true)
     setFormError(null)
     setFieldErrors({})
-    setReactivationLink(null)
-    setReactivationMessage(null)
+    setReactivationPrompt(null)
+    setReactivationFeedback(null)
 
     try {
       const result = await login({ email, password })
@@ -54,8 +56,10 @@ const LoginPage = () => {
       authFlowLog('stored refresh token:', localStorage.getItem('refreshToken'))
 
       if (result.status === 'deactivated') {
-        setReactivationLink(result.reactivationLink ?? null)
-        setReactivationMessage(result.message ?? 'Your account needs to be reactivated before you can sign in.')
+        setReactivationPrompt({
+          email: email.trim(),
+          message: result.message ?? t('auth.reactivation.required', { defaultValue: 'Your account needs to be reactivated before you can sign in.' }),
+        })
         return
       }
 
@@ -70,6 +74,31 @@ const LoginPage = () => {
       setFieldErrors(getFirstFieldErrorMap(appError.fieldErrors))
     } finally {
       setSubmitting(false)
+    }
+  }
+
+  const handleRequestReactivation = async () => {
+    if (!reactivationPrompt?.email) {
+      return
+    }
+
+    setReactivationFeedback(null)
+    setReactivationRequesting(true)
+
+    try {
+      const message = await authApi.requestReactivation({ email: reactivationPrompt.email })
+      setReactivationFeedback({
+        tone: 'success',
+        message: message || t('auth.reactivation.sent', { defaultValue: 'If your account is eligible, a reactivation link has been sent to your email.' }),
+      })
+    } catch (error) {
+      const appError = normalizeApiError(error)
+      setReactivationFeedback({
+        tone: 'error',
+        message: appError.message,
+      })
+    } finally {
+      setReactivationRequesting(false)
     }
   }
 
@@ -115,17 +144,41 @@ const LoginPage = () => {
             {formError}
           </div>
         ) : null}
-        {reactivationLink ? (
+        {reactivationPrompt ? (
           <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-muted-mandarin)] px-4 py-3 text-sm text-[color:var(--text-heading)]">
-            <p>{reactivationMessage}</p>
-            <a
-              className="mt-2 block break-all font-medium text-[color:var(--text-heading)] underline underline-offset-4"
-              href={reactivationLink}
-              rel="noreferrer"
-              target="_blank"
-            >
-              {reactivationLink}
-            </a>
+            <p>{reactivationPrompt.message}</p>
+            <p className="mt-2">
+              {t('auth.reactivation.prompt', { defaultValue: 'Send a reactivation email to' })}{' '}
+              <span className="font-semibold">{reactivationPrompt.email}</span>?
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Button
+                disabled={reactivationRequesting}
+                onClick={() => {
+                  setReactivationPrompt(null)
+                  setReactivationFeedback(null)
+                }}
+                type="button"
+                variant="secondary"
+              >
+                {t('auth.reactivation.notNow', { defaultValue: 'Not now' })}
+              </Button>
+              <Button
+                className="text-white"
+                disabled={reactivationRequesting}
+                onClick={() => void handleRequestReactivation()}
+                type="button"
+              >
+                {reactivationRequesting
+                  ? t('auth.reactivation.sending', { defaultValue: 'Sending...' })
+                  : t('auth.reactivation.send', { defaultValue: 'Yes, send link' })}
+              </Button>
+            </div>
+            {reactivationFeedback ? (
+              <p className={`mt-3 ${reactivationFeedback.tone === 'error' ? 'text-[color:var(--danger)]' : 'theme-text'}`}>
+                {reactivationFeedback.message}
+              </p>
+            ) : null}
           </div>
         ) : null}
         <Button className="mt-2 w-full text-white" size="lg" type="submit">

@@ -1,6 +1,8 @@
-﻿import { ArrowRight, CirclePlay } from 'lucide-react'
+import type { SyntheticEvent } from 'react'
+import { ArrowRight, CirclePlay } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
+import { resolveServiceUrl } from '../config/api'
 import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
 import DashboardSection from '../components/dashboard/DashboardSection'
 import EmptyState from '../components/dashboard/EmptyState'
@@ -9,9 +11,10 @@ import StatusBadge from '../components/dashboard/StatusBadge'
 import TableShell from '../components/dashboard/TableShell'
 import Button from '../components/ui/Button'
 import { useLanguage } from '../hooks/useLanguage'
+import { API_ENDPOINTS } from '../services/endpoints'
 import { useLibrary } from '../hooks/useLibrary'
 import { ROUTES } from '../utils/constants'
-import { getCourseCategoryFilterKeys, getCourseCategoryLabel } from '../utils/courseCategory'
+import { getCourseCategoryFilterKeys, getCourseCategoryLabels } from '../utils/courseCategory'
 
 const MyCoursesPage = () => {
   const { t } = useTranslation()
@@ -31,6 +34,19 @@ const MyCoursesPage = () => {
     course: language === 'tr' ? 'Kurs' : 'Course',
     category: language === 'tr' ? 'Kategori' : 'Category',
     actions: language === 'tr' ? 'Islem' : 'Action',
+  }
+  const continueButtonLabel = language === 'tr' ? 'Devam et' : 'Continue'
+
+  const handleImageError = (event: SyntheticEvent<HTMLImageElement>) => {
+    const target = event.currentTarget
+    const fallbackSrc = target.dataset.fallbackSrc
+
+    if (!fallbackSrc || target.dataset.fallbackApplied === 'true') {
+      return
+    }
+
+    target.dataset.fallbackApplied = 'true'
+    target.src = fallbackSrc
   }
 
   return (
@@ -59,7 +75,7 @@ const MyCoursesPage = () => {
       <DashboardSection title={t('myCourses.title')}>
         {hasCourses ? (
           <TableShell>
-            <table className="min-w-[860px] w-full border-collapse text-sm">
+            <table className="min-w-[980px] w-full border-collapse text-sm">
               <thead>
                 <tr className="border-b border-[color:var(--border)] bg-[color:var(--surface-soft)] text-left">
                   <th className="theme-subtle px-4 py-3 text-xs font-semibold uppercase tracking-[0.08em]">{labels.course}</th>
@@ -71,42 +87,81 @@ const MyCoursesPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {purchasedCourses.map((course) => (
-                  <tr className="border-b border-[color:var(--border)] last:border-b-0" key={course.id}>
-                    <td className="px-4 py-3.5">
-                      <p className="theme-heading font-medium">{course.title}</p>
-                      <p className="theme-muted mt-1 line-clamp-1 text-xs">{course.summary}</p>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <StatusBadge>{getCourseCategoryLabel(course)}</StatusBadge>
-                    </td>
-                    <td className="theme-muted px-4 py-3.5">{t('courseCard.lessonsValue', { count: course.lessons })}</td>
-                    <td className="theme-muted px-4 py-3.5">{course.duration}</td>
-                    <td className="px-4 py-3.5">
-                      <div className="w-[140px]">
-                        <p className="theme-muted mb-1 text-xs">{t('dashboard.progressComplete', { progress: course.progress })}</p>
-                        <div className="h-1.5 rounded bg-[color:var(--surface-muted)]">
-                          <div className="h-full rounded bg-[color:var(--primary)]" style={{ width: `${course.progress}%` }} />
+                {purchasedCourses.map((course) => {
+                  const categoryLabels = getCourseCategoryLabels(course)
+                  const fallbackImageSrc = resolveServiceUrl(API_ENDPOINTS.courses.image.public(course.id))
+
+                  return (
+                    <tr className="border-b border-[color:var(--border)] align-top last:border-b-0" key={course.id}>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-start gap-3">
+                          <Link
+                            className="shrink-0 overflow-hidden rounded-[var(--radius-navigation)] border border-[color:var(--border)]"
+                            to={ROUTES.courseDetail(course.slug)}
+                          >
+                            <img
+                              alt={course.title}
+                              className="h-16 w-24 object-cover"
+                              data-fallback-src={fallbackImageSrc}
+                              loading="lazy"
+                              onError={handleImageError}
+                              src={course.imageUrl || fallbackImageSrc}
+                            />
+                          </Link>
+                          <div className="min-w-0">
+                            <p className="theme-heading line-clamp-2 font-medium">{course.title}</p>
+                            <p className="theme-muted mt-1 line-clamp-2 text-xs">{course.summary}</p>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <Link to={ROUTES.coursePlayer(course.slug)}>
-                          <Button asChild size="sm">
-                            <CirclePlay className="h-4 w-4" />
-                            {t('myCourses.continueLearning')}
-                          </Button>
-                        </Link>
-                        <Link to={ROUTES.courseDetail(course.slug)}>
-                          <Button asChild size="sm" variant="ghost">
-                            {t('common.viewDetails')}
-                          </Button>
-                        </Link>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex max-w-[220px] flex-wrap gap-1.5">
+                          {categoryLabels.length > 0
+                            ? categoryLabels.slice(0, 3).map((categoryLabel) => (
+                              <StatusBadge
+                                className="rounded-full border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-2.5 normal-case tracking-normal"
+                                key={`${course.id}-${categoryLabel}`}
+                              >
+                                <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-[color:var(--primary)]" />
+                                {categoryLabel}
+                              </StatusBadge>
+                            ))
+                            : (
+                              <StatusBadge className="rounded-full border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-2.5 normal-case tracking-normal">
+                                <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-[color:var(--primary)]" />
+                                General
+                              </StatusBadge>
+                            )}
+                        </div>
+                      </td>
+                      <td className="theme-muted px-4 py-3.5">{t('courseCard.lessonsValue', { count: course.lessons })}</td>
+                      <td className="theme-muted px-4 py-3.5">{course.duration}</td>
+                      <td className="px-4 py-3.5">
+                        <div className="w-[140px]">
+                          <p className="theme-muted mb-1 text-xs">{t('dashboard.progressComplete', { progress: course.progress })}</p>
+                          <div className="h-1.5 rounded bg-[color:var(--surface-muted)]">
+                            <div className="h-full rounded bg-[color:var(--primary)]" style={{ width: `${course.progress}%` }} />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3.5">
+                        <div className="flex items-center gap-2">
+                          <Link to={ROUTES.coursePlayer(course.slug)}>
+                            <Button asChild className="min-w-[116px] whitespace-nowrap" size="sm">
+                              <CirclePlay className="h-4 w-4" />
+                              {continueButtonLabel}
+                            </Button>
+                          </Link>
+                          <Link to={ROUTES.courseDetail(course.slug)}>
+                            <Button asChild size="sm" variant="ghost">
+                              {t('common.viewDetails')}
+                            </Button>
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </TableShell>
@@ -130,4 +185,3 @@ const MyCoursesPage = () => {
 }
 
 export default MyCoursesPage
-

@@ -18,6 +18,7 @@ export const ROUTES = {
   register: '/register',
   forgotPassword: '/forgot-password',
   resetPassword: '/reset-password',
+  reactivateAccount: '/reactivate-account',
   completeProfile: '/complete-profile',
   dashboard: '/dashboard',
   myCourses: '/my-courses',
