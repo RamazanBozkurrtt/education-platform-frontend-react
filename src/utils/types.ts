@@ -158,6 +158,31 @@ export interface CourseModule {
   videoUrl?: string
 }
 
+export interface LessonProgress {
+  courseId: string
+  lessonId: string
+  lastWatchedSecond: number
+  watchedPercentage: number
+  completed: boolean
+  completedAt: string | null
+  updatedAt: string | null
+}
+
+export interface LessonProgressUpdateRequest {
+  lastWatchedSecond: number
+  videoDurationSecond: number
+}
+
+export interface CourseProgressSummary {
+  courseId: string
+  totalLessons: number
+  completedLessons: number
+  overallPercentage: number
+  lastLessonId: string | null
+  lastWatchedSecond: number
+  lastActivityAt: string | null
+}
+
 export interface CourseCategoryOption {
   id: string
   categoryName: string
@@ -198,6 +223,7 @@ export interface Course {
     name: string
     role: string
     bio: string
+    avatarUrl?: string
   }
 }
 

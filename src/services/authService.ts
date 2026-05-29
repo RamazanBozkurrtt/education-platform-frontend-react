@@ -20,6 +20,7 @@ import type {
   LoginSuccessData,
 } from '../utils/types'
 import { isAppError } from '../shared/errors/types'
+import { normalizeApiError } from '../shared/errors/normalizeApiError'
 
 const requireTokens = (accessToken: string, refreshToken: string, message?: string) => {
   if (!accessToken || !refreshToken) {
@@ -51,6 +52,30 @@ const withLatestPersistedTokens = (
 
 const PROFILE_SYNC_RETRY_DELAYS = [250, 500, 900] as const
 const shouldCallServerLogout = import.meta.env.VITE_ENABLE_SERVER_LOGOUT === 'true'
+const DEACTIVATED_LOGIN_CODE = '1009'
+const DEACTIVATED_LOGIN_MESSAGE_HINTS = [
+  'deaktif',
+  'deactivated',
+  'reactivation',
+  'reactivate',
+  'inactive',
+  'not active',
+] as const
+
+const isDeactivatedLoginError = (message: string, code?: string, httpStatus?: number) => {
+  const normalizedMessage = message.toLowerCase()
+  const normalizedCode = (code || '').trim().toLowerCase()
+
+  if (normalizedCode === DEACTIVATED_LOGIN_CODE) {
+    return true
+  }
+
+  if (httpStatus !== 403) {
+    return false
+  }
+
+  return DEACTIVATED_LOGIN_MESSAGE_HINTS.some((hint) => normalizedMessage.includes(hint))
+}
 
 const normalizeAuthResponse = ({
   data,
@@ -165,29 +190,43 @@ export const authService = {
   },
 
   async login(payload: AuthPayload): Promise<AuthActionResult> {
-    const { data, message } = await authApi.login(payload)
-    const result = normalizeAuthResponse({
-      data,
-      payload,
-      profileCompleted: undefined,
-    })
-
-    if (result.status === 'authenticated' && result.session) {
-      const session = await syncSessionProfile({
-        session: result.session,
-        fallbackProfileCompleted: undefined,
+    try {
+      const { data, message } = await authApi.login(payload)
+      const result = normalizeAuthResponse({
+        data,
+        payload,
+        profileCompleted: undefined,
       })
+
+      if (result.status === 'authenticated' && result.session) {
+        const session = await syncSessionProfile({
+          session: result.session,
+          fallbackProfileCompleted: undefined,
+        })
+
+        return {
+          ...result,
+          message,
+          session,
+        }
+      }
 
       return {
         ...result,
         message,
-        session,
       }
-    }
+    } catch (error) {
+      const appError = normalizeApiError(error)
 
-    return {
-      ...result,
-      message,
+      if (isDeactivatedLoginError(appError.message, appError.code, appError.httpStatus)) {
+        clearSession()
+        return {
+          status: 'deactivated',
+          message: appError.message,
+        }
+      }
+
+      throw appError
     }
   },
 

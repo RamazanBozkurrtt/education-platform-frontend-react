@@ -1,5 +1,5 @@
-import { AlertCircle, LoaderCircle, Maximize2, Minimize2, Pause, Play, Volume2, VolumeX } from 'lucide-react'
-import { type ChangeEvent, type CSSProperties, type KeyboardEvent, type MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AlertCircle, LoaderCircle, Maximize2, Minimize2, Pause, PictureInPicture2, Play, Volume2, VolumeX } from 'lucide-react'
+import { type ChangeEvent, type CSSProperties, type KeyboardEvent, type MouseEvent, type MutableRefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '../../utils/helpers'
 import './courseVideoPlayer.css'
 
@@ -8,18 +8,24 @@ interface CourseVideoPlayerProps {
   src?: string
   videoKey: string
   title: string
-  subtitle?: string
   emptyMessage: string
   isSourceLoading: boolean
   sourceErrorMessage?: string | null
   onVideoPlay: () => void
   onVideoLoadedMetadata: () => void
   onVideoError: () => void
+  onVideoPause?: () => void
+  onVideoEnded?: () => void
+  onVideoTimeUpdate?: () => void
 }
 
 const SPEED_OPTIONS = [0.5, 1, 1.25, 1.5, 2]
+const VOLUME_STEP_FINE = 0.01
+const VOLUME_STEP_COARSE = 0.05
+const SEEK_SECONDS = 5
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
+const toVolumePercent = (value: number) => Math.round(clamp(value, 0, 1) * 100)
 
 const formatTime = (value: number) => {
   if (!Number.isFinite(value) || value <= 0) {
@@ -59,13 +65,15 @@ const CourseVideoPlayer = ({
   src,
   videoKey,
   title,
-  subtitle,
   emptyMessage,
   isSourceLoading,
   sourceErrorMessage,
+  onVideoEnded,
   onVideoError,
   onVideoLoadedMetadata,
+  onVideoPause,
   onVideoPlay,
+  onVideoTimeUpdate,
 }: CourseVideoPlayerProps) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const hideControlsTimeoutRef = useRef<number | null>(null)
@@ -81,6 +89,8 @@ const CourseVideoPlayer = ({
   const [playbackRate, setPlaybackRate] = useState(1)
   const [isMuted, setIsMuted] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isPictureInPicture, setIsPictureInPicture] = useState(false)
+  const [isPictureInPictureSupported, setIsPictureInPictureSupported] = useState(false)
   const [hasStarted, setHasStarted] = useState(false)
   const [isSeeking, setIsSeeking] = useState(false)
 
@@ -160,6 +170,31 @@ const CourseVideoPlayer = ({
     setHasStarted(false)
     setIsSeeking(false)
   }, [videoKey])
+
+  useEffect(() => {
+    setIsPictureInPictureSupported(Boolean(document.pictureInPictureEnabled))
+
+    const video = videoRef.current
+
+    if (!video) {
+      return
+    }
+
+    const handleEnterPictureInPicture = () => {
+      setIsPictureInPicture(true)
+    }
+    const handleLeavePictureInPicture = () => {
+      setIsPictureInPicture(false)
+    }
+
+    video.addEventListener('enterpictureinpicture', handleEnterPictureInPicture)
+    video.addEventListener('leavepictureinpicture', handleLeavePictureInPicture)
+
+    return () => {
+      video.removeEventListener('enterpictureinpicture', handleEnterPictureInPicture)
+      video.removeEventListener('leavepictureinpicture', handleLeavePictureInPicture)
+    }
+  }, [videoKey, videoRef])
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -242,6 +277,10 @@ const CourseVideoPlayer = ({
     updateVolume(0)
   }, [isMuted, updateVolume, volume])
 
+  const adjustVolumeByStep = useCallback((step: number) => {
+    updateVolume(volume + step)
+  }, [updateVolume, volume])
+
   const toggleFullscreen = useCallback(async () => {
     const container = containerRef.current
 
@@ -256,6 +295,21 @@ const CourseVideoPlayer = ({
 
     await container.requestFullscreen().catch(() => undefined)
   }, [])
+
+  const togglePictureInPicture = useCallback(async () => {
+    const video = videoRef.current
+
+    if (!video || !hasSource || hasError || !document.pictureInPictureEnabled) {
+      return
+    }
+
+    if (document.pictureInPictureElement) {
+      await document.exitPictureInPicture().catch(() => undefined)
+      return
+    }
+
+    await video.requestPictureInPicture().catch(() => undefined)
+  }, [hasError, hasSource, videoRef])
 
   const handlePlaybackRateChange = (event: ChangeEvent<HTMLSelectElement>) => {
     const video = videoRef.current
@@ -312,19 +366,19 @@ const CourseVideoPlayer = ({
         break
       case 'ArrowLeft':
         event.preventDefault()
-        seekTo(currentTime - 10)
+        seekTo(currentTime - SEEK_SECONDS)
         break
       case 'ArrowRight':
         event.preventDefault()
-        seekTo(currentTime + 10)
+        seekTo(currentTime + SEEK_SECONDS)
         break
       case 'ArrowUp':
         event.preventDefault()
-        updateVolume(volume + 0.1)
+        adjustVolumeByStep(event.shiftKey ? VOLUME_STEP_COARSE : VOLUME_STEP_FINE)
         break
       case 'ArrowDown':
         event.preventDefault()
-        updateVolume(volume - 0.1)
+        adjustVolumeByStep(event.shiftKey ? -VOLUME_STEP_COARSE : -VOLUME_STEP_FINE)
         break
       case 'f':
       case 'F':
@@ -336,16 +390,28 @@ const CourseVideoPlayer = ({
     }
   }
 
+  const displayedVolume = isMuted ? 0 : volume
+  const displayedVolumePercent = toVolumePercent(displayedVolume)
+
   const handlePointerMove = () => {
     setShowControls(true)
     queueAutoHideControls()
+  }
+
+  const handleContainerClick = (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement | null
+
+    if (target?.closest('[data-no-video-toggle="true"], button, input, select, label, a')) {
+      return
+    }
+
+    togglePlayPause()
   }
 
   return (
     <div className="space-y-4">
       <div className="space-y-1">
         <h2 className="theme-heading text-lg font-semibold md:text-xl">{title}</h2>
-        {subtitle ? <p className="theme-muted text-sm leading-6">{subtitle}</p> : null}
       </div>
 
       <div
@@ -354,6 +420,7 @@ const CourseVideoPlayer = ({
           isPlaying && !showControls ? 'cursor-none' : 'cursor-default',
         )}
         onBlur={queueAutoHideControls}
+        onClick={handleContainerClick}
         onFocus={() => setShowControls(true)}
         onKeyDown={handleKeyDown}
         onMouseEnter={() => setShowControls(true)}
@@ -371,7 +438,6 @@ const CourseVideoPlayer = ({
           <video
             className="aspect-video w-full bg-[#070d13] object-contain"
             controlsList="nodownload noremoteplayback"
-            disablePictureInPicture
             key={videoKey}
             onCanPlay={() => setIsBuffering(false)}
             onContextMenu={(event) => event.preventDefault()}
@@ -380,6 +446,7 @@ const CourseVideoPlayer = ({
               setIsPlaying(false)
               setShowControls(true)
               setIsBuffering(false)
+              onVideoEnded?.()
             }}
             onError={onVideoError}
             onLoadedMetadata={() => {
@@ -390,6 +457,7 @@ const CourseVideoPlayer = ({
               setIsPlaying(false)
               setShowControls(true)
               clearHideControlsTimer()
+              onVideoPause?.()
             }}
             onPlay={() => {
               setIsPlaying(true)
@@ -402,7 +470,10 @@ const CourseVideoPlayer = ({
             }}
             onProgress={refreshPlaybackStateFromElement}
             onRateChange={refreshPlaybackStateFromElement}
-            onTimeUpdate={refreshPlaybackStateFromElement}
+            onTimeUpdate={() => {
+              refreshPlaybackStateFromElement()
+              onVideoTimeUpdate?.()
+            }}
             onVolumeChange={refreshPlaybackStateFromElement}
             onWaiting={() => {
               if (videoRef.current && !videoRef.current.paused) {
@@ -425,6 +496,7 @@ const CourseVideoPlayer = ({
           <button
             aria-label="Play video"
             className="absolute inset-0 z-20 flex items-center justify-center bg-[color:rgba(7,12,18,0.38)]"
+            data-no-video-toggle="true"
             onClick={togglePlayPause}
             type="button"
           >
@@ -435,7 +507,7 @@ const CourseVideoPlayer = ({
         ) : null}
 
         {shouldShowLoader ? (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-[color:rgba(7,12,18,0.48)]">
+          <div className="absolute inset-0 z-30 flex items-center justify-center bg-[color:rgba(7,12,18,0.48)]" data-no-video-toggle="true">
             <div className="inline-flex items-center gap-2 rounded-full border border-[color:rgba(255,255,255,0.18)] bg-[color:rgba(10,16,24,0.86)] px-4 py-2 text-sm text-white">
               <LoaderCircle className="h-4 w-4 animate-spin" />
               <span>Loading video...</span>
@@ -444,7 +516,7 @@ const CourseVideoPlayer = ({
         ) : null}
 
         {hasError ? (
-          <div className="absolute inset-0 z-40 flex items-center justify-center bg-[color:rgba(7,12,18,0.82)] px-6">
+          <div className="absolute inset-0 z-40 flex items-center justify-center bg-[color:rgba(7,12,18,0.82)] px-6" data-no-video-toggle="true">
             <div className="max-w-md rounded-xl border border-[color:rgba(255,255,255,0.18)] bg-[color:rgba(12,18,28,0.94)] p-5 text-center text-sm text-white">
               <AlertCircle className="mx-auto mb-3 h-6 w-6 text-[color:var(--danger)]" />
               <p className="font-semibold">Video could not be loaded</p>
@@ -459,6 +531,7 @@ const CourseVideoPlayer = ({
               'absolute inset-x-0 bottom-0 z-[25] bg-[linear-gradient(180deg,rgba(6,11,18,0)_0%,rgba(6,11,18,0.72)_40%,rgba(6,11,18,0.94)_100%)] px-3 pb-3 pt-8 transition-opacity duration-200 sm:px-4 sm:pb-4',
               showControls || !isPlaying ? 'opacity-100' : 'pointer-events-none opacity-0',
             )}
+            data-no-video-toggle="true"
           >
             <div className="rounded-xl border border-[color:rgba(255,255,255,0.12)] bg-[color:rgba(6,11,18,0.82)] p-3 backdrop-blur-md sm:p-3.5">
               <div className="mb-2">
@@ -490,6 +563,7 @@ const CourseVideoPlayer = ({
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex min-w-0 items-center gap-2 sm:gap-3">
                   <button
+                    data-no-video-toggle="true"
                     aria-label={isPlaying ? 'Pause' : 'Play'}
                     className="edu-video-icon-btn"
                     onClick={togglePlayPause}
@@ -508,6 +582,7 @@ const CourseVideoPlayer = ({
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <div className="flex items-center gap-2">
                     <button
+                      data-no-video-toggle="true"
                       aria-label={isMuted || volume === 0 ? 'Unmute' : 'Mute'}
                       className="edu-video-icon-btn"
                       onClick={toggleMute}
@@ -515,22 +590,43 @@ const CourseVideoPlayer = ({
                     >
                       {isMuted || volume === 0 ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
                     </button>
+                    <button
+                      data-no-video-toggle="true"
+                      aria-label="Decrease volume by 1 percent"
+                      className="edu-video-icon-btn h-7 w-7 text-[11px] font-semibold"
+                      onClick={() => adjustVolumeByStep(-VOLUME_STEP_FINE)}
+                      type="button"
+                    >
+                      -
+                    </button>
                     <input
+                      data-no-video-toggle="true"
                       aria-label="Volume"
-                      className="edu-video-range w-20 sm:w-24"
+                      className="edu-video-range w-24 sm:w-28"
                       max={1}
                       min={0}
                       onChange={(event) => updateVolume(Number(event.target.value))}
-                      step={0.05}
-                      style={{ '--range-progress': `${(isMuted ? 0 : volume) * 100}%` } as CSSProperties}
+                      step={VOLUME_STEP_FINE}
+                      style={{ '--range-progress': `${displayedVolume * 100}%` } as CSSProperties}
                       type="range"
-                      value={isMuted ? 0 : volume}
+                      value={displayedVolume}
                     />
+                    <button
+                      data-no-video-toggle="true"
+                      aria-label="Increase volume by 1 percent"
+                      className="edu-video-icon-btn h-7 w-7 text-[11px] font-semibold"
+                      onClick={() => adjustVolumeByStep(VOLUME_STEP_FINE)}
+                      type="button"
+                    >
+                      +
+                    </button>
+                    <span className="w-10 text-right text-xs font-medium text-[color:rgba(255,255,255,0.84)]">{displayedVolumePercent}%</span>
                   </div>
 
                   <label className="relative inline-flex">
                     <span className="sr-only">Playback speed</span>
                     <select
+                      data-no-video-toggle="true"
                       className="edu-video-select"
                       onChange={handlePlaybackRateChange}
                       value={playbackRate}
@@ -541,7 +637,22 @@ const CourseVideoPlayer = ({
                     </select>
                   </label>
 
+                  {isPictureInPictureSupported ? (
+                    <button
+                      aria-label={isPictureInPicture ? 'Exit picture in picture' : 'Enter picture in picture'}
+                      className="edu-video-icon-btn"
+                      data-no-video-toggle="true"
+                      onClick={() => {
+                        void togglePictureInPicture()
+                      }}
+                      type="button"
+                    >
+                      <PictureInPicture2 className="h-4 w-4" />
+                    </button>
+                  ) : null}
+
                   <button
+                    data-no-video-toggle="true"
                     aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
                     className="edu-video-icon-btn"
                     onClick={() => {

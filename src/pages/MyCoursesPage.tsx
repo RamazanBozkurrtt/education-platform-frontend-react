@@ -9,22 +9,29 @@ import EmptyState from '../components/dashboard/EmptyState'
 import MetricTile from '../components/dashboard/MetricTile'
 import StatusBadge from '../components/dashboard/StatusBadge'
 import TableShell from '../components/dashboard/TableShell'
+import CourseProgressBar from '../components/progress/CourseProgressBar'
 import Button from '../components/ui/Button'
+import { useCourseProgressSummaries } from '../hooks/useCourseProgress'
 import { useLanguage } from '../hooks/useLanguage'
 import { API_ENDPOINTS } from '../services/endpoints'
 import { useLibrary } from '../hooks/useLibrary'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryFilterKeys, getCourseCategoryLabels } from '../utils/courseCategory'
+import { buildCoursePlayerPath, resolveContinueLessonId } from '../utils/courseProgress'
 
 const MyCoursesPage = () => {
   const { t } = useTranslation()
   const { language } = useLanguage()
   const { purchasedCourses } = useLibrary()
+  const courseProgressMap = useCourseProgressSummaries(purchasedCourses.map((course) => course.id))
   const hasCourses = purchasedCourses.length > 0
   const totalLessons = purchasedCourses.reduce((sum, course) => sum + course.lessons, 0)
   const averageProgress = hasCourses
     ? Math.round(
-      purchasedCourses.reduce((sum, course) => sum + course.progress, 0) / purchasedCourses.length,
+      purchasedCourses.reduce((sum, course) => {
+        const summary = courseProgressMap[course.id]?.data
+        return sum + (summary?.overallPercentage ?? course.progress)
+      }, 0) / purchasedCourses.length,
     )
     : 0
   const categoryCount = new Set(
@@ -36,6 +43,7 @@ const MyCoursesPage = () => {
     actions: language === 'tr' ? 'Islem' : 'Action',
   }
   const continueButtonLabel = language === 'tr' ? 'Devam et' : 'Continue'
+  const startButtonLabel = language === 'tr' ? 'Kursa basla' : 'Start course'
 
   const handleImageError = (event: SyntheticEvent<HTMLImageElement>) => {
     const target = event.currentTarget
@@ -90,6 +98,13 @@ const MyCoursesPage = () => {
                 {purchasedCourses.map((course) => {
                   const categoryLabels = getCourseCategoryLabels(course)
                   const fallbackImageSrc = resolveServiceUrl(API_ENDPOINTS.courses.image.public(course.id))
+                  const progressSummary = courseProgressMap[course.id]?.data ?? null
+                  const overallPercentage = progressSummary?.overallPercentage ?? course.progress
+                  const continueLessonId = resolveContinueLessonId(progressSummary, course.modules)
+                  const continuePath = buildCoursePlayerPath(course.slug, continueLessonId)
+                  const rowContinueLabel = (progressSummary && (progressSummary.overallPercentage > 0 || progressSummary.lastLessonId))
+                    ? continueButtonLabel
+                    : startButtonLabel
 
                   return (
                     <tr className="border-b border-[color:var(--border)] align-top last:border-b-0" key={course.id}>
@@ -138,18 +153,21 @@ const MyCoursesPage = () => {
                       <td className="theme-muted px-4 py-3.5">{course.duration}</td>
                       <td className="px-4 py-3.5">
                         <div className="w-[140px]">
-                          <p className="theme-muted mb-1 text-xs">{t('dashboard.progressComplete', { progress: course.progress })}</p>
-                          <div className="h-1.5 rounded bg-[color:var(--surface-muted)]">
-                            <div className="h-full rounded bg-[color:var(--primary)]" style={{ width: `${course.progress}%` }} />
-                          </div>
+                          <CourseProgressBar
+                            compact
+                            completedLessons={progressSummary?.completedLessons}
+                            language={language}
+                            percentage={overallPercentage}
+                            totalLessons={progressSummary?.totalLessons}
+                          />
                         </div>
                       </td>
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
-                          <Link to={ROUTES.coursePlayer(course.slug)}>
+                          <Link to={continuePath}>
                             <Button asChild className="min-w-[116px] whitespace-nowrap" size="sm">
                               <CirclePlay className="h-4 w-4" />
-                              {continueButtonLabel}
+                              {rowContinueLabel}
                             </Button>
                           </Link>
                           <Link to={ROUTES.courseDetail(course.slug)}>

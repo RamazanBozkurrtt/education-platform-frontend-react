@@ -2,6 +2,7 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router-dom'
 import CourseCatalogList from '../components/dashboard/CourseCatalogList'
 import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
 import DashboardSection from '../components/dashboard/DashboardSection'
@@ -24,10 +25,16 @@ const chipClass = (active: boolean) => {
 const SearchPage = () => {
   const { t } = useTranslation()
   const { language } = useLanguage()
-  const [query, setQuery] = useState('')
+  const [searchParams] = useSearchParams()
+  const queryFromUrl = searchParams.get('q')?.trim() ?? ''
+  const [query, setQuery] = useState(queryFromUrl)
   const [category, setCategory] = useState('')
   const [level, setLevel] = useState('')
   const deferredQuery = useDeferredValue(query)
+
+  useEffect(() => {
+    setQuery(queryFromUrl)
+  }, [queryFromUrl])
 
   const { data, error, isFetching, isLoading } = useQuery({
     queryKey: ['search-results', language, deferredQuery, category, level],

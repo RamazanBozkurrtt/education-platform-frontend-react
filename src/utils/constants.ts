@@ -10,6 +10,9 @@ export const LANGUAGE_STORAGE_KEY = 'luma.language'
 export const CART_STORAGE_KEY = 'luma.cart'
 export const LIBRARY_STORAGE_KEY = 'luma.library'
 export const SUPPORTED_LANGUAGES = ['en', 'tr'] as const
+export const PROGRESS_SYNC_INTERVAL_SECONDS = 15
+export const RESUME_PROMPT_MIN_SECONDS = 10
+export const LESSON_COMPLETION_THRESHOLD_PERCENT = 80
 
 export const ROUTES = {
   home: '/',
@@ -25,6 +28,9 @@ export const ROUTES = {
   courses: '/courses',
   courseDetail: (slug = ':slug') => `/courses/${slug}`,
   coursePlayer: (slug = ':slug') => `/courses/${slug}/watch`,
+  courseFinalExamOverview: (courseId = ':courseId') => `/courses/${courseId}/final-exam`,
+  courseFinalExamAttempt: (courseId = ':courseId', attemptId = ':attemptId') => `/courses/${courseId}/final-exam/attempt/${attemptId}`,
+  courseFinalExamResult: (courseId = ':courseId', attemptId = ':attemptId') => `/courses/${courseId}/final-exam/attempt/${attemptId}/result`,
   cart: '/cart',
   payment: '/payment',
   payments: '/payments',

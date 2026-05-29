@@ -1,40 +1,70 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, CheckCircle2, Clock3, ListVideo, LockKeyhole, PlayCircle, ShoppingCart } from 'lucide-react'
+import { ListVideo, PanelRightClose, PanelRightOpen, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import CourseVideoPlayer from '../components/player/CourseVideoPlayer'
+import ResumePlaybackPrompt from '../components/player/ResumePlaybackPrompt'
+import LessonSidebar from '../components/player/watch/LessonSidebar'
+import WatchPageBackButton from '../components/player/watch/WatchPageBackButton'
+import CourseProgressBar from '../components/progress/CourseProgressBar'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
-import InfoBadge from '../components/ui/InfoBadge'
 import Loader from '../components/ui/Loader'
-import MetaRow from '../components/ui/MetaRow'
 import QueryErrorState from '../components/ui/QueryErrorState'
-import SectionHeader from '../components/ui/SectionHeader'
-import TagList from '../components/ui/TagList'
+import ThemeToggle from '../components/ui/ThemeToggle'
 import { useCart } from '../hooks/useCart'
+import { useCourseLessonProgress, useCourseProgressSummary } from '../hooks/useCourseProgress'
 import { useLanguage } from '../hooks/useLanguage'
 import { useLibrary } from '../hooks/useLibrary'
+import { useVideoProgressTracking } from '../hooks/useVideoProgressTracking'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
+import { emitAppToast } from '../shared/notifications/appToast'
 import { courseMediaService } from '../services/courseMediaService'
 import { courseService } from '../services/courseService'
+import { cn } from '../utils/helpers'
 import { ROUTES } from '../utils/constants'
-import { getCourseCategoryLabel } from '../utils/courseCategory'
+import type { LessonProgress } from '../utils/types'
 
 const PLAYBACK_URL_REFRESH_BUFFER_MS = 3_000
 
-const CoursePlayerPage = () => {
+type VideoLoadState = 'idle' | 'ready' | 'missing' | 'error'
+
+const isMissingVideoError = (error: unknown) => {
+  const appError = normalizeApiError(error)
+
+  if (appError.kind === 'not_found' || appError.httpStatus === 404) {
+    return true
+  }
+
+  const normalizedCode = appError.code?.trim().toUpperCase()
+
+  if (!normalizedCode) {
+    return false
+  }
+
+  return normalizedCode.includes('VIDEO') && (normalizedCode.includes('NOT') || normalizedCode.includes('MISSING'))
+}
+
+const CourseWatchPage = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { language } = useLanguage()
   const { slug = '' } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedLessonId = searchParams.get('lessonId')?.trim() || null
   const { addCourse, isInCart } = useCart()
   const { isPurchased } = useLibrary()
-  const [activeModuleIndex, setActiveModuleIndex] = useState(0)
+
+  const [activeLessonId, setActiveLessonId] = useState<string | null>(null)
   const [activeVideoSource, setActiveVideoSource] = useState('')
   const [activeVideoExpiresAtMs, setActiveVideoExpiresAtMs] = useState<number | null>(null)
   const [isVideoLoading, setIsVideoLoading] = useState(false)
   const [videoErrorMessage, setVideoErrorMessage] = useState<string | null>(null)
+  const [videoLoadState, setVideoLoadState] = useState<VideoLoadState>('idle')
+  const [showLessonCompletedFeedback, setShowLessonCompletedFeedback] = useState(false)
+  const [isLessonSidebarOpen, setIsLessonSidebarOpen] = useState(true)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+
   const playbackRequestIdRef = useRef(0)
   const videoElementRef = useRef<HTMLVideoElement | null>(null)
   const pendingResumeRef = useRef<{ currentTime: number; shouldResumePlayback: boolean } | null>(null)
@@ -46,9 +76,112 @@ const CoursePlayerPage = () => {
   })
 
   const purchased = data ? isPurchased(data.id) : false
-  const activeModule = data ? (data.modules[activeModuleIndex] ?? data.modules[0]) : undefined
+  const lessons = data?.modules ?? []
+
+  const activeLesson = useMemo(() => {
+    if (!data) {
+      return undefined
+    }
+
+    if (activeLessonId) {
+      return data.modules.find((module) => module.id === activeLessonId) ?? data.modules[0]
+    }
+
+    return data.modules[0]
+  }, [activeLessonId, data])
+
   const activeCourseId = data?.id ?? null
-  const activeLessonId = activeModule?.id ?? null
+  const resolvedActiveLessonId = activeLesson?.id ?? null
+
+  const { data: courseLessonProgress = [] } = useCourseLessonProgress(purchased ? activeCourseId : null)
+  const { data: courseProgressSummary } = useCourseProgressSummary(purchased ? activeCourseId : null)
+
+  const lessonProgressByLessonId = useMemo(
+    () => courseLessonProgress.reduce<Record<string, LessonProgress>>((accumulator, lessonProgress) => {
+      if (!lessonProgress.lessonId) {
+        return accumulator
+      }
+
+      accumulator[lessonProgress.lessonId] = lessonProgress
+      return accumulator
+    }, {}),
+    [courseLessonProgress],
+  )
+
+  const {
+    lessonProgress: activeLessonProgress,
+    resumePromptOpen,
+    resumePromptSecond,
+    handleVideoEnded,
+    handleVideoLoadedMetadata: handleTrackedVideoLoadedMetadata,
+    handleVideoPause,
+    handleVideoTimeUpdate,
+    handleRestartFromPrompt,
+    handleResumeFromPrompt,
+  } = useVideoProgressTracking({
+    courseId: purchased ? activeCourseId : null,
+    lessonId: purchased ? resolvedActiveLessonId : null,
+    enabled: Boolean(purchased && activeCourseId && resolvedActiveLessonId),
+    language,
+    videoRef: videoElementRef,
+    onLessonCompleted: () => {
+      setShowLessonCompletedFeedback(true)
+    },
+  })
+
+  useEffect(() => {
+    if (!data) {
+      return
+    }
+
+    const lessonIds = new Set(data.modules.map((module) => module.id))
+    const firstLessonId = data.modules[0]?.id ?? null
+    const nextLessonId = requestedLessonId && lessonIds.has(requestedLessonId)
+      ? requestedLessonId
+      : firstLessonId
+
+    setActiveLessonId((current) => (current === nextLessonId ? current : nextLessonId))
+
+    if (!nextLessonId && requestedLessonId) {
+      setSearchParams({}, { replace: true })
+      return
+    }
+
+    if (nextLessonId && requestedLessonId !== nextLessonId) {
+      setSearchParams({ lessonId: nextLessonId }, { replace: true })
+    }
+  }, [data, requestedLessonId, setSearchParams])
+
+  useEffect(() => {
+    if (!showLessonCompletedFeedback) {
+      return undefined
+    }
+
+    const timeout = window.setTimeout(() => {
+      setShowLessonCompletedFeedback(false)
+    }, 3_000)
+
+    return () => {
+      window.clearTimeout(timeout)
+    }
+  }, [showLessonCompletedFeedback])
+
+  useEffect(() => {
+    setShowLessonCompletedFeedback(false)
+  }, [resolvedActiveLessonId])
+
+  useEffect(() => {
+    if (!isMobileSidebarOpen) {
+      return undefined
+    }
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isMobileSidebarOpen])
 
   const loadPlaybackUrl = useCallback(async (
     params: { courseId: string; lessonId: string; preservePlaybackState?: boolean },
@@ -63,6 +196,9 @@ const CoursePlayerPage = () => {
       }
     } else {
       pendingResumeRef.current = null
+      setActiveVideoSource('')
+      setActiveVideoExpiresAtMs(null)
+      failedRefreshSourceRef.current = null
     }
 
     setIsVideoLoading(true)
@@ -79,6 +215,7 @@ const CoursePlayerPage = () => {
 
       setActiveVideoSource(url)
       setActiveVideoExpiresAtMs(expiresAtMs)
+      setVideoLoadState('ready')
       failedRefreshSourceRef.current = null
     } catch (loadError) {
       if (requestId !== playbackRequestIdRef.current) {
@@ -88,7 +225,14 @@ const CoursePlayerPage = () => {
       setActiveVideoSource('')
       setActiveVideoExpiresAtMs(null)
       pendingResumeRef.current = null
-      setVideoErrorMessage(normalizeApiError(loadError).message)
+
+      if (isMissingVideoError(loadError)) {
+        setVideoLoadState('missing')
+        setVideoErrorMessage(null)
+      } else {
+        setVideoLoadState('error')
+        setVideoErrorMessage(normalizeApiError(loadError).message)
+      }
     } finally {
       if (requestId === playbackRequestIdRef.current) {
         setIsVideoLoading(false)
@@ -97,25 +241,22 @@ const CoursePlayerPage = () => {
   }, [])
 
   useEffect(() => {
-    setActiveModuleIndex(0)
-  }, [data?.id])
-
-  useEffect(() => {
-    if (!purchased || !activeCourseId || !activeLessonId) {
+    if (!purchased || !activeCourseId || !resolvedActiveLessonId) {
       setVideoErrorMessage(null)
       setIsVideoLoading(false)
       setActiveVideoSource('')
       setActiveVideoExpiresAtMs(null)
+      setVideoLoadState('idle')
       pendingResumeRef.current = null
       failedRefreshSourceRef.current = null
       return
     }
 
-    void loadPlaybackUrl({ courseId: activeCourseId, lessonId: activeLessonId })
-  }, [activeCourseId, activeLessonId, loadPlaybackUrl, purchased])
+    void loadPlaybackUrl({ courseId: activeCourseId, lessonId: resolvedActiveLessonId })
+  }, [activeCourseId, loadPlaybackUrl, purchased, resolvedActiveLessonId])
 
   const handleVideoPlay = () => {
-    if (!activeCourseId || !activeLessonId || !activeVideoExpiresAtMs) {
+    if (!activeCourseId || !resolvedActiveLessonId || !activeVideoExpiresAtMs) {
       return
     }
 
@@ -127,7 +268,7 @@ const CoursePlayerPage = () => {
 
     void loadPlaybackUrl({
       courseId: activeCourseId,
-      lessonId: activeLessonId,
+      lessonId: resolvedActiveLessonId,
       preservePlaybackState: true,
     })
   }
@@ -136,40 +277,47 @@ const CoursePlayerPage = () => {
     const pendingResume = pendingResumeRef.current
     const videoElement = videoElementRef.current
 
-    if (!pendingResume || !videoElement) {
-      return
+    if (pendingResume && videoElement) {
+      const hasDuration = Number.isFinite(videoElement.duration) && videoElement.duration > 0
+
+      if (hasDuration && pendingResume.currentTime > 0 && pendingResume.currentTime < videoElement.duration) {
+        videoElement.currentTime = pendingResume.currentTime
+      }
+
+      pendingResumeRef.current = null
+
+      if (pendingResume.shouldResumePlayback) {
+        void videoElement.play().catch(() => undefined)
+      }
     }
 
-    const hasDuration = Number.isFinite(videoElement.duration) && videoElement.duration > 0
-
-    if (hasDuration && pendingResume.currentTime > 0 && pendingResume.currentTime < videoElement.duration) {
-      videoElement.currentTime = pendingResume.currentTime
-    }
-
-    pendingResumeRef.current = null
-
-    if (pendingResume.shouldResumePlayback) {
-      void videoElement.play().catch(() => undefined)
-    }
+    handleTrackedVideoLoadedMetadata()
   }
 
   const handleVideoError = () => {
-    if (!activeCourseId || !activeLessonId || !purchased || !activeVideoSource) {
+    if (!activeCourseId || !resolvedActiveLessonId || !purchased || !activeVideoSource) {
       return
     }
 
-    const refreshKey = `${activeCourseId}:${activeLessonId}:${activeVideoSource}`
+    const refreshKey = `${activeCourseId}:${resolvedActiveLessonId}:${activeVideoSource}`
 
     if (failedRefreshSourceRef.current === refreshKey) {
       return
     }
 
     failedRefreshSourceRef.current = refreshKey
+
     void loadPlaybackUrl({
       courseId: activeCourseId,
-      lessonId: activeLessonId,
+      lessonId: resolvedActiveLessonId,
       preservePlaybackState: true,
     })
+  }
+
+  const handleLessonSelect = (lessonId: string) => {
+    setActiveLessonId(lessonId)
+    setSearchParams({ lessonId })
+    setIsMobileSidebarOpen(false)
   }
 
   const handleAddToCart = (courseId: string) => {
@@ -178,193 +326,197 @@ const CoursePlayerPage = () => {
   }
 
   if (error) {
-    return <QueryErrorState error={error} />
+    return <QueryErrorState error={error} fullScreen />
   }
 
   if (isLoading || !data) {
-    return <Loader label={t('loader.courseDetails')} />
+    return <Loader fullScreen label={t('loader.courseDetails')} />
   }
-
-  const activeModuleId = activeModule?.id ?? null
-  const activeModuleTitle = activeModule?.title ?? t('player.chooseLesson')
-  const activeModuleType = activeModule?.type ?? '-'
-  const activeModuleDuration = activeModule?.duration ?? '-'
 
   if (!purchased) {
     return (
-      <div className="space-y-7">
-        <Card>
-          <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{getCourseCategoryLabel(data)}</p>
-          <h1 className="theme-heading mt-2 break-words text-3xl font-semibold tracking-tight">{t('player.lockedTitle')}</h1>
-          <p className="theme-muted mt-3 text-sm leading-7">{t('player.lockedDescription')}</p>
-        </Card>
+      <div className="theme-app min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl space-y-5">
+          <WatchPageBackButton label={t('common.backToCourse')} to={ROUTES.courseDetail(data.slug)} />
 
-        <Card>
-          <SectionHeader
-            description={t('player.accessExplanation')}
-            title={data.title}
-          />
+          <section className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-6 py-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--text-subtle)]">{t('player.eyebrow')}</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[color:var(--text-heading)]">{t('player.lockedTitle')}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[color:var(--text-muted)]">{t('player.lockedDescription')}</p>
 
-          <div className="mt-5 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-navigation)] bg-[color:var(--surface-muted)] text-[color:var(--primary)]">
-              <LockKeyhole className="h-5 w-5" />
-            </div>
-            <InfoBadge tone="warning">{t('player.accessRequired')}</InfoBadge>
-          </div>
-
-          <MetaRow
-            className="mt-5"
-            items={[
-              { key: 'duration', icon: Clock3, label: t('player.runtime'), value: data.duration },
-              { key: 'type', label: t('player.lessonType'), value: data.level.levelName },
-            ]}
-          />
-
-          <div className="mt-5 border-t border-[color:var(--border)] pt-5">
-            <TagList hideWhenEmpty label={language === 'tr' ? 'Etiketler' : 'Tags'} tags={data.tags} />
-          </div>
-
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            {isInCart(data.id) ? (
-              <Link className="block w-full sm:w-auto" to={ROUTES.cart}>
-                <Button asChild className="w-full justify-center sm:w-auto" variant="secondary">
-                  <CheckCircle2 className="h-4 w-4" />
-                  {t('common.goToCart')}
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              {isInCart(data.id) ? (
+                <Link to={ROUTES.cart}>
+                  <Button asChild className="w-full justify-center sm:w-auto" variant="secondary">
+                    {t('common.goToCart')}
+                  </Button>
+                </Link>
+              ) : (
+                <Button className="w-full justify-center sm:w-auto" onClick={() => handleAddToCart(data.id)} variant="secondary">
+                  <ShoppingCart className="h-4 w-4" />
+                  {t('common.addToCart')}
                 </Button>
-              </Link>
-            ) : (
-              <Button className="w-full justify-center sm:w-auto" onClick={() => handleAddToCart(data.id)}>
-                <ShoppingCart className="h-4 w-4" />
-                {t('common.addToCart')}
-              </Button>
-            )}
-            <Link className="block w-full sm:w-auto" to={ROUTES.courseDetail(data.slug)}>
-              <Button asChild className="w-full justify-center sm:w-auto" variant="ghost">
-                {t('common.backToCourse')}
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
-        </Card>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
     )
   }
 
+  const lessonEmptyMessage = lessons.length === 0
+    ? (language === 'tr' ? 'Bu kurs icin henuz ders eklenmemis.' : 'No lessons have been added for this course yet.')
+    : videoLoadState === 'missing' && activeLesson
+      ? (language === 'tr' ? 'Bu derse henuz video eklenmemis.' : 'No video has been added to this lesson yet.')
+      : t('player.chooseLesson')
+  const isFinalExamUnlocked = Boolean(courseProgressSummary && courseProgressSummary.overallPercentage >= 100)
+  const finalExamLockedMessage = language === 'tr'
+    ? 'Final sinavini acmak icin tum dersleri bitirmen gerekiyor.'
+    : 'You need to complete all lessons before opening the final exam.'
+  const playerProgressPercentage = courseProgressSummary?.overallPercentage ?? activeLessonProgress?.watchedPercentage ?? 0
+  const showPlayerProgress = Boolean(courseProgressSummary || activeLessonProgress)
+
+  const handleFinalExamSelect = () => {
+    if (!activeCourseId) {
+      return
+    }
+
+    if (!isFinalExamUnlocked) {
+      emitAppToast({
+        tone: 'info',
+        message: finalExamLockedMessage,
+      })
+      return
+    }
+
+    navigate(ROUTES.courseFinalExamOverview(activeCourseId))
+  }
+
   return (
-    <div className="space-y-7">
-      <Card>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="max-w-3xl">
-            <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.16em]">{t('player.eyebrow')}</p>
-            <h1 className="theme-heading mt-2 break-words text-3xl font-semibold tracking-tight md:text-4xl">{data.title}</h1>
-            <p className="theme-muted mt-3 text-sm leading-7">{t('player.description')}</p>
+    <div className="theme-app relative min-h-screen overflow-hidden bg-[color:var(--bg)]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,color-mix(in_srgb,var(--primary)_12%,transparent),transparent_35%),radial-gradient(circle_at_95%_8%,color-mix(in_srgb,var(--surface-soft)_92%,transparent),transparent_40%)]" />
+
+      <div className="relative flex min-h-screen flex-col">
+        <header className="border-b border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface-strong)_78%,transparent)] backdrop-blur-md">
+          <div className="mx-auto flex w-full max-w-[1740px] items-center justify-between gap-3 px-3 py-3 sm:px-4 lg:px-6">
+            <WatchPageBackButton label={t('common.backToCourse')} to={ROUTES.courseDetail(data.slug)} />
+
+            <div className="flex items-center gap-2">
+              <ThemeToggle compact />
+
+              {showLessonCompletedFeedback ? (
+                <span className="hidden rounded-full border border-[color:var(--success)]/30 bg-[color:var(--surface-sky-haze)] px-3 py-1 text-xs font-medium text-[color:var(--success)] sm:inline-flex">
+                  {language === 'tr' ? 'Ders tamamlandi' : 'Lesson completed'}
+                </span>
+              ) : null}
+
+              <button
+                aria-label={language === 'tr' ? 'Ders listesini ac veya kapat' : 'Toggle lesson list'}
+                className="hidden items-center gap-2 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2 text-sm font-medium text-[color:var(--text-heading)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] lg:inline-flex"
+                onClick={() => setIsLessonSidebarOpen((current) => !current)}
+                type="button"
+              >
+                {isLessonSidebarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+                <span>{language === 'tr' ? 'Dersler' : 'Lessons'}</span>
+              </button>
+
+              <button
+                aria-label={language === 'tr' ? 'Ders listesini ac' : 'Open lesson list'}
+                className="inline-flex items-center gap-2 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2 text-sm font-medium text-[color:var(--text-heading)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] lg:hidden"
+                onClick={() => setIsMobileSidebarOpen(true)}
+                type="button"
+              >
+                <ListVideo className="h-4 w-4" />
+                <span>{language === 'tr' ? 'Dersler' : 'Lessons'}</span>
+              </button>
+            </div>
           </div>
-          <Link className="w-full sm:w-auto" to={ROUTES.courseDetail(data.slug)}>
-            <Button asChild className="w-full justify-center sm:w-auto" variant="secondary">
-              {t('common.backToCourse')}
-            </Button>
-          </Link>
-        </div>
-      </Card>
+        </header>
 
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
-        <Card>
-          <CourseVideoPlayer
-            emptyMessage={t('player.chooseLesson')}
-            isSourceLoading={isVideoLoading}
-            onVideoError={handleVideoError}
-            onVideoLoadedMetadata={handleVideoLoadedMetadata}
-            onVideoPlay={handleVideoPlay}
-            sourceErrorMessage={videoErrorMessage}
-            src={activeVideoSource || undefined}
-            subtitle={activeModule?.description || data.description}
-            title={activeModuleTitle}
-            videoKey={activeModule ? `${data.id}-${activeModule.id}` : `${data.id}-empty`}
-            videoRef={videoElementRef}
-          />
+        <main className="flex-1 px-3 pb-3 pt-3 sm:px-4 lg:px-6">
+          <div className="mx-auto flex h-full min-h-[calc(100vh-92px)] w-full max-w-[1740px] gap-3">
+            <section className="min-w-0 flex-1">
+              <div
+                className={cn(
+                  'flex h-full min-h-[460px] flex-col rounded-2xl border border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface-strong)_88%,transparent)] p-3 shadow-[0_22px_70px_rgba(4,12,21,0.20)] transition-[padding] sm:p-4 lg:p-5',
+                  isLessonSidebarOpen ? 'xl:pr-4' : 'xl:pr-5',
+                )}
+              >
+                <div className="mb-4 flex flex-col gap-3 border-b border-[color:var(--border)] pb-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--text-subtle)]">
+                      {language === 'tr' ? 'Kurs' : 'Course'}
+                    </p>
+                    <h1 className="mt-1 truncate text-base font-semibold text-[color:var(--text-heading)] sm:text-lg">
+                      {data.title}
+                    </h1>
+                  </div>
 
-          <div className="mt-5 border-t border-[color:var(--border)] pt-5">
-            <MetaRow
-              className="mt-3"
-              items={[
-                { key: 'moduleType', label: t('player.lessonType'), value: activeModuleType },
-                { key: 'moduleDuration', icon: Clock3, label: t('player.runtime'), value: activeModuleDuration },
-                { key: 'access', label: t('player.accessStatus'), value: t('player.purchasedAccess') },
-              ]}
-            />
-            <p className="theme-text mt-4 text-sm leading-7">{data.description}</p>
-          </div>
-        </Card>
-
-        <div className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-          <Card>
-            <SectionHeader
-              description={t('player.chooseLesson')}
-              title={t('player.courseContent')}
-            />
-
-            <div className="mt-5 space-y-3">
-              {data.modules.map((module, index) => {
-                const active = module.id === activeModuleId
-
-                return (
-                  <button
-                    key={module.id}
-                    className={`w-full rounded-[var(--radius-cards)] border px-4 py-4 text-left transition ${
-                      active
-                        ? 'border-[color:var(--primary)] bg-[color:var(--surface-muted)]'
-                        : 'border-[color:var(--border)] bg-[color:var(--surface-soft)] hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
-                    }`}
-                    onClick={() => setActiveModuleIndex(index)}
-                    type="button"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="theme-heading truncate font-medium">{module.title}</p>
-                        <div className="theme-muted mt-2 flex flex-wrap items-center gap-3 text-xs">
-                          <span className="inline-flex items-center gap-1">
-                            <Clock3 className="h-3.5 w-3.5" />
-                            {module.duration}
-                          </span>
-                          <span>{module.type}</span>
-                        </div>
-                      </div>
-                      {active ? <PlayCircle className="h-5 w-5 shrink-0 text-[color:var(--primary)]" /> : null}
+                  {showPlayerProgress ? (
+                    <div className="w-full sm:max-w-sm">
+                      <CourseProgressBar
+                        compact
+                        completedLessons={courseProgressSummary?.completedLessons}
+                        language={language}
+                        percentage={playerProgressPercentage}
+                        totalLessons={courseProgressSummary?.totalLessons}
+                      />
                     </div>
-                  </button>
-                )
-              })}
-            </div>
-          </Card>
-
-          <Card>
-            <SectionHeader title={t('courseDetail.instructor')} />
-            <h3 className="theme-heading mt-3 text-xl font-semibold">{data.instructor.name}</h3>
-            <p className="theme-muted mt-1 text-sm">{data.instructor.role}</p>
-            <p className="theme-text mt-4 text-sm leading-7">{data.instructor.bio}</p>
-          </Card>
-
-          <Card>
-            <SectionHeader title={t('player.outcomes')} />
-            <div className="mt-4 space-y-3">
-              {data.outcomes.slice(0, 3).map((outcome) => (
-                <div className="theme-text rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm" key={outcome}>
-                  {outcome}
+                  ) : null}
                 </div>
-              ))}
-            </div>
-          </Card>
 
-          <Card>
-            <div className="flex items-center gap-3">
-              <ListVideo className="h-4 w-4 theme-muted" />
-              <p className="theme-muted text-sm">{data.modules.length} ders</p>
-            </div>
-          </Card>
-        </div>
-      </section>
+                <div className="min-h-0 flex-1">
+                  <CourseVideoPlayer
+                    emptyMessage={lessonEmptyMessage}
+                    isSourceLoading={isVideoLoading}
+                    onVideoEnded={handleVideoEnded}
+                    onVideoError={handleVideoError}
+                    onVideoLoadedMetadata={handleVideoLoadedMetadata}
+                    onVideoPause={handleVideoPause}
+                    onVideoPlay={handleVideoPlay}
+                    onVideoTimeUpdate={handleVideoTimeUpdate}
+                    sourceErrorMessage={videoLoadState === 'error' ? videoErrorMessage : null}
+                    src={activeVideoSource || undefined}
+                    title={activeLesson?.title || data.title}
+                    videoKey={activeLesson ? `${data.id}-${activeLesson.id}` : `${data.id}-empty`}
+                    videoRef={videoElementRef}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <LessonSidebar
+              activeLessonId={resolvedActiveLessonId}
+              courseProgressSummary={courseProgressSummary}
+              courseTitle={data.title}
+              isDesktopOpen={isLessonSidebarOpen}
+              isMobileOpen={isMobileSidebarOpen}
+              language={language}
+              lessonProgressByLessonId={lessonProgressByLessonId}
+              lessons={lessons}
+              finalExamHint={language === 'tr'
+                ? (isFinalExamUnlocked ? 'Final sinavi baslatabilirsin.' : 'Final sinavi acmak icin tum dersleri tamamla.')
+                : (isFinalExamUnlocked ? 'You can start the final exam now.' : 'Complete all lessons to unlock the final exam.')}
+              finalExamLabel={language === 'tr' ? 'Final sinavi' : 'Final exam'}
+              isFinalExamLocked={!isFinalExamUnlocked}
+              onLessonSelect={handleLessonSelect}
+              onFinalExamSelect={handleFinalExamSelect}
+              onMobileClose={() => setIsMobileSidebarOpen(false)}
+              showFinalExamEntry
+            />
+          </div>
+        </main>
+      </div>
+
+      <ResumePlaybackPrompt
+        language={language}
+        lastWatchedSecond={resumePromptSecond}
+        onRestart={handleRestartFromPrompt}
+        onResume={handleResumeFromPrompt}
+        open={resumePromptOpen}
+      />
     </div>
   )
 }
 
-export default CoursePlayerPage
+export default CourseWatchPage

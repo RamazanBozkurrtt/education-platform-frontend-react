@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
-import { ArrowRight, ChevronDown, House, Languages, Layers3, Menu, X } from 'lucide-react'
+import { ArrowRight, ChevronDown, House, Languages, Layers3 } from 'lucide-react'
 import { Link, useLocation } from 'react-router-dom'
 import LanguageSwitcher from '../ui/LanguageSwitcher'
+import ThemeToggle from '../ui/ThemeToggle'
 import { useLanguage } from '../../hooks/useLanguage'
 import { APP_NAME, ROUTES } from '../../utils/constants'
 import { getCourseCategoryLabel } from '../../utils/courseCategory'
@@ -29,8 +30,6 @@ const PublicNavbar = ({
   const { language } = useLanguage()
   const location = useLocation()
   const [openDesktopMenu, setOpenDesktopMenu] = useState<string | null>(null)
-  const [openMobileMenu, setOpenMobileMenu] = useState<string | null>(null)
-  const [mobileOpen, setMobileOpen] = useState(false)
 
   const copy = language === 'tr'
     ? {
@@ -42,11 +41,7 @@ const PublicNavbar = ({
       featuredCourses: '\u00d6ne \u00e7\u0131kan kurslar',
       featuredCoursesDescription: 'En \u00e7ok incelenen e\u011fitimler',
       categoryDescription: 'Bu kategoriye ait kurslar\u0131 g\u00f6r',
-      menu: 'Men\u00fc',
-      close: 'Kapat',
       platformLabel: 'Online e\u011fitim',
-      mobileCoursesLabel: 'Kurs men\u00fcs\u00fc',
-      mobileCategoriesLabel: 'Kategori men\u00fcs\u00fc',
       signIn: 'Giri\u015f yap',
       register: 'Hesap olu\u015ftur',
     }
@@ -59,11 +54,7 @@ const PublicNavbar = ({
       featuredCourses: 'Featured courses',
       featuredCoursesDescription: 'Courses learners review most often',
       categoryDescription: 'View courses in this category',
-      menu: 'Menu',
-      close: 'Close',
       platformLabel: 'Online learning',
-      mobileCoursesLabel: 'Course menu',
-      mobileCategoriesLabel: 'Category menu',
       signIn: 'Sign in',
       register: 'Create account',
     }
@@ -74,15 +65,11 @@ const PublicNavbar = ({
   const shouldShowHomeNavLink = !isHome
 
   useEffect(() => {
-    setMobileOpen(false)
     setOpenDesktopMenu(null)
-    setOpenMobileMenu(null)
   }, [location.pathname, location.search])
 
   const handleAnchorClick = (id: string) => {
-    setMobileOpen(false)
     setOpenDesktopMenu(null)
-    setOpenMobileMenu(null)
     onAnchorClick?.(id)
   }
 
@@ -192,6 +179,7 @@ const PublicNavbar = ({
         </nav>
 
         <div className="hidden items-center gap-2 lg:flex">
+          <ThemeToggle compact />
           <div className="flex items-center gap-2 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-2 py-1">
             <Languages className="h-4 w-4 text-[color:var(--primary)]" />
             <LanguageSwitcher compact />
@@ -203,99 +191,7 @@ const PublicNavbar = ({
             <span className="public-primary-button h-10 px-4 text-sm font-semibold">{copy.register}</span>
           </Link>
         </div>
-
-        <button
-          aria-label={mobileOpen ? copy.close : copy.menu}
-          aria-controls="public-mobile-menu"
-          aria-expanded={mobileOpen}
-          className="public-outline-button h-11 w-11 px-0 lg:hidden"
-          onClick={() => setMobileOpen((current) => !current)}
-          type="button"
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
       </div>
-
-      {mobileOpen ? (
-        <div className="border-t border-[color:var(--border)] bg-[color:var(--surface-white)] px-4 py-4 lg:hidden" id="public-mobile-menu">
-          <div className="mx-auto max-w-[1480px] space-y-3">
-            {shouldShowHomeNavLink ? (
-              <Link className="public-mobile-link" to={ROUTES.home}>
-                {copy.home}
-              </Link>
-            ) : null}
-
-            {anchorLinks.map((item) => (
-              <button className="public-mobile-link w-full text-left" key={item.id} onClick={() => handleAnchorClick(item.id)} type="button">
-                {item.label}
-              </button>
-            ))}
-
-            <div className="public-mobile-group">
-              <button
-                aria-controls="public-mobile-courses"
-                aria-expanded={openMobileMenu === 'courses'}
-                className="public-mobile-toggle"
-                onClick={() => setOpenMobileMenu((current) => current === 'courses' ? null : 'courses')}
-                type="button"
-              >
-                <span>{copy.mobileCoursesLabel}</span>
-                <ChevronDown className={cn('h-4 w-4 transition-transform', openMobileMenu === 'courses' && 'rotate-180')} />
-              </button>
-              {openMobileMenu === 'courses' ? (
-                <div className="space-y-2 px-2 pb-2" id="public-mobile-courses">
-                  <Link className="public-mobile-subitem" to={ROUTES.catalog}>
-                    {copy.allCourses}
-                  </Link>
-                  {featuredCourses.slice(0, 3).map((course) => (
-                    <Link className="public-mobile-subitem" key={course.id} to={buildCatalogPath({ query: course.title })}>
-                      {course.title}
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="public-mobile-group">
-              <button
-                aria-controls="public-mobile-categories"
-                aria-expanded={openMobileMenu === 'categories'}
-                className="public-mobile-toggle"
-                onClick={() => setOpenMobileMenu((current) => current === 'categories' ? null : 'categories')}
-                type="button"
-              >
-                <span>{copy.mobileCategoriesLabel}</span>
-                <ChevronDown className={cn('h-4 w-4 transition-transform', openMobileMenu === 'categories' && 'rotate-180')} />
-              </button>
-              {openMobileMenu === 'categories' ? (
-                <div className="space-y-2 px-2 pb-2" id="public-mobile-categories">
-                  {categories.map((category) => (
-                    <Link className="public-mobile-subitem" key={category.key} to={buildCatalogPath({ category: category.key })}>
-                      {category.label}
-                    </Link>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="flex flex-col gap-3 border-t border-[color:var(--border)] pt-3">
-              <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
-                <div className="min-w-0 flex-1">
-                  <LanguageSwitcher compact />
-                </div>
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <Link className="flex-1" to={ROUTES.login}>
-                  <span className="public-outline-button h-10 w-full px-4 text-sm font-semibold">{copy.signIn}</span>
-                </Link>
-                <Link className="flex-1" to={ROUTES.register}>
-                  <span className="public-primary-button h-10 w-full px-4 text-sm font-semibold">{copy.register}</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </header>
   )
 }

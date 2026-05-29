@@ -2,6 +2,7 @@ import Button from '../../ui/Button'
 import LessonVideoPreview from './LessonVideoPreview'
 import LessonVideoUploader from './LessonVideoUploader'
 import UploadProgressBar from './UploadProgressBar'
+import { useLanguage } from '../../../hooks/useLanguage'
 
 interface LessonVideoActionsProps {
   lessonId: string
@@ -34,6 +35,8 @@ const LessonVideoActions = ({
   onDelete,
   onTogglePreview,
 }: LessonVideoActionsProps) => {
+  const { language } = useLanguage()
+
   return (
     <div className="space-y-4">
       <LessonVideoUploader
@@ -45,7 +48,7 @@ const LessonVideoActions = ({
         selectedFile={selectedFile}
       />
 
-      {isUploading ? <UploadProgressBar progress={uploadProgress} /> : null}
+      {isUploading ? <UploadProgressBar language={language} progress={uploadProgress} /> : null}
 
       <div className="flex flex-wrap gap-2">
         <Button
@@ -55,7 +58,7 @@ const LessonVideoActions = ({
           size="sm"
           variant="ghost"
         >
-          Videoyu sil
+          {language === 'tr' ? 'Videoyu sil' : 'Delete video'}
         </Button>
       </div>
 

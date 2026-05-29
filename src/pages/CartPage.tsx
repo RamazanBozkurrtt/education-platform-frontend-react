@@ -18,7 +18,7 @@ import { formatCoursePrice, formatCurrency } from '../utils/helpers'
 const CartPage = () => {
   const { t } = useTranslation()
   const { language } = useLanguage()
-  const { clearCart, itemCount, items, removeCourse, subtotal, tax, total } = useCart()
+  const { clearCart, itemCount, isResolvingItems, items, removeCourse, subtotal, tax, total } = useCart()
   const actionLabel = language === 'tr' ? 'Islem' : 'Action'
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const freeLabel = language === 'tr' ? 'Ücretsiz' : 'Free'
@@ -64,7 +64,7 @@ const CartPage = () => {
           description={t('cart.courseCount', { count: itemCount })}
           title={t('cart.selectedCourses')}
         >
-          {items.length === 0 ? (
+          {itemCount === 0 ? (
             <EmptyState
               action={(
                 <Link className="inline-flex" to={ROUTES.courses}>
@@ -73,6 +73,22 @@ const CartPage = () => {
               )}
               description={t('cart.emptyDescription')}
               title={t('cart.emptyTitle')}
+            />
+          ) : isResolvingItems ? (
+            <div className="theme-muted rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4 text-sm">
+              {t('loader.courseCatalog')}
+            </div>
+          ) : items.length === 0 ? (
+            <EmptyState
+              action={(
+                <Link className="inline-flex" to={ROUTES.courses}>
+                  <Button asChild>{t('cart.browseCourses')}</Button>
+                </Link>
+              )}
+              description={language === 'tr'
+                ? 'Sepetindeki kurs detaylari su an yuklenemedi. Lutfen sayfayi yenileyip tekrar dene.'
+                : 'Course details in your cart could not be loaded right now. Please refresh and try again.'}
+              title={language === 'tr' ? 'Sepet detaylari yuklenemedi' : 'Cart details unavailable'}
             />
           ) : (
             <TableShell>

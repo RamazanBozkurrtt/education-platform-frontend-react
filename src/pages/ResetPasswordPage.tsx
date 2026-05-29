@@ -7,24 +7,13 @@ import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import { authApi } from '../services/authApi'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
+import { buildPasswordPolicySchema } from '../shared/validation/passwordPolicy'
 import { ROUTES } from '../utils/constants'
 
 const resetPasswordSchema = z
   .object({
-    newPassword: z
-      .string()
-      .min(1, 'New password is required.')
-      .min(8, 'Password must be at least 8 characters.')
-      .regex(/[A-Z]/, 'Password must include at least one uppercase letter.')
-      .regex(/[a-z]/, 'Password must include at least one lowercase letter.')
-      .regex(/\d/, 'Password must include at least one number.'),
-    confirmPassword: z
-      .string()
-      .min(1, 'Confirm password is required.')
-      .min(8, 'Password must be at least 8 characters.')
-      .regex(/[A-Z]/, 'Password must include at least one uppercase letter.')
-      .regex(/[a-z]/, 'Password must include at least one lowercase letter.')
-      .regex(/\d/, 'Password must include at least one number.'),
+    newPassword: buildPasswordPolicySchema('New password is required.'),
+    confirmPassword: buildPasswordPolicySchema('Confirm password is required.'),
   })
   .refine((value) => value.newPassword === value.confirmPassword, {
     message: 'Passwords do not match.',

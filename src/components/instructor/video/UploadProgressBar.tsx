@@ -1,8 +1,9 @@
 interface UploadProgressBarProps {
   progress: number
+  language: 'tr' | 'en'
 }
 
-const UploadProgressBar = ({ progress }: UploadProgressBarProps) => {
+const UploadProgressBar = ({ progress, language }: UploadProgressBarProps) => {
   const normalizedProgress = Math.max(0, Math.min(100, Math.round(progress)))
 
   return (
@@ -13,7 +14,9 @@ const UploadProgressBar = ({ progress }: UploadProgressBarProps) => {
           style={{ width: `${normalizedProgress}%` }}
         />
       </div>
-      <p className="theme-muted text-xs">Yukleniyor... %{normalizedProgress}</p>
+      <p className="theme-muted text-xs">
+        {language === 'tr' ? `Yukleniyor... %${normalizedProgress}` : `Uploading... ${normalizedProgress}%`}
+      </p>
     </div>
   )
 }
