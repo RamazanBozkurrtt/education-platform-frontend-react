@@ -6,6 +6,12 @@ export interface BackendInstructorResponse {
   name?: string | null
   role?: string | null
   bio?: string | null
+  profileImageUrl?: string | null
+  profile_image_url?: string | null
+  avatarUrl?: string | null
+  avatar_url?: string | null
+  imageUrl?: string | null
+  image_url?: string | null
 }
 
 export interface BackendLessonResponse {
@@ -59,6 +65,12 @@ export interface BackendCourseResponse {
   level?: string | BackendCourseLevelResponse | null
   levelName?: string | null
   duration?: string | number | null
+  durationInMinutes?: number | null
+  duration_in_minutes?: number | null
+  durationMinutes?: number | null
+  durationInSeconds?: number | null
+  duration_seconds?: number | null
+  durationSeconds?: number | null
   lessons?: number | BackendLessonResponse[] | null
   lessonCount?: number | null
   students?: string | number | null
@@ -79,6 +91,12 @@ export interface BackendCourseResponse {
   instructorName?: string | null
   instructorTitle?: string | null
   instructorBio?: string | null
+  instructorProfileImageUrl?: string | null
+  instructor_profile_image_url?: string | null
+  instructorAvatarUrl?: string | null
+  instructor_avatar_url?: string | null
+  instructorImageUrl?: string | null
+  instructor_image_url?: string | null
 }
 
 const ACCENT_PALETTE = [
@@ -176,6 +194,13 @@ const normalizeDuration = (value: unknown) => {
   return typeof asNumber === 'number' ? `${Math.round(asNumber)} min` : 'N/A'
 }
 
+type BareDurationUnit = 'seconds' | 'minutes'
+
+const LESSON_BARE_DURATION_INFER_MAX_MINUTES = 180
+const LESSON_BARE_DURATION_INFER_MIN_SECONDS = 240
+const COURSE_BARE_DURATION_INFER_SHORT_VALUE = 300
+const COURSE_BARE_DURATION_INFER_LONG_VALUE = 3_600
+
 const toSeconds = (
   value: unknown,
   options?: {
@@ -264,15 +289,15 @@ const toSeconds = (
   return undefined
 }
 
-const toDurationMinutes = (lesson: BackendLessonResponse & Record<string, unknown>) => {
-  const minuteCandidates = [
-    lesson.durationInMinutes,
-    lesson.duration_in_minutes,
-    lesson.durationMinutes,
-    lesson.duration_inMinutes,
-  ]
+const DURATION_UNIT_TOKEN_REGEX = /[a-z]/i
 
-  for (const candidate of minuteCandidates) {
+const hasDurationUnitToken = (value: unknown) => {
+  const asText = trimToUndefined(value)
+  return typeof asText === 'string' && DURATION_UNIT_TOKEN_REGEX.test(asText)
+}
+
+const toDurationMinutesFromCandidates = (candidates: unknown[]) => {
+  for (const candidate of candidates) {
     const parsed = toNumber(candidate)
 
     if (typeof parsed === 'number' && parsed >= 0) {
@@ -283,15 +308,8 @@ const toDurationMinutes = (lesson: BackendLessonResponse & Record<string, unknow
   return undefined
 }
 
-const toDurationSecondsFromLesson = (lesson: BackendLessonResponse & Record<string, unknown>) => {
-  const explicitSecondCandidates = [
-    lesson.durationInSeconds,
-    lesson.duration_seconds,
-    lesson.durationSeconds,
-    lesson.duration_in_seconds,
-  ]
-
-  for (const candidate of explicitSecondCandidates) {
+const toDurationSecondsFromCandidates = (candidates: unknown[]) => {
+  for (const candidate of candidates) {
     const parsed = toNumber(candidate)
 
     if (typeof parsed === 'number' && parsed >= 0) {
@@ -299,9 +317,169 @@ const toDurationSecondsFromLesson = (lesson: BackendLessonResponse & Record<stri
     }
   }
 
-  // Backend payloads often carry lesson.duration as minutes when second-specific
-  // fields are absent. Treat bare numeric duration as minutes in this fallback.
-  return toSeconds(lesson.duration, { bareNumberUnit: 'minutes' })
+  return undefined
+}
+
+const toDurationMinutes = (lesson: BackendLessonResponse & Record<string, unknown>) =>
+  toDurationMinutesFromCandidates([
+    lesson.durationInMinutes,
+    lesson.duration_in_minutes,
+    lesson.durationMinutes,
+    lesson.duration_inMinutes,
+  ])
+
+const toDurationSecondsFromLesson = (
+  lesson: BackendLessonResponse & Record<string, unknown>,
+  bareNumberUnit: BareDurationUnit = 'seconds',
+) => {
+  const explicitSeconds = toDurationSecondsFromCandidates([
+    lesson.durationInSeconds,
+    lesson.duration_seconds,
+    lesson.durationSeconds,
+    lesson.duration_in_seconds,
+  ])
+
+  if (typeof explicitSeconds === 'number') {
+    return explicitSeconds
+  }
+
+  return toSeconds(lesson.duration, { bareNumberUnit })
+}
+
+const toCourseDurationMinutes = (course: BackendCourseResponse & Record<string, unknown>) =>
+  toDurationMinutesFromCandidates([
+    course.durationInMinutes,
+    course.duration_in_minutes,
+    course.durationMinutes,
+  ])
+
+const toCourseDurationSeconds = (
+  course: BackendCourseResponse & Record<string, unknown>,
+  bareNumberUnit: BareDurationUnit,
+) => {
+  const explicitSeconds = toDurationSecondsFromCandidates([
+    course.durationInSeconds,
+    course.duration_seconds,
+    course.durationSeconds,
+  ])
+
+  if (typeof explicitSeconds === 'number') {
+    return explicitSeconds
+  }
+
+  return toSeconds(course.duration, { bareNumberUnit })
+}
+
+const hasExplicitLessonDuration = (lesson: BackendLessonResponse & Record<string, unknown>) =>
+  typeof toDurationMinutes(lesson) === 'number'
+  || typeof toDurationSecondsFromCandidates([
+    lesson.durationInSeconds,
+    lesson.duration_seconds,
+    lesson.durationSeconds,
+    lesson.duration_in_seconds,
+  ]) === 'number'
+
+const toBareLessonDurationNumber = (lesson: BackendLessonResponse & Record<string, unknown>) => {
+  if (hasExplicitLessonDuration(lesson) || hasDurationUnitToken(lesson.duration)) {
+    return undefined
+  }
+
+  const numeric = toNumber(lesson.duration)
+  return typeof numeric === 'number' && numeric >= 0 ? numeric : undefined
+}
+
+const inferBareLessonDurationUnit = (rawLessons: unknown[]): BareDurationUnit => {
+  // Legacy payloads sometimes provide bare numeric durations as minutes.
+  // Infer a unit once per course and apply it consistently to all lessons.
+  const bareNumericValues = rawLessons
+    .map((rawLesson) => toBareLessonDurationNumber(toRecord(rawLesson) as BackendLessonResponse & Record<string, unknown>))
+    .filter((value): value is number => typeof value === 'number')
+
+  if (bareNumericValues.length === 0) {
+    return 'seconds'
+  }
+
+  const maxValue = Math.max(...bareNumericValues)
+  const minValue = Math.min(...bareNumericValues)
+  const averageValue = bareNumericValues.reduce((sum, value) => sum + value, 0) / bareNumericValues.length
+
+  if (maxValue <= LESSON_BARE_DURATION_INFER_MAX_MINUTES) {
+    return 'minutes'
+  }
+
+  if (minValue >= LESSON_BARE_DURATION_INFER_MIN_SECONDS) {
+    return 'seconds'
+  }
+
+  return averageValue <= LESSON_BARE_DURATION_INFER_MAX_MINUTES ? 'minutes' : 'seconds'
+}
+
+const resolveLessonCountForDurationInference = (
+  course: BackendCourseResponse,
+  modules: CourseModule[],
+  rawLessons: unknown[],
+) => {
+  const lessonCount = toNumber(course.lessonCount)
+
+  if (typeof lessonCount === 'number' && lessonCount > 0) {
+    return Math.round(lessonCount)
+  }
+
+  if (typeof course.lessons === 'number' && Number.isFinite(course.lessons) && course.lessons > 0) {
+    return Math.round(course.lessons)
+  }
+
+  if (rawLessons.length > 0) {
+    return rawLessons.length
+  }
+
+  if (modules.length > 0) {
+    return modules.length
+  }
+
+  return undefined
+}
+
+const inferCourseBareDurationUnit = (
+  course: BackendCourseResponse,
+  modules: CourseModule[],
+  rawLessons: unknown[],
+): BareDurationUnit => {
+  // Course-level duration may be delivered as either minutes or seconds.
+  // Use lesson-count plausibility first, then bounded fallbacks.
+  const rawDuration = toNumber(course.duration)
+
+  if (typeof rawDuration !== 'number' || rawDuration < 0 || hasDurationUnitToken(course.duration)) {
+    return 'seconds'
+  }
+
+  const lessonCount = resolveLessonCountForDurationInference(course, modules, rawLessons)
+
+  if (typeof lessonCount === 'number' && lessonCount > 0) {
+    const averageSecondsIfMinutes = (rawDuration * 60) / lessonCount
+    const averageSecondsIfSeconds = rawDuration / lessonCount
+
+    const minutesLooksPlausible = averageSecondsIfMinutes >= 120 && averageSecondsIfMinutes <= 10_800
+    const secondsLooksPlausible = averageSecondsIfSeconds >= 120 && averageSecondsIfSeconds <= 10_800
+
+    if (minutesLooksPlausible && !secondsLooksPlausible) {
+      return 'minutes'
+    }
+
+    if (secondsLooksPlausible && !minutesLooksPlausible) {
+      return 'seconds'
+    }
+  }
+
+  if (rawDuration <= COURSE_BARE_DURATION_INFER_SHORT_VALUE) {
+    return 'minutes'
+  }
+
+  if (rawDuration >= COURSE_BARE_DURATION_INFER_LONG_VALUE) {
+    return 'seconds'
+  }
+
+  return 'minutes'
 }
 
 const formatDurationFromSeconds = (seconds: number) => {
@@ -415,20 +593,25 @@ const extractLessonList = (course: BackendCourseResponse) => {
   return []
 }
 
-const mapLesson = (courseId: string, value: unknown, index: number): CourseModule => {
+const mapLesson = (
+  courseId: string,
+  value: unknown,
+  index: number,
+  bareDurationUnit: BareDurationUnit,
+): CourseModule => {
   const lesson = toRecord(value) as BackendLessonResponse & Record<string, unknown>
   const lessonId = toIdentifier(lesson.id) ?? `${courseId}-lesson-${index + 1}`
   const durationMinutes = toDurationMinutes(lesson)
-  const durationInSeconds = toDurationSecondsFromLesson(lesson)
-  const durationValue = typeof durationMinutes === 'number'
-    ? formatDurationFromSeconds(Math.round(durationMinutes * 60))
-    : typeof durationInSeconds === 'number'
-      ? formatDurationFromSeconds(durationInSeconds)
-      : normalizeDuration(lesson.duration)
-  const fallbackDurationValue = typeof durationInSeconds === 'number'
+  const durationInSeconds = toDurationSecondsFromLesson(lesson, bareDurationUnit)
+  const durationValue = typeof durationInSeconds === 'number'
     ? formatDurationFromSeconds(durationInSeconds)
     : typeof durationMinutes === 'number'
       ? formatDurationFromSeconds(Math.round(durationMinutes * 60))
+      : normalizeDuration(lesson.duration)
+  const fallbackDurationValue = typeof durationMinutes === 'number'
+    ? formatDurationFromSeconds(Math.round(durationMinutes * 60))
+    : typeof durationInSeconds === 'number'
+      ? formatDurationFromSeconds(durationInSeconds)
       : normalizeDuration(lesson.duration)
 
   return {
@@ -461,44 +644,52 @@ const resolveInstructor = (course: BackendCourseResponse) => {
   const instructor = course.instructor ?? {}
   const role = trimToUndefined(instructor.role) ?? trimToUndefined(course.instructorTitle) ?? 'Instructor'
   const fullName = trimToUndefined(instructor.fullName)
+  const avatarUrl = toAbsoluteMediaUrl(
+    trimToUndefined(instructor.profileImageUrl)
+    ?? trimToUndefined(instructor.profile_image_url)
+    ?? trimToUndefined(instructor.avatarUrl)
+    ?? trimToUndefined(instructor.avatar_url)
+    ?? trimToUndefined(instructor.imageUrl)
+    ?? trimToUndefined(instructor.image_url)
+    ?? trimToUndefined(course.instructorProfileImageUrl)
+    ?? trimToUndefined(course.instructor_profile_image_url)
+    ?? trimToUndefined(course.instructorAvatarUrl)
+    ?? trimToUndefined(course.instructor_avatar_url)
+    ?? trimToUndefined(course.instructorImageUrl)
+    ?? trimToUndefined(course.instructor_image_url),
+  )
 
   return {
     name: fullName ?? trimToUndefined(instructor.name) ?? trimToUndefined(course.instructorName) ?? 'Unknown Instructor',
     role,
     bio: trimToUndefined(instructor.bio) ?? trimToUndefined(course.instructorBio) ?? `${role} on this course.`,
+    avatarUrl: avatarUrl || undefined,
   }
 }
 
-const resolveCourseDuration = (course: BackendCourseResponse, modules: CourseModule[]) => {
-  const lessonSources: unknown[] = [
-    course.modules,
-    course.lessonList,
-    course.lessonsList,
-    Array.isArray(course.lessons) ? course.lessons : undefined,
-  ]
+const resolveCourseDuration = (
+  course: BackendCourseResponse,
+  modules: CourseModule[],
+  rawLessons: unknown[],
+  inferredLessonDurationUnit: BareDurationUnit,
+) => {
   let totalSeconds = 0
   let hasAnyDuration = false
 
-  for (const source of lessonSources) {
-    if (!Array.isArray(source)) {
+  for (const rawLesson of rawLessons) {
+    const lesson = toRecord(rawLesson) as BackendLessonResponse & Record<string, unknown>
+    const durationInMinutes = toDurationMinutes(lesson)
+    const durationInSeconds = toDurationSecondsFromLesson(lesson, inferredLessonDurationUnit)
+
+    if (typeof durationInSeconds === 'number') {
+      totalSeconds += durationInSeconds
+      hasAnyDuration = true
       continue
     }
 
-    for (const rawLesson of source) {
-      const lesson = toRecord(rawLesson) as BackendLessonResponse & Record<string, unknown>
-      const durationInMinutes = toDurationMinutes(lesson)
-      const durationInSeconds = toDurationSecondsFromLesson(lesson)
-
-      if (typeof durationInMinutes === 'number') {
-        totalSeconds += Math.round(durationInMinutes * 60)
-        hasAnyDuration = true
-        continue
-      }
-
-      if (typeof durationInSeconds === 'number') {
-        totalSeconds += durationInSeconds
-        hasAnyDuration = true
-      }
+    if (typeof durationInMinutes === 'number') {
+      totalSeconds += Math.round(durationInMinutes * 60)
+      hasAnyDuration = true
     }
   }
 
@@ -517,13 +708,31 @@ const resolveCourseDuration = (course: BackendCourseResponse, modules: CourseMod
     }
   }
 
+  const inferredCourseDurationUnit = inferCourseBareDurationUnit(course, modules, rawLessons)
+  const durationFromCourseSeconds = toCourseDurationSeconds(
+    course as BackendCourseResponse & Record<string, unknown>,
+    inferredCourseDurationUnit,
+  )
+
+  if (typeof durationFromCourseSeconds === 'number') {
+    return formatDurationFromSeconds(durationFromCourseSeconds)
+  }
+
+  const durationFromCourseMinutes = toCourseDurationMinutes(course as BackendCourseResponse & Record<string, unknown>)
+
+  if (typeof durationFromCourseMinutes === 'number') {
+    return formatDurationFromSeconds(Math.round(durationFromCourseMinutes * 60))
+  }
+
   return normalizeDuration(course.duration)
 }
 
 export const mapBackendCourseToCourse = (value: unknown): Course => {
   const course = toRecord(value) as BackendCourseResponse
   const id = toIdentifier(course.id) ?? crypto.randomUUID()
-  const lessons = extractLessonList(course).map((lesson, index) => mapLesson(id, lesson, index))
+  const rawLessons = extractLessonList(course)
+  const inferredLessonDurationUnit = inferBareLessonDurationUnit(rawLessons)
+  const lessons = rawLessons.map((lesson, index) => mapLesson(id, lesson, index, inferredLessonDurationUnit))
   const categoryObject = toCourseCategory(course.category)
   const legacyCategoryId = toIdentifier(course.categoryId) ?? toIdentifier(categoryObject?.id)
   const categoryIdsFromResponse = toIdentifierArray(course.categoryIds)
@@ -589,7 +798,7 @@ export const mapBackendCourseToCourse = (value: unknown): Course => {
     levelId: levelId ?? resolvedLevel.id,
     level: resolvedLevel,
     levelKey: slugify(levelName) || 'all-levels',
-    duration: resolveCourseDuration(course, lessons),
+    duration: resolveCourseDuration(course, lessons, rawLessons, inferredLessonDurationUnit),
     lessons: resolveLessonsCount(course, lessons),
     progress: Math.max(0, Math.min(100, Math.round(toNumber(course.progress) ?? 0))),
     students: typeof studentCount === 'number'

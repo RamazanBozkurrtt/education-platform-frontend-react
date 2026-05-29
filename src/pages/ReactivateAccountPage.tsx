@@ -9,6 +9,22 @@ import { ROUTES } from '../utils/constants'
 const EXPIRED_MESSAGE = 'This reactivation link has expired. Please request a new one from the sign-in page.'
 const INVALID_MESSAGE = 'This reactivation link is invalid or has already been used.'
 const GENERIC_ERROR_MESSAGE = 'We could not reactivate your account right now. Please try again.'
+const reactivationRequestCache = new Map<string, Promise<string>>()
+
+const reactivateAccountOnce = (token: string) => {
+  const cachedRequest = reactivationRequestCache.get(token)
+
+  if (cachedRequest) {
+    return cachedRequest
+  }
+
+  const request = authApi.reactivateAccount(token).finally(() => {
+    reactivationRequestCache.delete(token)
+  })
+
+  reactivationRequestCache.set(token, request)
+  return request
+}
 
 const resolveReactivationErrorMessage = (error: unknown) => {
   const appError = normalizeApiError(error)
@@ -52,7 +68,7 @@ const ReactivateAccountPage = () => {
       setMessage('Reactivating your account...')
 
       try {
-        const successMessage = await authApi.reactivateAccount(token)
+        const successMessage = await reactivateAccountOnce(token)
 
         if (cancelled) {
           return

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import DashboardLayout from '../layouts/DashboardLayout'
 import AuthLayout from '../layouts/AuthLayout'
 import CompleteProfileLayout from '../layouts/CompleteProfileLayout'
+import ExamSessionLayout from '../layouts/ExamSessionLayout'
 import ProtectedRoute from './ProtectedRoute'
 import RoleBasedRoute from './RoleBasedRoute'
 import LandingPage from '../pages/LandingPage'
@@ -17,6 +18,9 @@ import MyCoursesPage from '../pages/MyCoursesPage'
 import CourseListPage from '../pages/CourseListPage'
 import CourseDetailPage from '../pages/CourseDetailPage'
 import CoursePlayerPage from '../pages/CoursePlayerPage'
+import CourseFinalExamOverviewPage from '../pages/CourseFinalExamOverviewPage'
+import CourseFinalExamAttemptPage from '../pages/CourseFinalExamAttemptPage'
+import CourseFinalExamResultPage from '../pages/CourseFinalExamResultPage'
 import CartPage from '../pages/CartPage'
 import PaymentPage from '../pages/PaymentPage'
 import MyPaymentsPage from '../pages/MyPaymentsPage'
@@ -49,12 +53,19 @@ const AppRouter = () => (
         <Route path={ROUTES.completeProfile} element={<CompleteProfilePage />} />
       </Route>
 
+      <Route element={<ExamSessionLayout />}>
+        <Route path={ROUTES.courseFinalExamAttempt()} element={<CourseFinalExamAttemptPage />} />
+      </Route>
+
+      <Route path={ROUTES.coursePlayer()} element={<CoursePlayerPage />} />
+
       <Route element={<DashboardLayout />}>
         <Route path={ROUTES.dashboard} element={<DashboardPage />} />
         <Route path={ROUTES.myCourses} element={<MyCoursesPage />} />
         <Route path={ROUTES.courses} element={<CourseListPage />} />
         <Route path={ROUTES.courseDetail()} element={<CourseDetailPage />} />
-        <Route path={ROUTES.coursePlayer()} element={<CoursePlayerPage />} />
+        <Route path={ROUTES.courseFinalExamOverview()} element={<CourseFinalExamOverviewPage />} />
+        <Route path={ROUTES.courseFinalExamResult()} element={<CourseFinalExamResultPage />} />
         <Route path={ROUTES.cart} element={<CartPage />} />
         <Route path={ROUTES.payment} element={<PaymentPage />} />
         <Route path={ROUTES.payments} element={<MyPaymentsPage />} />

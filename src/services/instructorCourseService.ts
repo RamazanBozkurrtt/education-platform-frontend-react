@@ -7,6 +7,7 @@ import { mapBackendCourseToCourse } from './courseMappers'
 import type { ApiEnvelope, CourseCategoryOption, CourseLevelOption } from '../utils/types'
 
 const VIDEO_UPLOAD_TIMEOUT_MS = 30 * 60_000
+const DEFAULT_NEW_LESSON_DURATION_SECONDS = 1
 
 const requireEnvelopeData = <T>(envelope: ApiEnvelope<T>, fallbackMessage: string) => {
   if (typeof envelope.data !== 'undefined') {
@@ -51,6 +52,7 @@ interface CreateLessonPayload {
   title: string
   description?: string
   orderIndex: number
+  durationSeconds?: number
 }
 
 interface CreateCoursePayload {
@@ -77,9 +79,7 @@ interface UpdateLessonPayload {
   title: string
   summaryTitle?: string
   videoUrl: string | null
-  duration: number | null
   orderIndex: number
-  completed: boolean
 }
 
 const toRecord = (value: unknown): Record<string, unknown> =>
@@ -520,22 +520,19 @@ export const instructorCourseService = {
       .filter(Boolean)
       .slice(0, 2)
       .join(' ')
+    const durationSeconds = Number.isFinite(payload.durationSeconds)
+      ? Math.max(1, Math.trunc(payload.durationSeconds as number))
+      : DEFAULT_NEW_LESSON_DURATION_SECONDS
 
     const requestPayload = {
       title: trimmedTitle,
       summaryTitle: summaryTitle || trimmedTitle,
-      duration: 1,
       orderIndex: payload.orderIndex,
-      completed: false,
+      duration: durationSeconds,
       description: payload.description?.trim() || undefined,
     }
 
-    const response = await api.post<ApiEnvelope<unknown>>(
-      API_ENDPOINTS.courses.lessons.create(courseId),
-      requestPayload,
-    )
-
-    return requireEnvelopeData(response.data, 'Lesson create response is missing data.')
+    return courseService.createLesson(courseId, requestPayload)
   },
 
   async updateCourse(courseId: string, payload: UpdateCoursePayload) {
@@ -565,11 +562,7 @@ export const instructorCourseService = {
       title: trimmedTitle,
       summaryTitle,
       videoUrl: payload.videoUrl,
-      duration: Number.isFinite(payload.duration) && typeof payload.duration === 'number'
-        ? Math.max(0, Math.trunc(payload.duration))
-        : 0,
       orderIndex: Math.max(1, Math.trunc(payload.orderIndex)),
-      completed: Boolean(payload.completed),
     }
 
     const response = await api.put<ApiEnvelope<unknown>>(

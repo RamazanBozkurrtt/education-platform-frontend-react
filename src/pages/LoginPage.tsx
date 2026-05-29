@@ -17,8 +17,8 @@ const LoginPage = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { isAuthenticated, isBootstrapping, login, user } = useAuth()
-  const [email, setEmail] = useState('avery@lumaacademy.dev')
-  const [password, setPassword] = useState('password123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -43,11 +43,19 @@ const LoginPage = () => {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setSubmitting(true)
     setFormError(null)
     setFieldErrors({})
     setReactivationPrompt(null)
     setReactivationFeedback(null)
+
+    if (!password.trim()) {
+      setFieldErrors({
+        password: 'Password is required.',
+      })
+      return
+    }
+
+    setSubmitting(true)
 
     try {
       const result = await login({ email, password })

@@ -1,34 +1,38 @@
-﻿import { useMemo, useState } from 'react'
+﻿import { useEffect, useMemo, useState, type SyntheticEvent } from 'react'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { BookOpen, Clock3, PlayCircle, Star, Users2 } from 'lucide-react'
+import { BookOpen, CheckCircle2, Clock3, FileCheck2, LockKeyhole, PlayCircle, ShoppingCart, Star, Users2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
 import DashboardSection from '../components/dashboard/DashboardSection'
 import StatusBadge from '../components/dashboard/StatusBadge'
+import CourseProgressBar from '../components/progress/CourseProgressBar'
+import LessonProgressBadge from '../components/progress/LessonProgressBadge'
 import Button from '../components/ui/Button'
 import Loader from '../components/ui/Loader'
 import MetaRow from '../components/ui/MetaRow'
-import Modal from '../components/ui/Modal'
 import QueryErrorState from '../components/ui/QueryErrorState'
 import TagList from '../components/ui/TagList'
 import CourseReviewList from '../components/reviews/CourseReviewList'
 import CourseReviewSummary from '../components/reviews/CourseReviewSummary'
 import ReviewForm from '../components/reviews/ReviewForm'
 import { useLanguage } from '../hooks/useLanguage'
+import { useCourseLessonProgress, useCourseProgressSummary } from '../hooks/useCourseProgress'
 import { useCart } from '../hooks/useCart'
 import { useLibrary } from '../hooks/useLibrary'
 import { useAuth } from '../hooks/useAuth'
-import { useConfirmPaymentMutation, useCreatePaymentMutation } from '../hooks/usePayments'
+import { resolveServiceUrl } from '../config/api'
 import { courseService } from '../services/courseService'
 import { enrollmentService } from '../services/enrollmentService'
+import { API_ENDPOINTS } from '../services/endpoints'
 import { reviewService } from '../services/reviewService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
-import { createIdempotencyKey, formatCoursePrice } from '../utils/helpers'
+import { formatCoursePrice } from '../utils/helpers'
 import { isAdmin } from '../utils/roles'
 import type { CreateReviewRequest, Review, UpdateReviewRequest } from '../utils/types'
+import { buildCoursePlayerPath, resolveContinueLessonId, resolveLessonProgressStatus } from '../utils/courseProgress'
 
 const REVIEW_PAGE_SIZE = 10
 
@@ -123,22 +127,21 @@ const isPaymentRequiredForEnrollmentError = (error: unknown) => {
 
 const CourseDetailPage = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { language } = useLanguage()
   const { user, claims, isAuthenticated } = useAuth()
-  const { removeCourse } = useCart()
+  const { addCourse, isInCart, removeCourse } = useCart()
   const { isPurchased, purchaseCourses } = useLibrary()
   const { slug = '' } = useParams()
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [editingReview, setEditingReview] = useState<Review | null>(null)
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null)
-  const [checkoutOpen, setCheckoutOpen] = useState(false)
   const [purchaseError, setPurchaseError] = useState<string | null>(null)
   const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null)
-  const [purchaseStage, setPurchaseStage] = useState<'payment' | 'confirm' | 'enrollment' | null>(null)
-  const createPaymentMutation = useCreatePaymentMutation()
-  const confirmPaymentMutation = useConfirmPaymentMutation()
+  const [purchaseStage, setPurchaseStage] = useState<'enrollment' | null>(null)
+  const [isInstructorAvatarBroken, setIsInstructorAvatarBroken] = useState(false)
 
   const copy = language === 'tr'
     ? {
@@ -168,22 +171,17 @@ const CourseDetailPage = () => {
       level: 'Seviye',
       includedOutcomes: 'Kazanacagin yetkinlikler',
       enrollFree: 'Kursa Katıl',
-      buyAndEnroll: 'Satın Al ve Katıl',
-      checkoutTitle: 'Ödeme Onayı',
-      checkoutDescription: 'Bu kursa kaydolmak için ödemeyi onaylayın.',
-      paymentProvider: 'Provider',
-      paymentMethod: 'Ödeme yöntemi',
-      completePayment: 'Ödemeyi Tamamla',
-      paymentPreparing: 'Ödeme hazırlanıyor...',
-      paymentConfirming: 'Ödeme doğrulanıyor...',
       enrollmentCreating: 'Kayıt oluşturuluyor...',
-      paymentSuccess: 'Ödeme başarılı. Kurs kaydınız oluşturuldu.',
-      paymentDeclined: 'Odeme basarisiz. Yeni bir odeme denemesi baslatabilirsiniz.',
       enrollmentSuccess: 'Kurs kaydınız oluşturuldu.',
       paymentRequiredMessage: 'Bu kursa kayıt olmak için önce ödeme işlemini tamamlamalısınız.',
-      paymentFailedMessage: 'Ödeme işlemi tamamlanamadı. Lütfen tekrar deneyin.',
       enrollmentFailedMessage: 'Kurs kaydı oluşturulamadı. Lütfen tekrar deneyin.',
-      enrollmentAfterPaymentFailedMessage: 'Ödeme alındı ancak kayıt işlemi tamamlanamadı. Lütfen tekrar deneyin veya destek ile iletişime geçin.',
+      finalExamCtaTitle: 'Final sınavı',
+      finalExamUnlockHint: 'Final sınavına girebilmek için kurs içeriğini %100 tamamlamalısın.',
+      finalExamRequiresEnrollment: 'Final sınavına erişmek için önce kursa kayıt olmalısın.',
+      finalExamReady: 'Kurs içeriğini tamamladın. Final sınavına başlayabilirsin.',
+      finalExamGo: 'Final sınavına git',
+      finalExamLocked: 'Final sınavı kilitli',
+      progressSummary: (value: number) => `Tamamlanma: %${value}`,
     }
     : {
       detailsTitle: 'Course details',
@@ -212,22 +210,17 @@ const CourseDetailPage = () => {
       level: 'Level',
       includedOutcomes: 'What you will learn',
       enrollFree: 'Join Course',
-      buyAndEnroll: 'Buy and Join',
-      checkoutTitle: 'Payment confirmation',
-      checkoutDescription: 'Confirm payment to enroll in this course.',
-      paymentProvider: 'Provider',
-      paymentMethod: 'Payment method',
-      completePayment: 'Complete Payment',
-      paymentPreparing: 'Preparing payment...',
-      paymentConfirming: 'Confirming payment...',
       enrollmentCreating: 'Creating enrollment...',
-      paymentSuccess: 'Payment succeeded. Your enrollment has been created.',
-      paymentDeclined: 'Payment failed. You can start a new payment attempt.',
       enrollmentSuccess: 'Your enrollment has been created.',
       paymentRequiredMessage: 'You need to complete payment before enrolling in this course.',
-      paymentFailedMessage: 'Payment could not be completed. Please try again.',
       enrollmentFailedMessage: 'Enrollment could not be created. Please try again.',
-      enrollmentAfterPaymentFailedMessage: 'Payment was captured but enrollment could not be completed. Please try again or contact support.',
+      finalExamCtaTitle: 'Final exam',
+      finalExamUnlockHint: 'You must complete 100% of course content before taking the final exam.',
+      finalExamRequiresEnrollment: 'You need to enroll before you can access the final exam.',
+      finalExamReady: 'You completed the course content. You can start the final exam.',
+      finalExamGo: 'Go to final exam',
+      finalExamLocked: 'Final exam is locked',
+      progressSummary: (value: number) => `Completion: ${value}%`,
     }
 
   const { data, error, isLoading } = useQuery({
@@ -238,9 +231,43 @@ const CourseDetailPage = () => {
   const courseId = data?.id ?? ''
   const isUserAdmin = isAdmin(user, claims)
   const purchased = data ? isPurchased(data.id) : false
+  const inCart = data ? isInCart(data.id) : false
+  const { data: courseProgressSummary } = useCourseProgressSummary(purchased ? courseId : null)
+  const { data: courseLessonProgress = [] } = useCourseLessonProgress(purchased ? courseId : null)
+  const courseLessonProgressById = useMemo(
+    () => courseLessonProgress.reduce<Record<string, typeof courseLessonProgress[number]>>((accumulator, progress) => {
+      if (!progress.lessonId) {
+        return accumulator
+      }
+
+      accumulator[progress.lessonId] = progress
+      return accumulator
+    }, {}),
+    [courseLessonProgress],
+  )
   const isPaidCourse = Boolean(data && data.price > 0)
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const freeLabel = language === 'tr' ? 'Ücretsiz' : 'Free'
+  const continueLessonId = data
+    ? resolveContinueLessonId(courseProgressSummary, data.modules)
+    : null
+  const coursePlayerPath = data
+    ? buildCoursePlayerPath(data.slug, continueLessonId)
+    : ROUTES.coursePlayer(slug)
+  const canResumeCourse = Boolean(
+    courseProgressSummary && (courseProgressSummary.overallPercentage > 0 || courseProgressSummary.lastLessonId),
+  )
+  const watchCourseButtonLabel = purchased
+    ? (canResumeCourse ? (language === 'tr' ? 'Devam et' : 'Continue') : (language === 'tr' ? 'Kursa basla' : 'Start course'))
+    : t('common.watchCourse')
+  const completionPercentage = purchased
+    ? Math.max(0, Math.min(100, Math.round(courseProgressSummary?.overallPercentage ?? data?.progress ?? 0)))
+    : 0
+  const isFinalExamUnlocked = purchased && completionPercentage >= 100
+  const finalExamLockReason = purchased ? copy.finalExamUnlockHint : copy.finalExamRequiresEnrollment
+  const finalExamPath = data
+    ? ROUTES.courseFinalExamOverview(data.id)
+    : ROUTES.courseFinalExamOverview(courseId)
 
   const {
     data: reviewSummary,
@@ -431,70 +458,18 @@ const CourseDetailPage = () => {
     }
   }
 
-  const handlePaidEnrollment = async (approved: boolean) => {
-    if (!data || purchased || purchaseStage) {
+  const handleAddToCart = () => {
+    if (!data || purchased) {
       return
     }
 
-    setPurchaseError(null)
-    setPurchaseSuccess(null)
-    setPurchaseStage('payment')
-
-    try {
-      const createdPayment = await createPaymentMutation.mutateAsync({
-        courseId: data.id,
-        provider: 'MOCK_GATEWAY',
-        paymentMethod: 'CARD',
-        idempotencyKey: createIdempotencyKey(),
-        autoConfirm: false,
-        buyerFullName: user?.name,
-        buyerEmail: user?.email,
-      })
-
-      setPurchaseStage('confirm')
-
-      const confirmedPayment = await confirmPaymentMutation.mutateAsync({
-        paymentId: createdPayment.id,
-        payload: {
-          approved,
-          failureReason: approved ? undefined : copy.paymentDeclined,
-          buyerFullName: user?.name,
-          buyerEmail: user?.email,
-        },
-      })
-
-      if (confirmedPayment.status !== 'SUCCEEDED') {
-        setPurchaseError(confirmedPayment.failureReason ?? copy.paymentDeclined)
-        return
-      }
-
-      setPurchaseStage('enrollment')
-
-      try {
-        await enrollmentService.createEnrollment(
-          { courseId: data.id },
-          { skipGlobalErrorHandling: true },
-        )
-      } catch (enrollmentError) {
-        if (isPaymentRequiredForEnrollmentError(enrollmentError)) {
-          setPurchaseError(copy.paymentRequiredMessage)
-        } else {
-          setPurchaseError(copy.enrollmentAfterPaymentFailedMessage)
-        }
-        return
-      }
-
-      purchaseCourses([data.id])
-      removeCourse(data.id)
-      await refreshEnrollmentState()
-      setPurchaseSuccess(copy.paymentSuccess)
-      setCheckoutOpen(false)
-    } catch {
-      setPurchaseError(copy.paymentFailedMessage)
-    } finally {
-      setPurchaseStage(null)
-    }
+    addCourse(data.id)
+    navigate(ROUTES.cart)
   }
+
+  useEffect(() => {
+    setIsInstructorAvatarBroken(false)
+  }, [data?.instructor.avatarUrl])
 
   if (error) {
     return <QueryErrorState error={error} />
@@ -504,28 +479,60 @@ const CourseDetailPage = () => {
     return <Loader label={t('loader.courseDetails')} />
   }
 
+  const fallbackCourseImageUrl = resolveServiceUrl(API_ENDPOINTS.courses.image.public(data.id))
+  const courseImageUrl = data.imageUrl || fallbackCourseImageUrl
+  const instructorAvatarUrl = data.instructor.avatarUrl ?? ''
+  const showInstructorAvatar = Boolean(instructorAvatarUrl && !isInstructorAvatarBroken)
+  const instructorInitials = data.instructor.name
+    .split(' ')
+    .map((part) => part.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join('')
+  const coursePreviewLabel = language === 'tr' ? 'Kurs gorseli' : 'Course preview'
+
+  const handleMediaImageError = (event: SyntheticEvent<HTMLImageElement>, fallbackSrc: string) => {
+    const target = event.currentTarget
+
+    if (target.dataset.fallbackApplied === 'true') {
+      return
+    }
+
+    target.dataset.fallbackApplied = 'true'
+    target.src = fallbackSrc
+  }
+
   return (
     <div className="space-y-8">
       <DashboardPageHeader
         actions={(
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
             {purchased ? (
-              <Link className="w-full sm:w-auto" to={ROUTES.coursePlayer(data.slug)}>
+              <Link className="w-full sm:w-auto" to={coursePlayerPath}>
                 <Button asChild className="w-full justify-center">
                   <PlayCircle className="h-4 w-4" />
-                  {t('common.watchCourse')}
+                  {watchCourseButtonLabel}
                 </Button>
               </Link>
             ) : (
               <>
                 {isPaidCourse ? (
-                  <Button
-                    className="w-full justify-center sm:w-auto"
-                    disabled={Boolean(purchaseStage)}
-                    onClick={() => setCheckoutOpen(true)}
-                  >
-                    {copy.buyAndEnroll}
-                  </Button>
+                  inCart ? (
+                    <Link className="w-full sm:w-auto" to={ROUTES.cart}>
+                      <Button asChild className="w-full justify-center sm:w-auto" variant="secondary">
+                        <CheckCircle2 className="h-4 w-4" />
+                        {t('common.goToCart')}
+                      </Button>
+                    </Link>
+                  ) : (
+                    <Button
+                      className="w-full justify-center sm:w-auto"
+                      onClick={handleAddToCart}
+                      variant="secondary"
+                    >
+                      <ShoppingCart className="h-4 w-4" />
+                      {t('common.addToCart')}
+                    </Button>
+                  )
                 ) : (
                   <Button
                     className="w-full justify-center sm:w-auto"
@@ -545,6 +552,57 @@ const CourseDetailPage = () => {
         eyebrow={getCourseCategoryLabel(data)}
         title={data.title}
       />
+
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+        <article className="overflow-hidden rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
+          <div className="relative">
+            <img
+              alt={data.title}
+              className="aspect-[16/9] w-full object-cover"
+              loading="lazy"
+              onError={(event) => handleMediaImageError(event, fallbackCourseImageUrl)}
+              src={courseImageUrl}
+            />
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[color:rgba(6,10,16,0.6)] via-transparent to-transparent" />
+            <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+              <span className="rounded-sm border border-white/20 bg-black/35 px-2.5 py-1 text-xs font-semibold text-white">
+                {getCourseCategoryLabel(data)}
+              </span>
+              <span className="rounded-sm border border-white/20 bg-black/35 px-2.5 py-1 text-xs font-semibold text-white">
+                {data.level.levelName}
+              </span>
+            </div>
+          </div>
+          <div className="border-t border-[color:var(--border)] px-5 py-4">
+            <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.14em]">{coursePreviewLabel}</p>
+            <p className="theme-muted mt-2 text-sm leading-7">{data.summary}</p>
+          </div>
+        </article>
+
+        <article className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
+          <h3 className="theme-heading text-base font-semibold">{copy.instructorTitle}</h3>
+          <div className="mt-4 flex items-start gap-4">
+            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)]">
+              {showInstructorAvatar ? (
+                <img
+                  alt={data.instructor.name}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                  onError={() => setIsInstructorAvatarBroken(true)}
+                  src={instructorAvatarUrl}
+                />
+              ) : (
+                <span className="text-sm font-semibold text-[color:var(--text-heading)]">{instructorInitials}</span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="theme-heading truncate text-lg font-semibold">{data.instructor.name}</p>
+              <p className="theme-muted mt-1 text-sm">{data.instructor.role}</p>
+            </div>
+          </div>
+          <p className="theme-text mt-4 text-sm leading-7">{data.instructor.bio}</p>
+        </article>
+      </section>
 
       <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
         <MetaRow
@@ -580,26 +638,78 @@ const CourseDetailPage = () => {
           <DashboardSection description={copy.lessonsDescription} title={copy.lessonsTitle}>
             {data.modules.length > 0 ? (
               <ul className="divide-y divide-[color:var(--border)] rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
-                {data.modules.map((module, index) => (
-                  <li className="px-4 py-3.5" key={module.id}>
+                {data.modules.map((module, index) => {
+                  const lessonProgress = purchased ? courseLessonProgressById[module.id] : undefined
+                  const lessonStatus = resolveLessonProgressStatus(lessonProgress)
+
+                  return (
+                    <li className="px-4 py-3.5" key={module.id}>
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         <span className="theme-subtle w-7 text-xs font-semibold">{String(index + 1).padStart(2, '0')}</span>
                         <div className="min-w-0">
                           <p className="theme-heading truncate text-sm font-medium">{module.title}</p>
                           <p className="theme-muted mt-1 text-xs">{module.type} - {module.duration}</p>
+                          {purchased ? (
+                            <>
+                              <div className="mt-2">
+                                <LessonProgressBadge
+                                  language={language}
+                                  status={lessonStatus}
+                                  watchedPercentage={lessonProgress?.watchedPercentage}
+                                />
+                              </div>
+                              {lessonStatus === 'in_progress' ? (
+                                <div className="mt-2 h-1.5 w-[160px] rounded-full bg-[color:var(--surface-muted)]">
+                                  <div
+                                    className="h-full rounded-full bg-[color:var(--primary)]"
+                                    style={{ width: `${Math.round(lessonProgress?.watchedPercentage ?? 0)}%` }}
+                                  />
+                                </div>
+                              ) : null}
+                            </>
+                          ) : null}
                         </div>
                       </div>
-                      <StatusBadge tone={module.completed ? 'success' : 'warning'}>
-                        {module.completed ? t('common.completed') : t('common.upcoming')}
-                      </StatusBadge>
+                      {!purchased ? (
+                        <StatusBadge tone={module.completed ? 'success' : 'warning'}>
+                          {module.completed ? t('common.completed') : t('common.upcoming')}
+                        </StatusBadge>
+                      ) : null}
                     </div>
-                  </li>
-                ))}
+                    </li>
+                  )
+                })}
               </ul>
             ) : (
               <p className="theme-muted text-sm">{copy.noLessons}</p>
             )}
+
+            <div className="mt-4 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="theme-heading text-sm font-semibold">{copy.finalExamCtaTitle}</p>
+                  <p className="theme-subtle mt-1 text-xs">{copy.progressSummary(completionPercentage)}</p>
+                </div>
+                {isFinalExamUnlocked ? (
+                  <Link to={finalExamPath}>
+                    <Button asChild className="w-full sm:w-auto" variant="secondary">
+                      <FileCheck2 className="h-4 w-4" />
+                      {copy.finalExamGo}
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button disabled className="w-full sm:w-auto" variant="secondary">
+                    <LockKeyhole className="h-4 w-4" />
+                    {copy.finalExamLocked}
+                  </Button>
+                )}
+              </div>
+
+              <p className={`mt-3 text-sm ${isFinalExamUnlocked ? 'text-[color:var(--success)]' : 'theme-muted'}`}>
+                {isFinalExamUnlocked ? copy.finalExamReady : finalExamLockReason}
+              </p>
+            </div>
           </DashboardSection>
 
           <DashboardSection title={copy.reviewTitle}>
@@ -704,22 +814,34 @@ const CourseDetailPage = () => {
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {purchased ? (
-                <Link className="sm:col-span-2" to={ROUTES.coursePlayer(data.slug)}>
-                  <Button asChild className="w-full justify-center">
-                    <PlayCircle className="h-4 w-4" />
-                    {t('common.watchCourse')}
-                  </Button>
-                </Link>
+                <div className="sm:col-span-2">
+                  <Link to={coursePlayerPath}>
+                    <Button asChild className="w-full justify-center">
+                      <PlayCircle className="h-4 w-4" />
+                      {watchCourseButtonLabel}
+                    </Button>
+                  </Link>
+                </div>
               ) : (
                 <>
                   {isPaidCourse ? (
-                    <Button
-                      className="w-full justify-center sm:col-span-2"
-                      disabled={Boolean(purchaseStage)}
-                      onClick={() => setCheckoutOpen(true)}
-                    >
-                      {copy.buyAndEnroll}
-                    </Button>
+                    inCart ? (
+                      <Link className="sm:col-span-2" to={ROUTES.cart}>
+                        <Button asChild className="w-full justify-center" variant="secondary">
+                          <CheckCircle2 className="h-4 w-4" />
+                          {t('common.goToCart')}
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        className="w-full justify-center sm:col-span-2"
+                        onClick={handleAddToCart}
+                        variant="secondary"
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                        {t('common.addToCart')}
+                      </Button>
+                    )
                   ) : (
                     <Button
                       className="w-full justify-center sm:col-span-2"
@@ -748,24 +870,15 @@ const CourseDetailPage = () => {
             ) : null}
           </section>
 
-          <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
-            <h3 className="theme-heading text-base font-semibold">{copy.instructorTitle}</h3>
-            <p className="theme-heading mt-3 text-lg font-semibold">{data.instructor.name}</p>
-            <p className="theme-muted mt-1 text-sm">{data.instructor.role}</p>
-            <p className="theme-text mt-4 text-sm leading-7">{data.instructor.bio}</p>
-          </section>
-
           {purchased ? (
             <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
               <h3 className="theme-heading text-base font-semibold">{copy.progressTitle}</h3>
-              <div className="mt-3 flex items-center justify-between gap-3">
-                <p className="theme-heading text-2xl font-semibold">%{data.progress}</p>
-                <p className="theme-muted text-sm">{t('dashboard.progressComplete', { progress: data.progress })}</p>
-              </div>
-              <div className="mt-3 h-2 rounded-full bg-[color:var(--surface-muted)]">
-                <div
-                  className="h-2 rounded-full bg-[color:var(--primary)]"
-                  style={{ width: `${data.progress}%` }}
+              <div className="mt-3">
+                <CourseProgressBar
+                  completedLessons={courseProgressSummary?.completedLessons}
+                  language={language}
+                  percentage={courseProgressSummary?.overallPercentage ?? data.progress}
+                  totalLessons={courseProgressSummary?.totalLessons}
                 />
               </div>
             </section>
@@ -773,82 +886,10 @@ const CourseDetailPage = () => {
         </aside>
       </section>
 
-      <Modal
-        description={copy.checkoutDescription}
-        onClose={() => {
-          if (!purchaseStage) {
-            setCheckoutOpen(false)
-          }
-        }}
-        open={checkoutOpen && isPaidCourse && !purchased}
-        title={copy.checkoutTitle}
-      >
-        <div className="space-y-4">
-          <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
-            <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
-              <div>
-                <dt className="theme-subtle text-xs uppercase tracking-[0.08em]">{language === 'tr' ? 'Kurs' : 'Course'}</dt>
-                <dd className="theme-heading mt-1 font-medium">{data.title}</dd>
-              </div>
-              <div>
-                <dt className="theme-subtle text-xs uppercase tracking-[0.08em]">{t('common.price')}</dt>
-                <dd className="theme-heading mt-1 font-medium">
-                  {formatCoursePrice(data.price, data.currency, { locale, freeLabel })}
-                </dd>
-              </div>
-              <div>
-                <dt className="theme-subtle text-xs uppercase tracking-[0.08em]">{copy.paymentProvider}</dt>
-                <dd className="theme-heading mt-1 font-medium">MOCK_GATEWAY</dd>
-              </div>
-              <div>
-                <dt className="theme-subtle text-xs uppercase tracking-[0.08em]">{copy.paymentMethod}</dt>
-                <dd className="theme-heading mt-1 font-medium">CARD</dd>
-              </div>
-            </dl>
-          </div>
-
-          {purchaseError ? (
-            <p className="rounded-sm border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-3 py-2 text-sm text-[color:var(--danger)]">
-              {purchaseError}
-            </p>
-          ) : null}
-
-          <Button
-            className="w-full justify-center"
-            disabled={Boolean(purchaseStage)}
-            onClick={() => {
-              void handlePaidEnrollment(true)
-            }}
-          >
-            {purchaseStage === 'payment'
-              ? copy.paymentPreparing
-              : purchaseStage === 'confirm'
-                ? copy.paymentConfirming
-                : purchaseStage === 'enrollment'
-                  ? copy.enrollmentCreating
-                  : copy.completePayment}
-          </Button>
-
-          <Button
-            className="w-full justify-center"
-            disabled={Boolean(purchaseStage)}
-            onClick={() => {
-              void handlePaidEnrollment(false)
-            }}
-            variant="secondary"
-          >
-            {purchaseStage === 'payment'
-              ? copy.paymentPreparing
-              : purchaseStage === 'confirm'
-                ? copy.paymentConfirming
-              : purchaseStage === 'enrollment'
-                ? copy.enrollmentCreating
-                : (language === 'tr' ? 'Reddet (Fail)' : 'Decline (Fail)')}
-          </Button>
-        </div>
-      </Modal>
     </div>
   )
 }
 
 export default CourseDetailPage
+
+

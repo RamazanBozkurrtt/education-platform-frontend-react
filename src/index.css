@@ -64,7 +64,11 @@ select {
 input:not([type='checkbox']):not([type='radio']):not([type='range']),
 textarea,
 select {
-  border-radius: var(--radius-navigation);
+  border-radius: 0 !important;
+}
+
+.app-input-shell {
+  border-radius: 0 !important;
 }
 
 button {
@@ -502,6 +506,13 @@ html[data-theme='dark'] .complete-profile-overlay {
 .public-mobile-subitem:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
+}
+
+.exam-guard-active,
+.exam-guard-active * {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 

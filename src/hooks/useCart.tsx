@@ -2,20 +2,22 @@ import {
   createContext,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { CART_STORAGE_KEY } from '../utils/constants'
 import { useLanguage } from './useLanguage'
 import { useAuth } from './useAuth'
 import { courseService } from '../services/courseService'
-import type { CartItem } from '../utils/types'
+import type { CartItem, Course } from '../utils/types'
 
 interface CartContextValue {
   items: CartItem[]
   courseIds: string[]
   itemCount: number
+  isResolvingItems: boolean
   subtotal: number
   tax: number
   total: number
@@ -74,17 +76,65 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem(storageKey, JSON.stringify(courseIds))
   }, [courseIds, hydratedStorageKey, isBootstrapping, storageKey])
 
-  const { data: localizedCourses = [] } = useQuery({
+  const { data: localizedCourses = [], isPending: isCourseCatalogPending } = useQuery({
     queryKey: ['public-courses', language],
     queryFn: () => courseService.getCourses(language),
+    enabled: !isBootstrapping,
   })
-  const items = courseIds
-    .map((courseId) => {
-      const course = localizedCourses.find((entry) => entry.id === courseId)
 
-      return course ? { courseId, course } : null
+  const localizedCoursesById = useMemo(() => {
+    const mappedCourses = new Map<string, Course>()
+
+    for (const course of localizedCourses) {
+      mappedCourses.set(normalizeCourseId(course.id), course)
+    }
+
+    return mappedCourses
+  }, [localizedCourses])
+
+  const missingCourseIds = useMemo(
+    () => courseIds.filter((courseId) => !localizedCoursesById.has(courseId)),
+    [courseIds, localizedCoursesById],
+  )
+
+  const missingCourseResults = useQueries({
+    queries: missingCourseIds.map((courseId) => ({
+      queryKey: ['course-cart-item', language, courseId],
+      queryFn: () => courseService.getCourseBySlug(courseId, language),
+      enabled: !isBootstrapping,
+      staleTime: 5 * 60 * 1000,
+    })),
+  })
+
+  const fallbackCoursesById = useMemo(() => {
+    const mappedCourses = new Map<string, Course>()
+
+    missingCourseResults.forEach((result, index) => {
+      if (!result.data) {
+        return
+      }
+
+      const fallbackCourseId = missingCourseIds[index]
+      mappedCourses.set(normalizeCourseId(fallbackCourseId), result.data)
     })
-    .filter((item): item is CartItem => item !== null)
+
+    return mappedCourses
+  }, [missingCourseIds, missingCourseResults])
+
+  const items = useMemo(
+    () =>
+      courseIds
+        .map((courseId) => {
+          const course = localizedCoursesById.get(courseId) ?? fallbackCoursesById.get(courseId)
+          return course ? { courseId, course } : null
+        })
+        .filter((item): item is CartItem => item !== null),
+    [courseIds, fallbackCoursesById, localizedCoursesById],
+  )
+
+  const isResolvingItems = courseIds.length > items.length && (
+    isCourseCatalogPending || missingCourseResults.some((result) => result.isPending)
+  )
 
   const subtotal = items.reduce((sum, item) => sum + item.course.price, 0)
   const tax = Math.round(subtotal * 0.08)
@@ -118,6 +168,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         items,
         courseIds,
         itemCount: courseIds.length,
+        isResolvingItems,
         subtotal,
         tax,
         total,

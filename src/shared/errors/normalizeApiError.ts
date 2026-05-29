@@ -83,6 +83,18 @@ const toNumberOrUndefined = (value: unknown) => {
   return undefined
 }
 
+const toStringOrUndefined = (value: unknown) => {
+  if (typeof value === 'string' && value.trim().length > 0) {
+    return value.trim()
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(Math.trunc(value))
+  }
+
+  return undefined
+}
+
 const resolveKindFromStatus = (status: number | undefined, fieldErrors?: Record<string, string[]>): AppErrorKind => {
   if (fieldErrors && Object.keys(fieldErrors).length > 0) {
     return 'validation'
@@ -134,11 +146,7 @@ const normalizeApiPayload = (payload: unknown) => {
     ? serviceEnvelope.message.trim()
     : undefined
   const status = toNumberOrUndefined(serviceEnvelope.status)
-  const code = isNonEmptyString(serviceEnvelope.error)
-    ? serviceEnvelope.error.trim()
-    : isNonEmptyString(serviceEnvelope.code)
-      ? serviceEnvelope.code.trim()
-      : undefined
+  const code = toStringOrUndefined(serviceEnvelope.error) ?? toStringOrUndefined(serviceEnvelope.code)
   const fieldErrors = normalizeFieldErrors(serviceEnvelope.errors)
 
   return {
@@ -184,9 +192,11 @@ export const normalizeApiError = (error: unknown): AppError => {
   const payload = normalizeApiPayload(error.response.data)
   const httpStatus = error.response.status ?? payload.status
   const kind = resolveKindFromStatus(httpStatus, payload.fieldErrors)
+  const firstFieldErrorMessage = getFirstMessageFromFieldErrors(payload.fieldErrors)
   const message =
+    (kind === 'validation' ? firstFieldErrorMessage : undefined) ||
     payload.message ||
-    getFirstMessageFromFieldErrors(payload.fieldErrors) ||
+    firstFieldErrorMessage ||
     (isTimeout ? 'Request timed out. Please try again.' : DEFAULT_MESSAGES[kind]) ||
     DEFAULT_MESSAGES.unknown
 

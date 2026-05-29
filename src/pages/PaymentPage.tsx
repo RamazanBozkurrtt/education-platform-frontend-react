@@ -16,7 +16,7 @@ import { useLanguage } from '../hooks/useLanguage'
 import { useLibrary } from '../hooks/useLibrary'
 import { useConfirmPaymentMutation, useCreatePaymentMutation } from '../hooks/usePayments'
 import { enrollmentService } from '../services/enrollmentService'
-import type { PaymentMethod, PaymentProvider } from '../services/paymentService'
+import type { PaymentProvider } from '../services/paymentService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { getFirstFieldErrorMap } from '../shared/errors/types'
 import { ROUTES } from '../utils/constants'
@@ -34,7 +34,6 @@ const MAX_LENGTHS = {
 
 type BuyerFormState = {
   provider: PaymentProvider
-  paymentMethod: PaymentMethod
   buyerFullName: string
   buyerEmail: string
   buyerTaxNumber: string
@@ -150,7 +149,7 @@ const PaymentPage = () => {
   const { language } = useLanguage()
   const { isAuthenticated, user } = useAuth()
   const queryClient = useQueryClient()
-  const { clearCart, itemCount, items, removeCourse, subtotal, tax, total } = useCart()
+  const { clearCart, isResolvingItems, itemCount, items, removeCourse, subtotal, tax, total } = useCart()
   const { purchaseCourses } = useLibrary()
   const createPaymentMutation = useCreatePaymentMutation()
   const confirmPaymentMutation = useConfirmPaymentMutation()
@@ -166,7 +165,6 @@ const PaymentPage = () => {
   const decisionResolverRef = useRef<((approved: boolean) => void) | null>(null)
   const [buyerForm, setBuyerForm] = useState<BuyerFormState>({
     provider: 'MOCK_GATEWAY',
-    paymentMethod: 'CARD',
     buyerFullName: user?.name ?? '',
     buyerEmail: user?.email ?? '',
     buyerTaxNumber: '',
@@ -179,7 +177,9 @@ const PaymentPage = () => {
     cvv: '',
   })
 
-  const hasItems = itemCount > 0
+  const hasCartIds = itemCount > 0
+  const hasItems = hasCartIds && items.length > 0
+  const canCheckout = hasItems && !isResolvingItems
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const freeLabel = language === 'tr' ? 'Ucretsiz' : 'Free'
   const summaryCurrency = items[0]?.course.currency ?? 'TRY'
@@ -225,10 +225,6 @@ const PaymentPage = () => {
 
   const setBuyerFormValue = <T extends keyof BuyerFormState>(field: T, value: BuyerFormState[T]) => {
     setBuyerForm((previousState) => ({ ...previousState, [field]: value }))
-
-    if (field === 'paymentMethod') {
-      setCardErrors({})
-    }
 
     if (fieldErrors[field as string]) {
       setFieldErrors((previousState) => {
@@ -289,7 +285,7 @@ const PaymentPage = () => {
 
   const validateCardForm = () => {
     const hasPaidCourse = items.some((item) => item.course.price > 0)
-    const shouldValidateCard = hasPaidCourse && buyerForm.paymentMethod === 'CARD'
+    const shouldValidateCard = hasPaidCourse
 
     if (!shouldValidateCard) {
       setCardErrors({})
@@ -345,7 +341,7 @@ const PaymentPage = () => {
   }
 
   const handleCheckout = async () => {
-    if (!isAuthenticated || !hasItems || isSubmitting) {
+    if (!isAuthenticated || !canCheckout || isSubmitting) {
       return
     }
 
@@ -373,7 +369,7 @@ const PaymentPage = () => {
           const createdPayment = await createPaymentMutation.mutateAsync({
             courseId: item.course.id,
             provider: buyerForm.provider,
-            paymentMethod: buyerForm.paymentMethod,
+            paymentMethod: 'CARD',
             idempotencyKey: createIdempotencyKey(),
             autoConfirm: false,
             ...buyerPayload,
@@ -463,9 +459,9 @@ const PaymentPage = () => {
     <div className="space-y-8">
       <DashboardPageHeader
         actions={
-          <Link to={hasItems ? ROUTES.cart : ROUTES.courses}>
+          <Link to={hasCartIds ? ROUTES.cart : ROUTES.courses}>
             <Button asChild variant="secondary">
-              {hasItems ? t('payment.backToCart') : t('payment.browseCourses')}
+              {hasCartIds ? t('payment.backToCart') : t('payment.browseCourses')}
             </Button>
           </Link>
         }
@@ -476,8 +472,13 @@ const PaymentPage = () => {
 
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
-          {hasItems ? (
-            <div className="space-y-5">
+          {hasCartIds ? (
+            isResolvingItems ? (
+              <div className="theme-muted rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-4 text-sm">
+                {t('loader.courseCatalog')}
+              </div>
+            ) : hasItems ? (
+              <div className="space-y-5">
               <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
                 <div className="flex items-start gap-3">
                   <span className="mt-0.5 rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-2">
@@ -518,15 +519,11 @@ const PaymentPage = () => {
 
                   <label className="flex flex-col gap-2">
                     <span className="theme-heading text-sm font-semibold">{language === 'tr' ? 'Odeme Yontemi' : 'Payment method'}</span>
-                    <select
-                      className="h-12 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 text-sm theme-text outline-none focus:border-[color:var(--primary)] focus:ring-2 focus:ring-[color:var(--focus-ring)]"
-                      onChange={(event) => setBuyerFormValue('paymentMethod', event.target.value as PaymentMethod)}
-                      value={buyerForm.paymentMethod}
-                    >
-                      <option value="CARD">CARD</option>
-                      <option value="BANK_TRANSFER">BANK_TRANSFER</option>
-                      <option value="WALLET">WALLET</option>
-                    </select>
+                    <input
+                      className="h-12 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 text-sm theme-text"
+                      readOnly
+                      value="CARD"
+                    />
                   </label>
                 </div>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -570,14 +567,6 @@ const PaymentPage = () => {
               <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
                 <p className="theme-heading text-sm font-semibold">{cardSectionTitle}</p>
                 <p className="theme-muted mt-1 text-xs">{cardSectionHint}</p>
-
-                {buyerForm.paymentMethod !== 'CARD' ? (
-                  <p className="mt-3 rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-2 text-xs theme-muted">
-                    {language === 'tr'
-                      ? 'Kart disi odeme yontemi secili oldugu icin bu alanlar opsiyoneldir.'
-                      : 'These fields are optional when a non-card payment method is selected.'}
-                  </p>
-                ) : null}
 
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <Input
@@ -666,10 +655,23 @@ const PaymentPage = () => {
                 </p>
               ) : null}
 
-              <Button className="w-full justify-center" disabled={isSubmitting} onClick={() => void handleCheckout()} size="lg">
+              <Button className="w-full justify-center" disabled={isSubmitting || !canCheckout} onClick={() => void handleCheckout()} size="lg">
                 {progressMessage ?? (language === 'tr' ? 'Odemeyi Tamamla ve Kursa Katil' : 'Complete Payment and Join Course')}
               </Button>
-            </div>
+              </div>
+            ) : (
+              <EmptyState
+                action={(
+                  <Link className="inline-flex" to={ROUTES.cart}>
+                    <Button asChild>{t('payment.backToCart')}</Button>
+                  </Link>
+                )}
+                description={language === 'tr'
+                  ? 'Sepetindeki kurslarin detaylari yuklenemedi. Lutfen sepete donup tekrar dene.'
+                  : 'Cart course details could not be loaded. Please go back to the cart and try again.'}
+                title={language === 'tr' ? 'Odeme detaylari yuklenemedi' : 'Checkout details unavailable'}
+              />
+            )
           ) : (
             <EmptyState
               action={(

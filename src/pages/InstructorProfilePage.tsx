@@ -1,14 +1,18 @@
 ﻿import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import InstructorProfileForm from '../components/instructor/InstructorProfileForm'
 import PageHeader from '../components/PageHeader'
 import Card from '../components/ui/Card'
+import Button from '../components/ui/Button'
 import Loader from '../components/ui/Loader'
 import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../hooks/useLanguage'
 import { instructorService } from '../services/instructorService'
+import { ROUTES } from '../utils/constants'
 import type { InstructorProfilePayload, InstructorProfileResponse } from '../utils/types'
 
 const InstructorProfilePage = () => {
+  const navigate = useNavigate()
   const { language } = useLanguage()
   const { user } = useAuth()
   const [profile, setProfile] = useState<InstructorProfileResponse | null>(null)
@@ -21,6 +25,7 @@ const InstructorProfilePage = () => {
       description: 'Öğrencilerin göreceği eğitmen bilgilerini buradan güncelleyebilirsin.',
       submitLabel: 'Profili güncelle',
       submittingLabel: 'Güncelleniyor...',
+      backLabel: 'Eğitmen paneline dön',
     }
     : {
       eyebrow: 'Instructor profile',
@@ -28,6 +33,7 @@ const InstructorProfilePage = () => {
       description: 'Update the instructor information visible to learners.',
       submitLabel: 'Update profile',
       submittingLabel: 'Updating...',
+      backLabel: 'Back to instructor panel',
     }
 
   useEffect(() => {
@@ -65,6 +71,7 @@ const InstructorProfilePage = () => {
   const handleSubmit = async (payload: InstructorProfilePayload) => {
     const nextProfile = await instructorService.updateInstructorProfile(payload)
     setProfile(nextProfile)
+    navigate(ROUTES.instructorDashboard, { replace: true })
   }
 
   if (loading) {
@@ -73,7 +80,16 @@ const InstructorProfilePage = () => {
 
   return (
     <div className="space-y-7">
-      <PageHeader description={copy.description} eyebrow={copy.eyebrow} title={copy.title} />
+      <PageHeader
+        actions={(
+          <Button onClick={() => navigate(ROUTES.instructorDashboard)} variant="secondary">
+            {copy.backLabel}
+          </Button>
+        )}
+        description={copy.description}
+        eyebrow={copy.eyebrow}
+        title={copy.title}
+      />
       <Card>
         <InstructorProfileForm
           forcedProfileImageUrl={user?.avatarUrl}
