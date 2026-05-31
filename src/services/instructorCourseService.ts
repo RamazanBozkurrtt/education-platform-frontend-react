@@ -7,7 +7,6 @@ import { mapBackendCourseToCourse } from './courseMappers'
 import type { ApiEnvelope, CourseCategoryOption, CourseLevelOption } from '../utils/types'
 
 const VIDEO_UPLOAD_TIMEOUT_MS = 30 * 60_000
-const DEFAULT_NEW_LESSON_DURATION_SECONDS = 1
 
 const requireEnvelopeData = <T>(envelope: ApiEnvelope<T>, fallbackMessage: string) => {
   if (typeof envelope.data !== 'undefined') {
@@ -22,7 +21,7 @@ export interface InstructorCourseLesson {
   title: string
   summaryTitle: string
   description?: string
-  duration: number | null
+  durationSeconds: number | null
   orderIndex: number
   completed: boolean
   videoUrl: string | null
@@ -52,7 +51,6 @@ interface CreateLessonPayload {
   title: string
   description?: string
   orderIndex: number
-  durationSeconds?: number
 }
 
 interface CreateCoursePayload {
@@ -304,7 +302,12 @@ const toCourseDetail = (payload: unknown): InstructorCourseDetail => {
     const summaryTitle = toText(lesson.summaryTitle) ?? (createSummaryTitle(trimmedTitle) || trimmedTitle)
     const description = toText(lesson.description ?? lesson.summary)
     const orderIndex = toNumber(lesson.orderIndex ?? lesson.order) ?? index + 1
-    const duration = toDurationSeconds(lesson.duration)
+    const durationSeconds = toDurationSeconds(
+      lesson.durationSeconds
+      ?? lesson.durationInSeconds
+      ?? lesson.duration_seconds
+      ?? lesson.duration,
+    )
     const completed = toBoolean(lesson.completed) ?? false
     const videoUrl = toText(lesson.videoUrl) ?? null
 
@@ -313,7 +316,7 @@ const toCourseDetail = (payload: unknown): InstructorCourseDetail => {
       title,
       summaryTitle,
       description,
-      duration,
+      durationSeconds,
       orderIndex,
       completed,
       videoUrl,
@@ -441,7 +444,7 @@ const toCourseDetail = (payload: unknown): InstructorCourseDetail => {
       title: module.title,
       summaryTitle: createSummaryTitle(module.title) || module.title,
       description: module.description,
-      duration: toDurationSeconds(module.duration),
+      durationSeconds: toDurationSeconds(module.durationSeconds ?? module.duration),
       orderIndex: module.order ?? index + 1,
       completed: module.completed,
       videoUrl: module.videoUrl?.trim() || null,
@@ -520,15 +523,10 @@ export const instructorCourseService = {
       .filter(Boolean)
       .slice(0, 2)
       .join(' ')
-    const durationSeconds = Number.isFinite(payload.durationSeconds)
-      ? Math.max(1, Math.trunc(payload.durationSeconds as number))
-      : DEFAULT_NEW_LESSON_DURATION_SECONDS
-
     const requestPayload = {
       title: trimmedTitle,
       summaryTitle: summaryTitle || trimmedTitle,
       orderIndex: payload.orderIndex,
-      duration: durationSeconds,
       description: payload.description?.trim() || undefined,
     }
 

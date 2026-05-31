@@ -81,4 +81,9 @@ export const API_ENDPOINTS = {
     myReviews: '/api/v1/reviews/me',
     byId: (reviewId: string) => `/api/v1/reviews/${reviewId}`,
   },
+  recommendations: {
+    dashboard: '/api/v1/recommendations/dashboard',
+    search: '/api/v1/recommendations/search',
+    explainMe: '/api/v1/recommendations/explain/me',
+  },
 } as const

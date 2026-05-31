@@ -151,6 +151,7 @@ export interface CourseModule {
   id: string
   title: string
   duration: string
+  durationSeconds?: number | null
   type: string
   completed: boolean
   description?: string
@@ -207,6 +208,8 @@ export interface Course {
   level: CourseLevelOption
   levelKey: string
   duration: string
+  durationSeconds?: number | null
+  totalDurationSeconds?: number | null
   lessons: number
   progress: number
   students: string
@@ -256,6 +259,36 @@ export interface SearchResponse {
     levels: string[]
   }
   results: Course[]
+}
+
+export interface RecommendationCourse {
+  courseId: string
+  title: string
+  description: string
+  category: string
+  level: string
+  durationSeconds?: number | null
+  totalDurationSeconds?: number | null
+  lessonCount: number
+  rating?: number | null
+  thumbnailUrl?: string | null
+  score?: number | null
+  reason?: string | null
+  badges?: string[] | null
+}
+
+export interface RecommendationListPayload {
+  recommendations: RecommendationCourse[]
+  strategy?: string
+}
+
+export interface RecommendationExplainPayload {
+  favoriteCategories?: string[] | null
+  averageCompletionRate?: number | null
+  dropoutRate?: number | null
+  preferredDurationLabel?: string | null
+  recommendationStrategy?: string | null
+  explanation?: string | null
 }
 
 export interface InstructorProfilePayload {

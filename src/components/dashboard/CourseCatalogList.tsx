@@ -9,6 +9,7 @@ import { useLibrary } from '../../hooks/useLibrary'
 import { API_ENDPOINTS } from '../../services/endpoints'
 import { ROUTES } from '../../utils/constants'
 import { getCourseCategoryLabel } from '../../utils/courseCategory'
+import { resolveCourseDurationLabel } from '../../utils/duration'
 import { formatCoursePrice } from '../../utils/helpers'
 import type { Course } from '../../utils/types'
 import Button from '../ui/Button'
@@ -50,6 +51,7 @@ const CourseCatalogList = ({ courses }: CourseCatalogListProps) => {
         const purchased = isPurchased(course.id)
         const fallbackImageUrl = resolveServiceUrl(API_ENDPOINTS.courses.image.public(course.id))
         const courseImageUrl = course.imageUrl || fallbackImageUrl
+        const durationLabel = resolveCourseDurationLabel(course, language)
 
         return (
           <li className="px-4 py-4 md:px-5" key={course.id}>
@@ -83,7 +85,7 @@ const CourseCatalogList = ({ courses }: CourseCatalogListProps) => {
                   <div className="theme-subtle mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
                     <span className="inline-flex items-center gap-1.5">
                       <Clock3 className="h-3.5 w-3.5" />
-                      {course.duration}
+                      {durationLabel}
                     </span>
                     <span>{t('courseCard.lessonsValue', { count: course.lessons })}</span>
                     <span className="inline-flex items-center gap-1.5">

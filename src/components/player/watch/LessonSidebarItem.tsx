@@ -1,6 +1,7 @@
 ﻿import { CheckCircle2, Clock3, PlayCircle } from 'lucide-react'
 import LessonProgressBadge from '../../progress/LessonProgressBadge'
 import { resolveLessonProgressStatus } from '../../../utils/courseProgress'
+import { resolveLessonDurationLabel } from '../../../utils/duration'
 import { cn } from '../../../utils/helpers'
 import type { CourseModule, LessonProgress } from '../../../utils/types'
 
@@ -52,7 +53,7 @@ const LessonSidebarItem = ({
 
           <div className="mt-1.5 flex items-center gap-2 text-[11px] text-[color:var(--text-muted)]">
             <Clock3 className="h-3.5 w-3.5" />
-            <span>{lesson.duration}</span>
+            <span>{resolveLessonDurationLabel(lesson, language)}</span>
           </div>
 
           <div className="mt-2">

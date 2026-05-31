@@ -25,6 +25,7 @@ import {
   type InstructorCourseLesson,
 } from '../services/instructorCourseService'
 import { ROUTES } from '../utils/constants'
+import { formatDuration } from '../utils/duration'
 
 const MAX_VIDEO_SIZE_BYTES = 2 * 1024 * 1024 * 1024
 const MP4_MIME_TYPE = 'video/mp4'
@@ -116,23 +117,6 @@ const toLessonDraft = (lesson: InstructorCourseLesson): LessonDraftState => ({
   summaryTitle: lesson.summaryTitle || toSummaryTitle(lesson.title) || lesson.title,
   orderIndex: String(lesson.orderIndex),
 })
-
-const formatLessonDuration = (durationSeconds: number | null) => {
-  if (typeof durationSeconds !== 'number' || !Number.isFinite(durationSeconds) || durationSeconds < 0) {
-    return null
-  }
-
-  const totalSeconds = Math.trunc(durationSeconds)
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-  }
-
-  return `${minutes}:${String(seconds).padStart(2, '0')}`
-}
 
 const INITIAL_COURSE_FORM: CourseFormState = {
   title: '',
@@ -1144,7 +1128,7 @@ const InstructorCourseVideoUploadPage = () => {
   const lessons = [...courseDetail.lessons].sort((left, right) => left.orderIndex - right.orderIndex)
   const totalLessons = lessons.length
   const lessonsWithVideo = lessons.filter((lesson) => Boolean(lesson.videoUrl)).length
-  const lessonsWithDuration = lessons.filter((lesson) => lesson.duration !== null).length
+  const lessonsWithDuration = lessons.filter((lesson) => typeof lesson.durationSeconds === 'number' && lesson.durationSeconds > 0).length
   const missingVideoLessons = totalLessons - lessonsWithVideo
   const durationCoverageRate = totalLessons === 0 ? 0 : Math.round((lessonsWithDuration * 100) / totalLessons)
   const videoCoverageRate = totalLessons === 0 ? 0 : Math.round((lessonsWithVideo * 100) / totalLessons)
@@ -1590,6 +1574,14 @@ const InstructorCourseVideoUploadPage = () => {
           title={txt('3. Ders ekle', '3. Add lesson')}
         />
         <div className="mt-4 space-y-4">
+          <div className="rounded-[var(--radius-navigation)] border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-3 py-2">
+            <p className="theme-subtle text-xs">
+              {txt(
+                'Video suresi yukleme sonrasi sistem tarafindan otomatik hesaplanir.',
+                'Video duration is calculated automatically by the system after upload.',
+              )}
+            </p>
+          </div>
           <div className="grid gap-3 md:grid-cols-3">
             <label className="flex flex-col gap-1 md:col-span-2">
               <span className="theme-subtle text-xs">{txt('Ders basligi', 'Lesson title')}</span>
@@ -1653,10 +1645,9 @@ const InstructorCourseVideoUploadPage = () => {
             const uploadProgress = uploadProgressByLesson[lesson.id] ?? 0
             const draft = lessonDraftsById[lesson.id] ?? toLessonDraft(lesson)
             const isExpanded = expandedLessonId === lesson.id
-            const formattedDuration = formatLessonDuration(lesson.duration)
-            const durationText = formattedDuration
-              ? (isTurkish ? `Sure: ${formattedDuration}` : `Duration: ${formattedDuration}`)
-              : txt('Sure bilgisi henuz olusmadi', 'Duration is not available yet')
+            const durationText = typeof lesson.durationSeconds === 'number' && lesson.durationSeconds > 0
+              ? (isTurkish ? `Sure: ${formatDuration(lesson.durationSeconds, 'tr')}` : `Duration: ${formatDuration(lesson.durationSeconds, 'en')}`)
+              : txt('Sure hesaplanıyor', 'Duration is being calculated')
             const statusText = isUploading
               ? (isTurkish ? `Yukleniyor... %${uploadProgress}` : `Uploading... ${uploadProgress}%`)
               : selectedFile
@@ -1734,7 +1725,9 @@ const InstructorCourseVideoUploadPage = () => {
                         <label className="flex flex-col gap-1">
                           <span className="theme-subtle text-xs">{txt('Sure', 'Duration')}</span>
                           <p className="theme-text h-10 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 text-sm leading-10">
-                            {formattedDuration ? formattedDuration : txt('Sure backend tarafinda islendikten sonra gorunecek', 'Duration will appear after backend processing')}
+                            {typeof lesson.durationSeconds === 'number' && lesson.durationSeconds > 0
+                              ? formatDuration(lesson.durationSeconds, isTurkish ? 'tr' : 'en')
+                              : txt('Sure backend tarafinda islendikten sonra gorunecek', 'Duration will appear after backend processing')}
                           </p>
                         </label>
                       </div>

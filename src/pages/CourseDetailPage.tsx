@@ -10,7 +10,6 @@ import CourseProgressBar from '../components/progress/CourseProgressBar'
 import LessonProgressBadge from '../components/progress/LessonProgressBadge'
 import Button from '../components/ui/Button'
 import Loader from '../components/ui/Loader'
-import MetaRow from '../components/ui/MetaRow'
 import QueryErrorState from '../components/ui/QueryErrorState'
 import TagList from '../components/ui/TagList'
 import CourseReviewList from '../components/reviews/CourseReviewList'
@@ -29,6 +28,7 @@ import { reviewService } from '../services/reviewService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
+import { resolveCourseDurationLabel, resolveLessonDurationLabel } from '../utils/duration'
 import { formatCoursePrice } from '../utils/helpers'
 import { isAdmin } from '../utils/roles'
 import type { CreateReviewRequest, Review, UpdateReviewRequest } from '../utils/types'
@@ -553,76 +553,177 @@ const CourseDetailPage = () => {
         title={data.title}
       />
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
         <article className="overflow-hidden rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
-          <div className="relative">
-            <img
-              alt={data.title}
-              className="aspect-[16/9] w-full object-cover"
-              loading="lazy"
-              onError={(event) => handleMediaImageError(event, fallbackCourseImageUrl)}
-              src={courseImageUrl}
-            />
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[color:rgba(6,10,16,0.6)] via-transparent to-transparent" />
-            <div className="absolute left-4 top-4 flex flex-wrap gap-2">
-              <span className="rounded-sm border border-white/20 bg-black/35 px-2.5 py-1 text-xs font-semibold text-white">
-                {getCourseCategoryLabel(data)}
-              </span>
-              <span className="rounded-sm border border-white/20 bg-black/35 px-2.5 py-1 text-xs font-semibold text-white">
-                {data.level.levelName}
-              </span>
+          <div className="grid lg:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]">
+            <div className="relative flex min-h-[260px] items-center justify-center bg-[linear-gradient(145deg,var(--surface-soft),var(--surface-hover))] p-4 md:min-h-[320px] md:p-5">
+              <img
+                alt={data.title}
+                className="h-full max-h-[420px] w-full rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-strong)] object-contain"
+                loading="lazy"
+                onError={(event) => handleMediaImageError(event, fallbackCourseImageUrl)}
+                src={courseImageUrl}
+              />
+              <div className="absolute left-4 top-4 flex flex-wrap gap-2">
+                <span className="rounded-sm border border-white/20 bg-black/35 px-2.5 py-1 text-xs font-semibold text-white">
+                  {getCourseCategoryLabel(data)}
+                </span>
+                <span className="rounded-sm border border-white/20 bg-black/35 px-2.5 py-1 text-xs font-semibold text-white">
+                  {data.level.levelName}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="border-t border-[color:var(--border)] px-5 py-4">
-            <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.14em]">{coursePreviewLabel}</p>
-            <p className="theme-muted mt-2 text-sm leading-7">{data.summary}</p>
+
+            <div className="space-y-5 border-t border-[color:var(--border)] px-5 py-5 lg:border-l lg:border-t-0">
+              <div>
+                <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.14em]">{coursePreviewLabel}</p>
+                <p className="theme-muted mt-2 text-sm leading-7">{data.summary}</p>
+              </div>
+
+              <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
+                <h3 className="theme-heading text-sm font-semibold">{copy.instructorTitle}</h3>
+                <div className="mt-3 flex items-start gap-3.5">
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
+                    {showInstructorAvatar ? (
+                      <img
+                        alt={data.instructor.name}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                        onError={() => setIsInstructorAvatarBroken(true)}
+                        src={instructorAvatarUrl}
+                      />
+                    ) : (
+                      <span className="text-sm font-semibold text-[color:var(--text-heading)]">{instructorInitials}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="theme-heading truncate text-base font-semibold">{data.instructor.name}</p>
+                    <p className="theme-muted mt-0.5 text-sm">{data.instructor.role}</p>
+                  </div>
+                </div>
+                <p className="theme-text mt-3 text-sm leading-7">{data.instructor.bio}</p>
+              </div>
+
+              <div className="grid gap-2.5 sm:grid-cols-2">
+                <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
+                  <p className="theme-subtle flex items-center gap-1.5 text-xs"><Star className="h-3.5 w-3.5" />{copy.ratingLabel}</p>
+                  <p className="theme-heading mt-1 text-sm font-semibold">{data.rating.toFixed(1)}</p>
+                </div>
+                <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
+                  <p className="theme-subtle flex items-center gap-1.5 text-xs"><Clock3 className="h-3.5 w-3.5" />{t('courseDetail.duration')}</p>
+                  <p className="theme-heading mt-1 text-sm font-semibold">{resolveCourseDurationLabel(data, language)}</p>
+                </div>
+                <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
+                  <p className="theme-subtle flex items-center gap-1.5 text-xs"><BookOpen className="h-3.5 w-3.5" />{t('courseDetail.lessons')}</p>
+                  <p className="theme-heading mt-1 text-sm font-semibold">{t('courseDetail.lessonsValue', { count: data.lessons })}</p>
+                </div>
+                <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
+                  <p className="theme-subtle flex items-center gap-1.5 text-xs"><Users2 className="h-3.5 w-3.5" />{t('courseDetail.enrolled')}</p>
+                  <p className="theme-heading mt-1 text-sm font-semibold">{t('courseDetail.enrolledValue', { students: data.students })}</p>
+                </div>
+              </div>
+
+              <TagList emptyText={copy.noTag} hideWhenEmpty label={copy.tags} tags={data.tags} />
+            </div>
           </div>
         </article>
 
-        <article className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
-          <h3 className="theme-heading text-base font-semibold">{copy.instructorTitle}</h3>
-          <div className="mt-4 flex items-start gap-4">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)]">
-              {showInstructorAvatar ? (
-                <img
-                  alt={data.instructor.name}
-                  className="h-full w-full object-cover"
-                  loading="lazy"
-                  onError={() => setIsInstructorAvatarBroken(true)}
-                  src={instructorAvatarUrl}
-                />
+        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
+          <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
+            <h3 className="theme-heading text-base font-semibold">{copy.statusTitle}</h3>
+            <p className="theme-muted mt-1 text-sm">{copy.statusDescription}</p>
+
+            <div className="mt-5 flex items-start justify-between gap-4">
+              <div>
+                <p className="theme-muted text-sm">{t('common.price')}</p>
+                <p className="theme-heading mt-1 text-3xl font-semibold">
+                  {formatCoursePrice(data.price, data.currency, { locale, freeLabel })}
+                </p>
+              </div>
+              <StatusBadge>{data.level.levelName}</StatusBadge>
+            </div>
+
+            <div className="mt-4">
+              <StatusBadge tone={purchased ? 'success' : 'warning'}>
+                {purchased ? copy.purchased : copy.notPurchased}
+              </StatusBadge>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              {purchased ? (
+                <div className="sm:col-span-2">
+                  <Link to={coursePlayerPath}>
+                    <Button asChild className="w-full justify-center">
+                      <PlayCircle className="h-4 w-4" />
+                      {watchCourseButtonLabel}
+                    </Button>
+                  </Link>
+                </div>
               ) : (
-                <span className="text-sm font-semibold text-[color:var(--text-heading)]">{instructorInitials}</span>
+                <>
+                  {isPaidCourse ? (
+                    inCart ? (
+                      <Link className="sm:col-span-2" to={ROUTES.cart}>
+                        <Button asChild className="w-full justify-center" variant="secondary">
+                          <CheckCircle2 className="h-4 w-4" />
+                          {t('common.goToCart')}
+                        </Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        className="w-full justify-center sm:col-span-2"
+                        onClick={handleAddToCart}
+                        variant="secondary"
+                      >
+                        <ShoppingCart className="h-4 w-4" />
+                        {t('common.addToCart')}
+                      </Button>
+                    )
+                  ) : (
+                    <Button
+                      className="w-full justify-center sm:col-span-2"
+                      disabled={Boolean(purchaseStage)}
+                      onClick={() => {
+                        void handleFreeEnrollment()
+                      }}
+                    >
+                      {purchaseStage === 'enrollment' ? copy.enrollmentCreating : copy.enrollFree}
+                    </Button>
+                  )}
+                </>
               )}
             </div>
-            <div className="min-w-0">
-              <p className="theme-heading truncate text-lg font-semibold">{data.instructor.name}</p>
-              <p className="theme-muted mt-1 text-sm">{data.instructor.role}</p>
-            </div>
-          </div>
-          <p className="theme-text mt-4 text-sm leading-7">{data.instructor.bio}</p>
-        </article>
+
+            {(purchaseError || purchaseSuccess) ? (
+              <div
+                className={`mt-4 rounded-sm border px-3 py-2 text-sm ${
+                  purchaseError
+                    ? 'border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] text-[color:var(--danger)]'
+                    : 'border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] theme-heading'
+                }`}
+              >
+                {purchaseError ?? purchaseSuccess}
+              </div>
+            ) : null}
+          </section>
+
+          {purchased ? (
+            <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
+              <h3 className="theme-heading text-base font-semibold">{copy.progressTitle}</h3>
+              <div className="mt-3">
+                <CourseProgressBar
+                  completedLessons={courseProgressSummary?.completedLessons}
+                  language={language}
+                  percentage={courseProgressSummary?.overallPercentage ?? data.progress}
+                  totalLessons={courseProgressSummary?.totalLessons}
+                />
+              </div>
+            </section>
+          ) : null}
+        </aside>
       </section>
 
-      <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
-        <MetaRow
-          items={[
-            { key: 'rating', icon: Star, label: copy.ratingLabel, value: data.rating.toFixed(1) },
-            { key: 'instructor', label: copy.instructorTitle, value: data.instructor.name },
-            { key: 'duration', icon: Clock3, label: t('courseDetail.duration'), value: data.duration },
-            { key: 'lessons', icon: BookOpen, label: t('courseDetail.lessons'), value: t('courseDetail.lessonsValue', { count: data.lessons }) },
-            { key: 'students', icon: Users2, label: t('courseDetail.enrolled'), value: t('courseDetail.enrolledValue', { students: data.students }) },
-            { key: 'level', label: copy.level, value: data.level.levelName },
-          ]}
-        />
-
-        <div className="mt-4 border-t border-[color:var(--border)] pt-4">
-          <TagList emptyText={copy.noTag} hideWhenEmpty label={copy.tags} tags={data.tags} />
-        </div>
-      </section>
-
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.85fr)]">
-        <div className="min-w-0 space-y-7">
+      <section className="min-w-0 space-y-7">
           <DashboardSection description={copy.detailsDescription} title={copy.detailsTitle}>
             {data.outcomes.length > 0 ? (
               <ul className="divide-y divide-[color:var(--border)] rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
@@ -649,7 +750,7 @@ const CourseDetailPage = () => {
                         <span className="theme-subtle w-7 text-xs font-semibold">{String(index + 1).padStart(2, '0')}</span>
                         <div className="min-w-0">
                           <p className="theme-heading truncate text-sm font-medium">{module.title}</p>
-                          <p className="theme-muted mt-1 text-xs">{module.type} - {module.duration}</p>
+                          <p className="theme-muted mt-1 text-xs">{module.type} - {resolveLessonDurationLabel(module, language)}</p>
                           {purchased ? (
                             <>
                               <div className="mt-2">
@@ -789,101 +890,6 @@ const CourseDetailPage = () => {
               )}
             </div>
           </DashboardSection>
-        </div>
-
-        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-          <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
-            <h3 className="theme-heading text-base font-semibold">{copy.statusTitle}</h3>
-            <p className="theme-muted mt-1 text-sm">{copy.statusDescription}</p>
-
-            <div className="mt-5 flex items-start justify-between gap-4">
-              <div>
-                <p className="theme-muted text-sm">{t('common.price')}</p>
-                <p className="theme-heading mt-1 text-3xl font-semibold">
-                  {formatCoursePrice(data.price, data.currency, { locale, freeLabel })}
-                </p>
-              </div>
-              <StatusBadge>{data.level.levelName}</StatusBadge>
-            </div>
-
-            <div className="mt-4">
-              <StatusBadge tone={purchased ? 'success' : 'warning'}>
-                {purchased ? copy.purchased : copy.notPurchased}
-              </StatusBadge>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {purchased ? (
-                <div className="sm:col-span-2">
-                  <Link to={coursePlayerPath}>
-                    <Button asChild className="w-full justify-center">
-                      <PlayCircle className="h-4 w-4" />
-                      {watchCourseButtonLabel}
-                    </Button>
-                  </Link>
-                </div>
-              ) : (
-                <>
-                  {isPaidCourse ? (
-                    inCart ? (
-                      <Link className="sm:col-span-2" to={ROUTES.cart}>
-                        <Button asChild className="w-full justify-center" variant="secondary">
-                          <CheckCircle2 className="h-4 w-4" />
-                          {t('common.goToCart')}
-                        </Button>
-                      </Link>
-                    ) : (
-                      <Button
-                        className="w-full justify-center sm:col-span-2"
-                        onClick={handleAddToCart}
-                        variant="secondary"
-                      >
-                        <ShoppingCart className="h-4 w-4" />
-                        {t('common.addToCart')}
-                      </Button>
-                    )
-                  ) : (
-                    <Button
-                      className="w-full justify-center sm:col-span-2"
-                      disabled={Boolean(purchaseStage)}
-                      onClick={() => {
-                        void handleFreeEnrollment()
-                      }}
-                    >
-                      {purchaseStage === 'enrollment' ? copy.enrollmentCreating : copy.enrollFree}
-                    </Button>
-                  )}
-                </>
-              )}
-            </div>
-
-            {(purchaseError || purchaseSuccess) ? (
-              <div
-                className={`mt-4 rounded-sm border px-3 py-2 text-sm ${
-                  purchaseError
-                    ? 'border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] text-[color:var(--danger)]'
-                    : 'border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] theme-heading'
-                }`}
-              >
-                {purchaseError ?? purchaseSuccess}
-              </div>
-            ) : null}
-          </section>
-
-          {purchased ? (
-            <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-5 py-5">
-              <h3 className="theme-heading text-base font-semibold">{copy.progressTitle}</h3>
-              <div className="mt-3">
-                <CourseProgressBar
-                  completedLessons={courseProgressSummary?.completedLessons}
-                  language={language}
-                  percentage={courseProgressSummary?.overallPercentage ?? data.progress}
-                  totalLessons={courseProgressSummary?.totalLessons}
-                />
-              </div>
-            </section>
-          ) : null}
-        </aside>
       </section>
 
     </div>

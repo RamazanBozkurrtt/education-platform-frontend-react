@@ -7,11 +7,14 @@ import CourseCatalogList from '../components/dashboard/CourseCatalogList'
 import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
 import DashboardSection from '../components/dashboard/DashboardSection'
 import EmptyState from '../components/dashboard/EmptyState'
+import RecommendationSection from '../components/recommendations/RecommendationSection'
 import StatusBadge from '../components/dashboard/StatusBadge'
 import Input from '../components/ui/Input'
 import Loader from '../components/ui/Loader'
 import QueryErrorState from '../components/ui/QueryErrorState'
+import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../hooks/useLanguage'
+import { recommendationService } from '../services/recommendationService'
 import { searchService } from '../services/searchService'
 
 const chipClass = (active: boolean) => {
@@ -24,6 +27,7 @@ const chipClass = (active: boolean) => {
 
 const SearchPage = () => {
   const { t } = useTranslation()
+  const { isAuthenticated, isBootstrapping, user } = useAuth()
   const { language } = useLanguage()
   const [searchParams] = useSearchParams()
   const queryFromUrl = searchParams.get('q')?.trim() ?? ''
@@ -31,6 +35,11 @@ const SearchPage = () => {
   const [category, setCategory] = useState('')
   const [level, setLevel] = useState('')
   const deferredQuery = useDeferredValue(query)
+  const recommendationQuery = deferredQuery.trim()
+  const shouldLoadSearchRecommendations =
+    !isBootstrapping &&
+    isAuthenticated &&
+    recommendationQuery.length > 0
 
   useEffect(() => {
     setQuery(queryFromUrl)
@@ -44,6 +53,17 @@ const SearchPage = () => {
         category,
         level,
       }, language),
+    placeholderData: keepPreviousData,
+  })
+
+  const {
+    data: searchRecommendationData,
+    isLoading: isSearchRecommendationLoading,
+    isError: isSearchRecommendationError,
+  } = useQuery({
+    queryKey: ['search-recommendations', user?.id, language, recommendationQuery],
+    queryFn: () => recommendationService.getSearchRecommendations(recommendationQuery, 6),
+    enabled: shouldLoadSearchRecommendations,
     placeholderData: keepPreviousData,
   })
 
@@ -132,6 +152,23 @@ const SearchPage = () => {
         </aside>
 
         <div className="min-w-0 space-y-5">
+          {recommendationQuery ? (
+            <RecommendationSection
+              description={language === 'tr'
+                ? 'Arama ifaden ve ogrenme gecmisine gore one cikan kurslar.'
+                : 'Courses highlighted for your query and learning history.'}
+              emptyDescription={language === 'tr'
+                ? 'Bu arama icin ek oneri bulunamadi. Sonuclari inceleyebilirsin.'
+                : 'No extra recommendation was found for this search yet. You can still review regular results.'}
+              emptyTitle={language === 'tr' ? 'Akilli oneri bulunamadi' : 'No smart recommendations found'}
+              errorMessage={isSearchRecommendationError ? 'failed' : null}
+              isLoading={isSearchRecommendationLoading}
+              language={language}
+              recommendations={searchRecommendationData?.recommendations ?? []}
+              title={language === 'tr' ? 'Aramana Gore Akilli Oneriler' : 'Smart Recommendations For Your Search'}
+            />
+          ) : null}
+
           <DashboardSection
             action={isFetching ? <StatusBadge>{t('searchPage.updating')}</StatusBadge> : null}
             description={t('searchPage.resultsDescription')}
