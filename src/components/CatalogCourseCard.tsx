@@ -1,4 +1,4 @@
-import { ArrowRight, Clock3, GraduationCap, Star, UserRound } from 'lucide-react'
+﻿import { ArrowRight, Clock3, GraduationCap, Star, UserRound } from 'lucide-react'
 import type { SyntheticEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
@@ -7,6 +7,7 @@ import { resolveServiceUrl } from '../config/api'
 import { API_ENDPOINTS } from '../services/endpoints'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
+import { resolveCourseDurationLabel } from '../utils/duration'
 import { formatCoursePrice } from '../utils/helpers'
 import type { Course } from '../utils/types'
 
@@ -22,6 +23,7 @@ const CatalogCourseCard = ({ course, compact = false }: CatalogCourseCardProps) 
   const courseImageUrl = course.imageUrl || fallbackImageUrl
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const freeLabel = language === 'tr' ? 'Ücretsiz' : 'Free'
+  const durationLabel = resolveCourseDurationLabel(course, language)
 
   const handleImageError = (event: SyntheticEvent<HTMLImageElement>) => {
     const target = event.currentTarget
@@ -72,7 +74,7 @@ const CatalogCourseCard = ({ course, compact = false }: CatalogCourseCardProps) 
         <div className="catalog-course-meta">
           <span className="catalog-course-meta-item">
             <Clock3 className="h-4 w-4" />
-            {course.duration}
+            {durationLabel}
           </span>
           <span className="catalog-course-meta-item">
             <GraduationCap className="h-4 w-4" />
@@ -113,4 +115,6 @@ const CatalogCourseCard = ({ course, compact = false }: CatalogCourseCardProps) 
 }
 
 export default CatalogCourseCard
+
+
 

@@ -18,6 +18,7 @@ import { useLibrary } from '../hooks/useLibrary'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryFilterKeys, getCourseCategoryLabels } from '../utils/courseCategory'
 import { buildCoursePlayerPath, resolveContinueLessonId } from '../utils/courseProgress'
+import { resolveCourseDurationLabel } from '../utils/duration'
 
 const MyCoursesPage = () => {
   const { t } = useTranslation()
@@ -102,6 +103,7 @@ const MyCoursesPage = () => {
                   const overallPercentage = progressSummary?.overallPercentage ?? course.progress
                   const continueLessonId = resolveContinueLessonId(progressSummary, course.modules)
                   const continuePath = buildCoursePlayerPath(course.slug, continueLessonId)
+                  const durationLabel = resolveCourseDurationLabel(course, language)
                   const rowContinueLabel = (progressSummary && (progressSummary.overallPercentage > 0 || progressSummary.lastLessonId))
                     ? continueButtonLabel
                     : startButtonLabel
@@ -150,7 +152,7 @@ const MyCoursesPage = () => {
                         </div>
                       </td>
                       <td className="theme-muted px-4 py-3.5">{t('courseCard.lessonsValue', { count: course.lessons })}</td>
-                      <td className="theme-muted px-4 py-3.5">{course.duration}</td>
+                      <td className="theme-muted px-4 py-3.5">{durationLabel}</td>
                       <td className="px-4 py-3.5">
                         <div className="w-[140px]">
                           <CourseProgressBar

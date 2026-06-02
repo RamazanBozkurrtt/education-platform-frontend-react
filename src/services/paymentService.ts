@@ -20,8 +20,11 @@ export interface CreatePaymentRequest {
 }
 
 export interface ConfirmPaymentRequest {
-  approved: boolean
+  approved?: boolean
   failureReason?: string
+  gatewayTransactionId?: string
+  gatewayTimestampEpochSeconds?: number
+  gatewaySignature?: string
   buyerFullName?: string
   buyerEmail?: string
   buyerTaxNumber?: string
@@ -34,6 +37,7 @@ export interface Payment {
   courseId: string
   courseTitleSnapshot?: string
   amount?: number
+  amountRaw?: string
   currency?: string
   status?: PaymentStatus
   provider?: PaymentProvider
@@ -111,6 +115,19 @@ const toNumber = (value: unknown) => {
   return undefined
 }
 
+const toDecimalString = (value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return String(value)
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : undefined
+  }
+
+  return undefined
+}
+
 const mapPayment = (value: unknown): Payment => {
   const payload = toRecord(value)
   const courseRecord = toRecord(payload.course)
@@ -120,7 +137,7 @@ const mapPayment = (value: unknown): Payment => {
   const normalizedPaymentMethod = trimToUndefined(payload.paymentMethod)
 
   return {
-    id: toIdentifier(payload.id) ?? '',
+    id: toIdentifier(payload.id ?? payload.paymentId) ?? '',
     courseId,
     userId: toIdentifier(payload.userId),
     courseTitleSnapshot: trimToUndefined(payload.courseTitleSnapshot)
@@ -128,6 +145,7 @@ const mapPayment = (value: unknown): Payment => {
       ?? trimToUndefined(payload.courseName)
       ?? trimToUndefined(courseRecord.title),
     amount: toNumber(payload.amount),
+    amountRaw: toDecimalString(payload.amount),
     currency: trimToUndefined(payload.currency)?.toUpperCase(),
     status: (normalizedStatus as PaymentStatus | undefined),
     provider: (normalizedProvider as PaymentProvider | undefined),

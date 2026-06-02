@@ -11,6 +11,8 @@ import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { getFirstFieldErrorMap } from '../shared/errors/types'
 import { ROUTES } from '../utils/constants'
 
+const FORGOT_PASSWORD_SUCCESS_MESSAGE = 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.'
+
 const ForgotPasswordPage = () => {
   const { t } = useTranslation()
   const [email, setEmail] = useState('')
@@ -50,7 +52,7 @@ const ForgotPasswordPage = () => {
 
     try {
       await forgotPasswordMutation.mutateAsync(parsed.data)
-      setSuccessMessage(t('auth.forgotPassword.success'))
+      setSuccessMessage(FORGOT_PASSWORD_SUCCESS_MESSAGE)
     } catch (error) {
       const appError = normalizeApiError(error)
       const apiFieldErrors = getFirstFieldErrorMap(appError.fieldErrors)

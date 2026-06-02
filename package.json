@@ -6,8 +6,12 @@
   "scripts": {
     "dev": "vite",
     "dev:local": "vite --mode local",
+    "dev:k8s": "vite --mode k8s",
+    "dev:ingress": "vite --mode ingress",
     "dev:docker": "vite --mode docker",
     "build": "tsc && vite build",
+    "build:k8s": "tsc && vite build --mode k8s",
+    "build:ingress": "tsc && vite build --mode ingress",
     "build:docker": "tsc && vite build --mode docker",
     "build:prod": "tsc && vite build --mode production",
     "preview": "vite preview"

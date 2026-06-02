@@ -4,10 +4,10 @@ import { courseMediaService } from './courseMediaService'
 import { courseService } from './courseService'
 import { API_ENDPOINTS } from './endpoints'
 import { mapBackendCourseToCourse } from './courseMappers'
+import { normalizeDurationSeconds } from '../utils/duration'
 import type { ApiEnvelope, CourseCategoryOption, CourseLevelOption } from '../utils/types'
 
 const VIDEO_UPLOAD_TIMEOUT_MS = 30 * 60_000
-const DEFAULT_NEW_LESSON_DURATION_SECONDS = 1
 
 const requireEnvelopeData = <T>(envelope: ApiEnvelope<T>, fallbackMessage: string) => {
   if (typeof envelope.data !== 'undefined') {
@@ -22,7 +22,7 @@ export interface InstructorCourseLesson {
   title: string
   summaryTitle: string
   description?: string
-  duration: number | null
+  durationSeconds: number | null
   orderIndex: number
   completed: boolean
   videoUrl: string | null
@@ -52,7 +52,6 @@ interface CreateLessonPayload {
   title: string
   description?: string
   orderIndex: number
-  durationSeconds?: number
 }
 
 interface CreateCoursePayload {
@@ -113,45 +112,6 @@ const toNumber = (value: unknown) => {
   }
 
   return undefined
-}
-
-const toDurationSeconds = (value: unknown) => {
-  const numeric = toNumber(value)
-
-  if (typeof numeric === 'number' && numeric >= 0) {
-    return Math.trunc(numeric)
-  }
-
-  if (typeof value !== 'string') {
-    return null
-  }
-
-  const trimmed = value.trim()
-
-  if (!trimmed) {
-    return null
-  }
-
-  const match = trimmed.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/)
-
-  if (!match) {
-    return null
-  }
-
-  const [, first, second, third] = match
-  const firstPart = Number(first)
-  const secondPart = Number(second)
-  const thirdPart = typeof third === 'string' ? Number(third) : undefined
-
-  if (!Number.isFinite(firstPart) || !Number.isFinite(secondPart)) {
-    return null
-  }
-
-  if (typeof thirdPart === 'number' && Number.isFinite(thirdPart)) {
-    return (firstPart * 3600) + (secondPart * 60) + thirdPart
-  }
-
-  return (firstPart * 60) + secondPart
 }
 
 const toBoolean = (value: unknown) => {
@@ -304,7 +264,16 @@ const toCourseDetail = (payload: unknown): InstructorCourseDetail => {
     const summaryTitle = toText(lesson.summaryTitle) ?? (createSummaryTitle(trimmedTitle) || trimmedTitle)
     const description = toText(lesson.description ?? lesson.summary)
     const orderIndex = toNumber(lesson.orderIndex ?? lesson.order) ?? index + 1
-    const duration = toDurationSeconds(lesson.duration)
+    const durationSeconds = normalizeDurationSeconds(
+      lesson.durationSeconds
+      ?? lesson.durationInSeconds
+      ?? lesson.duration_seconds
+      ?? lesson.duration_in_seconds
+      ?? lesson.videoDurationSeconds
+      ?? lesson.video_duration_seconds
+      ?? lesson.videoDuration
+      ?? lesson.duration,
+    )
     const completed = toBoolean(lesson.completed) ?? false
     const videoUrl = toText(lesson.videoUrl) ?? null
 
@@ -313,7 +282,7 @@ const toCourseDetail = (payload: unknown): InstructorCourseDetail => {
       title,
       summaryTitle,
       description,
-      duration,
+      durationSeconds,
       orderIndex,
       completed,
       videoUrl,
@@ -441,7 +410,7 @@ const toCourseDetail = (payload: unknown): InstructorCourseDetail => {
       title: module.title,
       summaryTitle: createSummaryTitle(module.title) || module.title,
       description: module.description,
-      duration: toDurationSeconds(module.duration),
+      durationSeconds: normalizeDurationSeconds(module.durationSeconds),
       orderIndex: module.order ?? index + 1,
       completed: module.completed,
       videoUrl: module.videoUrl?.trim() || null,
@@ -520,15 +489,10 @@ export const instructorCourseService = {
       .filter(Boolean)
       .slice(0, 2)
       .join(' ')
-    const durationSeconds = Number.isFinite(payload.durationSeconds)
-      ? Math.max(1, Math.trunc(payload.durationSeconds as number))
-      : DEFAULT_NEW_LESSON_DURATION_SECONDS
-
     const requestPayload = {
       title: trimmedTitle,
       summaryTitle: summaryTitle || trimmedTitle,
       orderIndex: payload.orderIndex,
-      duration: durationSeconds,
       description: payload.description?.trim() || undefined,
     }
 

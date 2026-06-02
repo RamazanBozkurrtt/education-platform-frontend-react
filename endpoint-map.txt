@@ -1,4 +1,4 @@
-Gateway base URL (docker): http://localhost:8090
+Gateway base URL (docker): http://localhost:30090
 Not: Course endpointleri hem /courses/** hem /api/v1/courses/** çalışıyor; frontend için /api/v1/courses/** kullanman daha temiz olur.
 Body şemaları
 •

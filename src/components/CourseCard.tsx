@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, Clock3, PlayCircle, ShoppingCart, Star, UserRound } from 'lucide-react'
+﻿import { ArrowRight, CheckCircle2, Clock3, PlayCircle, ShoppingCart, Star, UserRound } from 'lucide-react'
 import type { SyntheticEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
@@ -9,6 +9,7 @@ import { resolveServiceUrl } from '../config/api'
 import { API_ENDPOINTS } from '../services/endpoints'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
+import { resolveCourseDurationLabel } from '../utils/duration'
 import { formatCoursePrice } from '../utils/helpers'
 import type { Course } from '../utils/types'
 import Button from './ui/Button'
@@ -31,7 +32,8 @@ const CourseCard = ({ course }: CourseCardProps) => {
   const fallbackImageUrl = resolveServiceUrl(API_ENDPOINTS.courses.image.public(course.id))
   const courseImageUrl = course.imageUrl || fallbackImageUrl
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
-  const freeLabel = language === 'tr' ? '�cretsiz' : 'Free'
+  const freeLabel = language === 'tr' ? 'Ücretsiz' : 'Free'
+  const durationLabel = resolveCourseDurationLabel(course, language)
 
   const handleImageError = (event: SyntheticEvent<HTMLImageElement>) => {
     const target = event.currentTarget
@@ -90,7 +92,7 @@ const CourseCard = ({ course }: CourseCardProps) => {
       <MetaRow
         className="mt-4"
         items={[
-          { key: 'duration', icon: Clock3, label: t('courseDetail.duration'), value: course.duration },
+          { key: 'duration', icon: Clock3, label: t('courseDetail.duration'), value: durationLabel },
           { key: 'lessons', label: t('courseDetail.lessons'), value: t('courseCard.lessonsValue', { count: course.lessons }) },
           { key: 'rating', icon: Star, label: 'Puan', value: String(course.rating) },
         ]}
@@ -145,4 +147,6 @@ const CourseCard = ({ course }: CourseCardProps) => {
 }
 
 export default CourseCard
+
+
 

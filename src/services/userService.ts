@@ -32,10 +32,6 @@ const sanitizeAvatarUrl = (value?: string) => {
     return undefined
   }
 
-  if (/^https?:\/\//i.test(trimmed)) {
-    return trimmed
-  }
-
   return resolveServiceUrl(trimmed)
 }
 

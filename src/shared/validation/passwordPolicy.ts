@@ -9,4 +9,3 @@ export const buildPasswordPolicySchema = (requiredMessage: string) =>
     .string()
     .min(1, requiredMessage)
     .regex(PASSWORD_POLICY_REGEX, PASSWORD_POLICY_MESSAGE)
-

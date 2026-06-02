@@ -1,6 +1,7 @@
 import api from './api'
 import { API_ENDPOINTS } from './endpoints'
 import { extractCourseCollection, mapBackendCourseToCourse } from './courseMappers'
+import { resolveLessonDurationLabel } from '../utils/duration'
 import type {
   ApiEnvelope,
   AppLanguage,
@@ -364,7 +365,9 @@ const createDashboardOverview = (courses: Course[], language: AppLanguage): Dash
       levelName: language === 'tr' ? 'Tüm seviyeler' : 'All levels',
     },
     levelKey: 'all-levels',
-    duration: 'N/A',
+    duration: language === 'tr' ? 'Süre bilgisi hazırlanıyor' : 'Duration is being prepared',
+    durationSeconds: null,
+    totalDurationSeconds: null,
     lessons: 0,
     progress: 0,
     students: '0',
@@ -437,7 +440,7 @@ const createDashboardOverview = (courses: Course[], language: AppLanguage): Dash
     upcomingMilestones: focusCourse.modules.slice(0, 3).map((module) => ({
       id: module.id,
       label: module.title,
-      due: module.duration,
+      due: resolveLessonDurationLabel(module, language),
       status: module.completed
         ? (language === 'tr' ? 'Hazır' : 'Ready')
         : (language === 'tr' ? 'Planlandı' : 'Planned'),

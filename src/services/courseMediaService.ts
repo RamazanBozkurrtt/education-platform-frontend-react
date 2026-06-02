@@ -1,6 +1,7 @@
 import api from './api'
 import { API_ENDPOINTS } from './endpoints'
 import type { ApiEnvelope } from '../utils/types'
+import { resolveServiceUrl } from '../config/api'
 
 const COURSE_IMAGE_ALLOWED_TYPES = ['image/png', 'image/jpg', 'image/jpeg', 'image/webp', 'image/svg+xml']
 const LESSON_VIDEO_ALLOWED_TYPES = ['video/mp4']
@@ -195,20 +196,52 @@ const extractPlaybackUrlPayload = (value: unknown) => {
   return toNonEmptyText(source.url ?? source.playbackUrl ?? source.videoUrl)
 }
 
-const extractPlaybackUrl = (envelope: ApiEnvelope<unknown>) => {
-  const fromEnvelopeData = extractPlaybackUrlPayload(envelope.data)
-
-  if (fromEnvelopeData) {
-    return fromEnvelopeData
+const appendPlaybackTokenParam = (params: URLSearchParams, name: string, value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+    params.set(name, String(value))
+    return
   }
 
-  const fromEnvelopeRoot = extractPlaybackUrlPayload(envelope)
+  const text = toNonEmptyText(value)
+  if (text) {
+    params.set(name, text)
+  }
+}
 
-  if (fromEnvelopeRoot) {
-    return fromEnvelopeRoot
+const appendQueryParamsFromPlaybackUrl = (params: URLSearchParams, playbackUrl: string) => {
+  try {
+    const url = new URL(playbackUrl, window.location.origin)
+    for (const [key, value] of url.searchParams.entries()) {
+      if (value.trim()) {
+        params.set(key, value)
+      }
+    }
+  } catch {
+    // Invalid playback URL payloads are handled by the missing-token guard below.
+  }
+}
+
+const extractPlaybackTokenQuery = (envelope: ApiEnvelope<unknown>) => {
+  const params = new URLSearchParams()
+  const payloads = [envelope.data, envelope]
+
+  for (const payload of payloads) {
+    const playbackUrl = extractPlaybackUrlPayload(payload)
+    if (playbackUrl) {
+      appendQueryParamsFromPlaybackUrl(params, playbackUrl)
+    }
+
+    const source = toRecord(payload)
+    appendPlaybackTokenParam(params, 'uid', source.uid ?? source.userId ?? source.user_id)
+    appendPlaybackTokenParam(params, 'exp', source.exp ?? source.expiresAt ?? source.expires_at)
+    appendPlaybackTokenParam(params, 'sig', source.sig ?? source.signature ?? source.token ?? source.streamToken)
   }
 
-  throw new Error(envelope.message || 'Playback URL response is missing a valid URL.')
+  if (!params.get('exp') || !params.get('sig')) {
+    throw new Error(envelope.message || 'Playback URL response is missing a valid stream token.')
+  }
+
+  return params.toString()
 }
 
 export const courseMediaService = {
@@ -248,11 +281,13 @@ export const courseMediaService = {
       undefined,
       { skipGlobalErrorHandling: true },
     )
-    const url = extractPlaybackUrl(response.data)
+    const tokenQuery = extractPlaybackTokenQuery(response.data)
+    const streamPath = `${API_ENDPOINTS.courses.lessons.videoStream(courseId, lessonId)}?${tokenQuery}`
+    const resolvedUrl = resolveServiceUrl(streamPath)
 
     return {
-      url,
-      expiresAtMs: resolveExpiryFromPlaybackUrl(url),
+      url: resolvedUrl,
+      expiresAtMs: resolveExpiryFromPlaybackUrl(resolvedUrl),
     }
   },
 }
