@@ -1,5 +1,4 @@
-﻿import { ArrowRight, CheckCircle2, Clock3, PlayCircle, ShoppingCart, Star, UserRound } from 'lucide-react'
-import type { SyntheticEvent } from 'react'
+﻿import { ArrowRight, CheckCircle2, Clock3, PlayCircle, ShoppingCart, Star, UserRound, UsersRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router-dom'
 import { useCart } from '../hooks/useCart'
@@ -10,8 +9,9 @@ import { API_ENDPOINTS } from '../services/endpoints'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
 import { resolveCourseDurationLabel } from '../utils/duration'
-import { formatCoursePrice } from '../utils/helpers'
+import { formatCoursePrice, formatStudentCountLabel, parseStudentCount } from '../utils/helpers'
 import type { Course } from '../utils/types'
+import CourseImage from './CourseImage'
 import Button from './ui/Button'
 import Card from './ui/Card'
 import MetaRow from './ui/MetaRow'
@@ -34,17 +34,11 @@ const CourseCard = ({ course }: CourseCardProps) => {
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const freeLabel = language === 'tr' ? 'Ücretsiz' : 'Free'
   const durationLabel = resolveCourseDurationLabel(course, language)
-
-  const handleImageError = (event: SyntheticEvent<HTMLImageElement>) => {
-    const target = event.currentTarget
-
-    if (target.dataset.fallbackApplied === 'true') {
-      return
-    }
-
-    target.dataset.fallbackApplied = 'true'
-    target.src = fallbackImageUrl
-  }
+  const ratingLabel = language === 'tr' ? 'Puan' : 'Rating'
+  const studentCount = course.studentsCount ?? parseStudentCount(course.students) ?? 0
+  const studentLabel = formatStudentCountLabel(studentCount, language)
+  const hasRating = (course.ratingCount ?? 0) > 0 || course.rating > 0
+  const ratingValue = hasRating ? course.rating.toFixed(1) : (language === 'tr' ? 'Yeni' : 'New')
 
   const handleAddToCart = () => {
     addCourse(course.id)
@@ -67,11 +61,11 @@ const CourseCard = ({ course }: CourseCardProps) => {
         className="mt-4 block overflow-hidden rounded-[var(--radius-navigation)] border border-[color:var(--border)]"
         to={ROUTES.courseDetail(course.slug)}
       >
-        <img
+        <CourseImage
           alt={course.title}
-          className="h-44 w-full object-cover transition-transform duration-300 hover:scale-[1.01]"
-          loading="lazy"
-          onError={handleImageError}
+          className="h-44 w-full"
+          fit="cover"
+          fallbackSrc={fallbackImageUrl}
           src={courseImageUrl}
         />
       </Link>
@@ -94,7 +88,8 @@ const CourseCard = ({ course }: CourseCardProps) => {
         items={[
           { key: 'duration', icon: Clock3, label: t('courseDetail.duration'), value: durationLabel },
           { key: 'lessons', label: t('courseDetail.lessons'), value: t('courseCard.lessonsValue', { count: course.lessons }) },
-          { key: 'rating', icon: Star, label: 'Puan', value: String(course.rating) },
+          { key: 'students', icon: UsersRound, label: t('courseDetail.enrolled'), value: studentLabel },
+          { key: 'rating', icon: Star, label: ratingLabel, value: ratingValue },
         ]}
       />
 

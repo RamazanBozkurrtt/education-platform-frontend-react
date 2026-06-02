@@ -40,7 +40,7 @@ const AuthLayout = () => {
               />
               <h1
                 className={cn(
-                  'theme-heading text-6xl font-semibold leading-none tracking-[-0.08em] transition-all duration-300 group-hover:-translate-y-2.5 group-focus-visible:-translate-y-0.5 xl:text-[6.75rem]',
+                  'theme-heading text-6xl font-semibold leading-none transition-all duration-300 group-hover:-translate-y-1 group-focus-visible:-translate-y-0.5 xl:text-[6.75rem]',
                   'group-hover:text-[color:var(--text-heading)]',
                 )}
               >
@@ -74,7 +74,7 @@ const AuthLayout = () => {
                 />
                 <h1
                   className={cn(
-                    'theme-heading text-3xl font-semibold tracking-[-0.06em] transition-all duration-300 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5',
+                    'theme-heading text-3xl font-semibold transition-all duration-300 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5',
                     'group-hover:text-[color:var(--text-heading)]',
                   )}
                 >

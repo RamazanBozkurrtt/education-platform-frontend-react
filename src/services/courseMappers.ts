@@ -1,5 +1,6 @@
 import { resolveServiceUrl } from '../config/api'
 import { formatDuration, normalizeDurationSeconds } from '../utils/duration'
+import { formatStudentCount, parseStudentCount } from '../utils/helpers'
 import type { Course, CourseLevelOption, CourseModule } from '../utils/types'
 
 export interface BackendInstructorResponse {
@@ -85,7 +86,19 @@ export interface BackendCourseResponse {
   lessonCount?: number | null
   students?: string | number | null
   studentsCount?: number | null
+  enrollmentCount?: number | null
+  enrolledStudentCount?: number | null
+  totalStudents?: number | null
   rating?: number | null
+  averageRating?: string | number | null
+  avgRating?: string | number | null
+  reviewAverageRating?: string | number | null
+  reviewsAverageRating?: string | number | null
+  ratingAverage?: string | number | null
+  ratingCount?: number | null
+  reviewCount?: number | null
+  reviewsCount?: number | null
+  totalReviews?: number | null
   price?: number | null
   currency?: string | null
   currencyCode?: string | null
@@ -161,20 +174,6 @@ const slugify = (value: string) => value
   .toLocaleLowerCase('en-US')
   .replace(/[^a-z0-9]+/g, '-')
   .replace(/^-+|-+$/g, '')
-
-const formatLearnerCount = (value: number) => {
-  if (!Number.isFinite(value) || value <= 0) {
-    return '0'
-  }
-
-  if (value >= 1000) {
-    const withSuffix = value / 1000
-    const formatted = withSuffix >= 10 ? withSuffix.toFixed(0) : withSuffix.toFixed(1)
-    return `${formatted}k`
-  }
-
-  return String(Math.round(value))
-}
 
 const toAbsoluteMediaUrl = (value: string | undefined) => {
   if (!value) {
@@ -435,7 +434,7 @@ const resolveLessonDurationTotalSeconds = (modules: CourseModule[]) => {
     .map((module) => normalizeDurationSeconds(module.durationSeconds))
     .filter((value): value is number => typeof value === 'number')
 
-  if (parsedModuleSeconds.length !== modules.length) {
+  if (parsedModuleSeconds.length === 0) {
     return undefined
   }
 
@@ -464,6 +463,47 @@ const resolveCourseDurationLabel = (
   const totalDurationSeconds = resolveCourseTotalDurationSeconds(course, modules)
 
   return formatDuration(totalDurationSeconds, 'en')
+}
+
+const resolveCourseRating = (course: BackendCourseResponse & Record<string, unknown>) => {
+  const ratings = [
+    course.averageRating,
+    course.avgRating,
+    course.reviewAverageRating,
+    course.reviewsAverageRating,
+    course.ratingAverage,
+    course.rating,
+  ]
+    .map((value) => toNumber(value))
+    .filter((value): value is number => typeof value === 'number' && value > 0)
+
+  return Math.max(0, Math.min(5, ratings[0] ?? toNumber(course.rating) ?? 0))
+}
+
+const resolveCourseRatingCount = (course: BackendCourseResponse & Record<string, unknown>) => {
+  const ratingCount = toNumber(course.ratingCount)
+    ?? toNumber(course.reviewCount)
+    ?? toNumber(course.reviewsCount)
+    ?? toNumber(course.totalReviews)
+
+  return typeof ratingCount === 'number' ? Math.max(0, Math.round(ratingCount)) : undefined
+}
+
+const resolveStudentCount = (course: BackendCourseResponse & Record<string, unknown>) => {
+  const explicitCount = toNumber(course.studentsCount)
+    ?? toNumber(course.enrollmentCount)
+    ?? toNumber(course.enrolledStudentCount)
+    ?? toNumber(course.totalStudents)
+
+  if (typeof explicitCount === 'number') {
+    return Math.max(0, Math.round(explicitCount))
+  }
+
+  if (typeof course.students === 'number' && Number.isFinite(course.students)) {
+    return Math.max(0, Math.round(course.students))
+  }
+
+  return undefined
 }
 
 export const mapBackendCourseToCourse = (value: unknown): Course => {
@@ -515,7 +555,12 @@ export const mapBackendCourseToCourse = (value: unknown): Course => {
   const normalizedDescription = trimToUndefined(course.description)
   const normalizedSummary = trimToUndefined(course.summary)
   const title = trimToUndefined(course.title) ?? 'Untitled Course'
-  const studentCount = toNumber(course.studentsCount) ?? toNumber(course.students)
+  const studentCount = resolveStudentCount(course as BackendCourseResponse & Record<string, unknown>)
+  const legacyStudentLabel = trimToUndefined(course.students)
+  const fallbackStudentCount = parseStudentCount(legacyStudentLabel)
+  const displayStudentCount = studentCount ?? fallbackStudentCount
+  const rating = resolveCourseRating(course as BackendCourseResponse & Record<string, unknown>)
+  const ratingCount = resolveCourseRatingCount(course as BackendCourseResponse & Record<string, unknown>)
   const tags = toStringArray(course.tags)
   const normalizedImageUrl = trimToUndefined(course.imageUrl)
     ?? trimToUndefined(course.image)
@@ -542,10 +587,12 @@ export const mapBackendCourseToCourse = (value: unknown): Course => {
     totalDurationSeconds,
     lessons: resolveLessonsCount(course, lessons),
     progress: Math.max(0, Math.min(100, Math.round(toNumber(course.progress) ?? 0))),
-    students: typeof studentCount === 'number'
-      ? formatLearnerCount(studentCount)
-      : trimToUndefined(course.students) ?? '0',
-    rating: Math.max(0, Math.min(5, toNumber(course.rating) ?? 0)),
+    studentsCount: studentCount,
+    students: typeof displayStudentCount === 'number'
+      ? formatStudentCount(displayStudentCount)
+      : legacyStudentLabel ?? '0',
+    rating,
+    ratingCount,
     price: Math.max(0, toNumber(course.price) ?? 0),
     currency: trimToUndefined(course.currency)?.toUpperCase()
       ?? trimToUndefined(course.currencyCode)?.toUpperCase()

@@ -1,7 +1,8 @@
-import { ArrowRight, BookOpen, Clock3, Star, WandSparkles } from 'lucide-react'
+import { ArrowRight, BookOpen, Clock3, Star, UsersRound, WandSparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { ROUTES } from '../../utils/constants'
 import { formatDuration } from '../../utils/duration'
+import { formatStudentCountLabel, parseStudentCount } from '../../utils/helpers'
 import type { RecommendationCourse } from '../../utils/types'
 import {
   formatRecommendationScore,
@@ -23,6 +24,21 @@ const RecommendationCourseCard = ({ item, language }: RecommendationCourseCardPr
   const reason = truncateRecommendationText(item.reason, 160)
   const description = truncateRecommendationText(item.description, 140)
   const recommendationDurationSeconds = item.totalDurationSeconds ?? item.totalDuration ?? item.durationSeconds ?? item.duration
+  const studentCount = item.studentsCount
+    ?? item.enrollmentCount
+    ?? item.enrolledStudentCount
+    ?? item.totalStudents
+    ?? (typeof item.students === 'number' ? item.students : parseStudentCount(item.students))
+  const studentLabel = typeof studentCount === 'number'
+    ? formatStudentCountLabel(studentCount, language)
+    : null
+  const rating = typeof item.averageRating === 'number'
+    ? item.averageRating
+    : typeof item.averageRating === 'string'
+      ? Number(item.averageRating)
+      : item.rating
+  const normalizedRating = typeof rating === 'number' && Number.isFinite(rating) ? rating : null
+  const hasRating = normalizedRating !== null && ((item.ratingCount ?? 0) > 0 || normalizedRating > 0)
 
   return (
     <article className="flex h-full flex-col rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4">
@@ -74,10 +90,16 @@ const RecommendationCourseCard = ({ item, language }: RecommendationCourseCardPr
               ? `${item.lessonCount} ders`
               : `${item.lessonCount} lessons`}
           </span>
-          {typeof item.rating === 'number' ? (
+          {studentLabel ? (
+            <span className="inline-flex items-center gap-1.5">
+              <UsersRound className="h-3.5 w-3.5" />
+              {studentLabel}
+            </span>
+          ) : null}
+          {hasRating ? (
             <span className="inline-flex items-center gap-1.5">
               <Star className="h-3.5 w-3.5" />
-              {item.rating.toFixed(1)}
+              {normalizedRating?.toFixed(1)}
             </span>
           ) : null}
         </div>

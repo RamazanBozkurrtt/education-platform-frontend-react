@@ -20,7 +20,7 @@ const toneClassMap: Record<MetricTone, string> = {
 const MetricTile = ({ hint, label, progress, tone = 'neutral', value }: MetricTileProps) => (
   <article className={cn('rounded-md border border-l-2 border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4', toneClassMap[tone])}>
     <p className="theme-muted text-xs font-medium uppercase tracking-[0.08em]">{label}</p>
-    <p className="theme-heading mt-2 text-2xl font-semibold tracking-tight">{value}</p>
+    <p className="theme-heading mt-2 text-2xl font-semibold">{value}</p>
     {typeof progress === 'number' ? (
       <div className="mt-3 space-y-1.5">
         <div className="h-1 overflow-hidden rounded bg-[color:var(--surface-muted)]">

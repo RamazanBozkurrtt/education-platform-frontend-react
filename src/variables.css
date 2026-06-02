@@ -60,7 +60,7 @@
   /* Named Radii */
   --radius-cards: 8px;
   --radius-inputs: 4px;
-  --radius-buttons: 200px;
+  --radius-buttons: 6px;
   --radius-general: 4px;
 
   /* Shadows */
@@ -106,14 +106,14 @@
   --page-glow-b: rgba(152, 227, 255, 0.22);
   --focus-ring: rgba(79, 93, 255, 0.3);
   --card-padding: clamp(1rem, 1vw + 0.8rem, 1.5rem);
-  --radius-navigation: 14px;
+  --radius-navigation: 8px;
   --radius-badges: 999px;
   --leading-heading-sm: 1.2;
   --color-forest-canopy: #1f344a;
   --color-muted-sage: #3f9b86;
-  --shadow-soft: 0 6px 18px rgba(20, 28, 50, 0.1);
-  --shadow-card: 0 10px 22px rgba(20, 28, 50, 0.12);
-  --shadow-sm: 0 4px 12px rgba(20, 28, 50, 0.1);
+  --shadow-soft: 0 4px 14px rgba(20, 28, 50, 0.08);
+  --shadow-card: 0 8px 18px rgba(20, 28, 50, 0.1);
+  --shadow-sm: 0 2px 8px rgba(20, 28, 50, 0.08);
 }
 
 html[data-theme='dark'] {
@@ -154,7 +154,7 @@ html[data-theme='dark'] {
   --focus-ring: rgba(0, 245, 220, 0.28);
   --color-forest-canopy: #132432;
   --color-muted-sage: #73cdb5;
-  --shadow-soft: 0 6px 16px rgba(0, 0, 0, 0.24);
-  --shadow-card: 0 10px 24px rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.24);
+  --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.22);
+  --shadow-card: 0 8px 20px rgba(0, 0, 0, 0.26);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.22);
 }

@@ -63,6 +63,56 @@ export const formatCoursePrice = (
   })
 }
 
+export const parseStudentCount = (value: unknown) => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return Math.max(0, Math.round(value))
+  }
+
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const normalized = value.trim().toLocaleLowerCase('en-US')
+
+  if (!normalized) {
+    return undefined
+  }
+
+  const multiplier = normalized.endsWith('k') ? 1000 : 1
+  const rawNumericPart = normalized
+    .replace(/k$/, '')
+    .replace(/\s*(learners?|students?|öğrenci|ogrenci|katılımcı|katilimci)\s*/gi, '')
+    .replace(/[^0-9.,]/g, '')
+  const numericPart = multiplier === 1000
+    ? rawNumericPart.replace(/,/g, '.')
+    : rawNumericPart.includes('.') && rawNumericPart.includes(',')
+      ? rawNumericPart.replace(/[.,](?=\d{3}\b)/g, '').replace(',', '.')
+      : rawNumericPart.replace(/[.,](?=\d{3}\b)/g, '')
+  const parsed = Number.parseFloat(numericPart)
+
+  return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed * multiplier)) : undefined
+}
+
+export const formatStudentCount = (value: number | null | undefined, locale = 'en-US') => {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    return '0'
+  }
+
+  return Math.round(value).toLocaleString(locale)
+}
+
+export const formatStudentCountLabel = (
+  value: number | null | undefined,
+  language: 'en' | 'tr' = 'en',
+) => {
+  const locale = language === 'tr' ? 'tr-TR' : 'en-US'
+  const count = formatStudentCount(value, locale)
+
+  return language === 'tr'
+    ? `${count} öğrenci`
+    : `${count} ${value === 1 ? 'student' : 'students'}`
+}
+
 export const createIdempotencyKey = () => {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()

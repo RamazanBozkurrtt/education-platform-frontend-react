@@ -15,22 +15,23 @@ import { useLanguage } from '../hooks/useLanguage'
 import { courseService } from '../services/courseService'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
+import { formatStudentCountLabel, parseStudentCount } from '../utils/helpers'
 
 const InstructorDashboardPage = () => {
   const { language } = useLanguage()
   const copy = language === 'tr'
     ? {
-      eyebrow: 'Egitmen paneli',
+      eyebrow: 'Eğitmen paneli',
       title: 'Kurs yonetimi',
-      description: 'Kurslarini, ders planini ve video yukleme surecini bu sayfadan yonet.',
+      description: 'Kurslarını, ders planını ve video yükleme sürecini bu sayfadan yönet.',
       myCourses: 'Kurslar',
       newCourse: 'Yeni kurs',
       profile: 'Profil',
       totalCourses: 'Toplam kurs',
       publishedCourses: 'Yayindaki kurs',
       totalLessons: 'Toplam ders',
-      totalStudents: 'Ogrenci',
-      noCourse: 'Henuz kurs olusturmadin.',
+      totalStudents: 'Öğrenci',
+      noCourse: 'Henüz kurs oluşturmadın.',
       noCourseHint: 'Ilk kursunu olusturarak paneldeki yonetim alanlarini aktif hale getirebilirsin.',
       goToCourseCreate: 'Ilk kursunu olustur',
       addVideo: 'Yonet',
@@ -38,7 +39,7 @@ const InstructorDashboardPage = () => {
       tableCategory: 'Kategori',
       tableLevel: 'Seviye',
       tableLessons: 'Ders',
-      tableStudents: 'Ogrenci',
+      tableStudents: 'Öğrenci',
       tableStatus: 'Durum',
       tableActions: 'Islem',
       statusPublished: 'Yayinda',
@@ -82,31 +83,22 @@ const InstructorDashboardPage = () => {
     const totalCourses = list.length
     const publishedCourses = list.filter((course) => course.progress > 0).length
     const totalLessons = list.reduce((sum, course) => sum + course.lessons, 0)
-    const totalStudents = list.reduce((sum, course) => {
-      const asNumber = Number(course.students.replace(/[^0-9.]/g, ''))
-
-      if (Number.isNaN(asNumber)) {
-        return sum
-      }
-
-      const multiplier = course.students.toLocaleLowerCase('en-US').includes('k') ? 1000 : 1
-      return sum + (asNumber * multiplier)
-    }, 0)
+    const totalStudents = list.reduce((sum, course) => sum + (course.studentsCount ?? parseStudentCount(course.students) ?? 0), 0)
 
     return [
       { label: copy.totalCourses, value: totalCourses.toString(), tone: 'neutral' as const },
       { label: copy.publishedCourses, value: publishedCourses.toString(), tone: 'success' as const },
       { label: copy.totalLessons, value: totalLessons.toString(), tone: 'primary' as const },
-      { label: copy.totalStudents, value: Math.round(totalStudents).toLocaleString('en-US'), tone: 'warning' as const },
+      { label: copy.totalStudents, value: Math.round(totalStudents).toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US'), tone: 'warning' as const },
     ]
-  }, [copy.publishedCourses, copy.totalCourses, copy.totalLessons, copy.totalStudents, courses])
+  }, [copy.publishedCourses, copy.totalCourses, copy.totalLessons, copy.totalStudents, courses, language])
 
   if (error) {
     return <QueryErrorState error={error} />
   }
 
   if (isLoading || !courses) {
-    return <Loader label={language === 'tr' ? 'Egitmen paneli yukleniyor...' : 'Loading instructor dashboard...'} />
+    return <Loader label={language === 'tr' ? 'Eğitmen paneli yükleniyor...' : 'Loading instructor dashboard...'} />
   }
 
   return (
@@ -165,7 +157,11 @@ const InstructorDashboardPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {courses.slice(0, 6).map((course) => (
+                {courses.slice(0, 6).map((course) => {
+                  const studentCount = course.studentsCount ?? parseStudentCount(course.students) ?? 0
+                  const studentLabel = formatStudentCountLabel(studentCount, language)
+
+                  return (
                   <tr className="border-b border-[color:var(--border)] last:border-b-0" key={course.id}>
                     <td className="px-4 py-3.5">
                       <p className="theme-heading font-medium">{course.title}</p>
@@ -173,7 +169,7 @@ const InstructorDashboardPage = () => {
                     <td className="theme-muted px-4 py-3.5">{getCourseCategoryLabel(course)}</td>
                     <td className="theme-muted px-4 py-3.5">{course.level.levelName}</td>
                     <td className="theme-muted px-4 py-3.5">{course.lessons}</td>
-                    <td className="theme-muted px-4 py-3.5">{course.students}</td>
+                    <td className="theme-muted px-4 py-3.5">{studentLabel}</td>
                     <td className="px-4 py-3.5">
                       <StatusBadge tone={course.progress > 0 ? 'success' : 'default'}>
                         {course.progress > 0 ? copy.statusPublished : copy.statusDraft}
@@ -188,7 +184,8 @@ const InstructorDashboardPage = () => {
                       </Link>
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           </TableShell>

@@ -4,6 +4,7 @@ import { ArrowRight, CirclePlay, GraduationCap, LayoutDashboard, UserRoundCheck 
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import ActivityList from '../components/dashboard/ActivityList'
+import CourseImage from '../components/CourseImage'
 import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
 import DashboardSection from '../components/dashboard/DashboardSection'
 import MetricTile from '../components/dashboard/MetricTile'
@@ -26,7 +27,7 @@ import { recommendationService } from '../services/recommendationService'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
 import { buildCoursePlayerPath, resolveContinueLessonId } from '../utils/courseProgress'
-import { resolveCourseDurationLabel, resolveLessonDurationLabel } from '../utils/duration'
+import { resolveCourseDurationLabel } from '../utils/duration'
 import { extractAuthRoles, isAdmin, isInstructor } from '../utils/roles'
 
 const DashboardPage = () => {
@@ -134,7 +135,7 @@ const DashboardPage = () => {
     : (language === 'tr' ? 'Odak kurs' : 'Focus course')
   const focusSectionDescription = shouldShowCourseCompletionCongrats
     ? (language === 'tr'
-      ? 'Tum derslerini tamamladin. Yeni hedefler icin hazirsin.'
+      ? 'Tüm derslerini tamamladın. Yeni hedefler için hazırsın.'
       : 'You completed all lessons. You are ready for your next goals.')
     : data.focusCourse.description
 
@@ -145,7 +146,7 @@ const DashboardPage = () => {
           <>
             <Link to={ROUTES.courses}>
               <Button asChild>
-                {language === 'tr' ? 'Kurslari goruntule' : 'View courses'}
+                {language === 'tr' ? 'Kursları görüntüle' : 'View courses'}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
@@ -163,21 +164,21 @@ const DashboardPage = () => {
               <Link to={ROUTES.instructorDashboard}>
                 <Button asChild variant="secondary">
                   <LayoutDashboard className="h-4 w-4" />
-                  {language === 'tr' ? 'Egitmen paneline git' : 'Go to instructor panel'}
+                  {language === 'tr' ? 'Eğitmen paneline git' : 'Go to instructor panel'}
                 </Button>
               </Link>
             ) : (
               <Link to={ROUTES.becomeInstructor}>
                 <Button asChild variant="secondary">
                   <GraduationCap className="h-4 w-4" />
-                  {language === 'tr' ? 'Egitmen ol' : 'Become instructor'}
+                  {language === 'tr' ? 'Eğitmen ol' : 'Become instructor'}
                 </Button>
               </Link>
             )}
           </>
         }
         description={language === 'tr'
-          ? 'Kurslarini, ilerlemeni ve sonraki adimlarini tek ekranda yonet.'
+          ? 'Kurslarını, ilerlemeni ve sonraki adımlarını tek ekranda yönet.'
           : 'Manage your courses, progress, and next actions from one screen.'}
         eyebrow={t('dashboard.eyebrow')}
         title={t('dashboard.title')}
@@ -209,39 +210,39 @@ const DashboardPage = () => {
           </Button>
         ) : null}
         description={language === 'tr'
-          ? 'Izleme aliskanliklarin ve ilgi alanlarina gore kisisellestirilmis oneriler.'
+          ? 'İzleme alışkanlıkların ve ilgi alanlarına göre kişiselleştirilmiş öneriler.'
           : 'Personalized suggestions based on your activity and interests.'}
         emptyDescription={language === 'tr'
-          ? 'Henuz oneri olusturmak icin yeterli veri yok. Populer kurslari kesfedebilirsin.'
+          ? 'Henüz öneri oluşturmak için yeterli veri yok. Popüler kursları keşfedebilirsin.'
           : 'There is not enough data to generate recommendations yet. Explore popular courses.'}
-        emptyTitle={language === 'tr' ? 'Henuz ozel oneriler yok' : 'No personalized recommendations yet'}
+        emptyTitle={language === 'tr' ? 'Henüz özel öneriler yok' : 'No personalized recommendations yet'}
         errorMessage={isDashboardRecommendationError ? 'failed' : null}
         isLoading={isDashboardRecommendationLoading}
         language={language}
         recommendations={dashboardRecommendationData?.recommendations ?? []}
-        title={language === 'tr' ? 'Senin Icin Onerilen Kurslar' : 'Recommended For You'}
+        title={language === 'tr' ? 'Senin İçin Önerilen Kurslar' : 'Recommended For You'}
       />
 
       {showRecommendationExplain ? (
         <Card className="space-y-3 p-5">
           <p className="theme-heading text-sm font-semibold">
-            {language === 'tr' ? 'Oneri ozeti' : 'Recommendation summary'}
+            {language === 'tr' ? 'Öneri özeti' : 'Recommendation summary'}
           </p>
 
           {isRecommendationExplainLoading ? (
-            <p className="theme-muted text-sm">{language === 'tr' ? 'Aciklama yukleniyor...' : 'Loading explanation...'}</p>
+            <p className="theme-muted text-sm">{language === 'tr' ? 'Açıklama yükleniyor...' : 'Loading explanation...'}</p>
           ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {recommendationExplainData?.favoriteCategories && recommendationExplainData.favoriteCategories.length > 0 ? (
                 <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
-                  <p className="theme-subtle text-xs">{language === 'tr' ? 'Ilgi kategorileri' : 'Top categories'}</p>
+                  <p className="theme-subtle text-xs">{language === 'tr' ? 'İlgi kategorileri' : 'Top categories'}</p>
                   <p className="theme-heading mt-1 text-sm">{recommendationExplainData.favoriteCategories.join(', ')}</p>
                 </div>
               ) : null}
 
               {recommendationExplainData?.preferredDurationLabel ? (
                 <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
-                  <p className="theme-subtle text-xs">{language === 'tr' ? 'Tercih edilen sure' : 'Preferred duration'}</p>
+                  <p className="theme-subtle text-xs">{language === 'tr' ? 'Tercih edilen süre' : 'Preferred duration'}</p>
                   <p className="theme-heading mt-1 text-sm">{recommendationExplainData.preferredDurationLabel}</p>
                 </div>
               ) : null}
@@ -255,7 +256,7 @@ const DashboardPage = () => {
 
               {formatRate(recommendationExplainData?.dropoutRate) ? (
                 <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
-                  <p className="theme-subtle text-xs">{language === 'tr' ? 'Birakma orani' : 'Dropout rate'}</p>
+                  <p className="theme-subtle text-xs">{language === 'tr' ? 'Bırakma oranı' : 'Dropout rate'}</p>
                   <p className="theme-heading mt-1 text-sm">{formatRate(recommendationExplainData?.dropoutRate)}</p>
                 </div>
               ) : null}
@@ -280,7 +281,7 @@ const DashboardPage = () => {
           description={language === 'tr'
             ? 'Kayitli kurslarinda son ilerlemene gore devam et.'
             : 'Continue from your latest lesson in enrolled courses.'}
-          title={language === 'tr' ? 'Kurslarim' : 'My courses'}
+          title={language === 'tr' ? 'Kurslarım' : 'My courses'}
         >
           {purchasedCourses.length > 0 ? (
             <div className="overflow-hidden rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
@@ -323,7 +324,7 @@ const DashboardPage = () => {
             </div>
           ) : (
             <p className="theme-muted text-sm">
-              {language === 'tr' ? 'Henuz kayitli kursun yok.' : 'You do not have any enrolled courses yet.'}
+              {language === 'tr' ? 'Henüz kayıtlı kursun yok.' : 'You do not have any enrolled courses yet.'}
             </p>
           )}
         </DashboardSection>
@@ -353,21 +354,23 @@ const DashboardPage = () => {
             </Card>
           ) : (
             <Card className="overflow-hidden p-0">
-            <div className="grid border-b border-[color:var(--border)] lg:grid-cols-[1.05fr_1fr]">
-              <div className="relative min-h-[220px] overflow-hidden bg-[color:var(--surface-soft)]">
+            <div className="grid border-b border-[color:var(--border)] lg:grid-cols-[0.72fr_1fr]">
+              <div className="relative overflow-hidden border-b border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 lg:self-start lg:border-b-0 lg:border-r">
                 {focusCourseHasImage ? (
-                  <img
+                  <CourseImage
                     alt={data.focusCourse.title}
-                    className="h-full w-full object-cover"
+                    className="h-44 rounded-[var(--radius-navigation)] border border-[color:var(--border)] sm:h-52 lg:h-56"
+                    fallbackSrc={data.focusCourse.imageUrl}
+                    imageClassName="p-3"
                     loading="lazy"
                     src={data.focusCourse.imageUrl}
                   />
                 ) : (
-                  <div className="absolute inset-0 bg-[linear-gradient(120deg,var(--surface-soft),var(--surface-hover))]" />
+                  <div className="h-44 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[linear-gradient(120deg,var(--surface-soft),var(--surface-hover))] sm:h-52 lg:h-56" />
                 )}
-                <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.06),rgba(15,23,42,0.72))]" />
+                <div className="pointer-events-none absolute inset-4 rounded-[var(--radius-navigation)] bg-[linear-gradient(180deg,rgba(15,23,42,0.02),rgba(15,23,42,0.68))]" />
 
-                <div className="absolute inset-x-4 top-4 flex flex-wrap items-center gap-2">
+                <div className="absolute inset-x-7 top-7 flex flex-wrap items-center gap-2">
                   <span className="rounded-[var(--radius-badges)] bg-[color:rgba(255,255,255,0.94)] px-2.5 py-1 text-xs font-semibold text-[color:var(--text-heading)]">
                     {getCourseCategoryLabel(data.focusCourse)}
                   </span>
@@ -376,9 +379,9 @@ const DashboardPage = () => {
                   </span>
                 </div>
 
-                <div className="absolute inset-x-4 bottom-4">
+                <div className="absolute inset-x-7 bottom-7">
                   <p className="text-sm font-medium text-white/90">
-                    {language === 'tr' ? 'Odak kurs' : 'Focus course'}
+                {language === 'tr' ? 'Odak kurs' : 'Focus course'}
                   </p>
                   <h3 className="mt-1 line-clamp-2 text-lg font-semibold leading-tight text-white md:text-xl">
                     {data.focusCourse.title}
@@ -393,7 +396,6 @@ const DashboardPage = () => {
                 <MetaRow
                   items={[
                     { key: 'progress', label: t('dashboard.progress'), value: `${data.focusCourse.progress}%` },
-                    { key: 'lessons', label: t('courseDetail.lessons'), value: String(data.focusCourse.lessons) },
                     { key: 'duration', label: t('courseDetail.duration'), value: resolveCourseDurationLabel(data.focusCourse, language) },
                     { key: 'category', label: language === 'tr' ? 'Kategori' : 'Category', value: getCourseCategoryLabel(data.focusCourse) },
                   ]}
@@ -415,24 +417,6 @@ const DashboardPage = () => {
                   </div>
                 </div>
 
-                {nextFocusModule ? (
-                  <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
-                    <p className="theme-muted text-xs font-medium">
-                      {language === 'tr' ? 'Siradaki ders' : 'Next lesson'}
-                    </p>
-                    <p className="theme-heading mt-1 truncate text-sm font-semibold">{nextFocusModule.title}</p>
-                    <p className="theme-muted mt-1 text-xs">{resolveLessonDurationLabel(nextFocusModule, language)}</p>
-                  </div>
-                ) : (
-                  <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
-                    <p className="theme-muted text-sm leading-6">
-                      {language === 'tr'
-                        ? 'Bu kurstaki tum dersleri tamamladin. Istersen detaylara donup tekrar yapabilir ya da yeni bir kursa gecebilirsin.'
-                        : 'You completed all lessons in this course. You can revisit details or continue with a new course.'}
-                    </p>
-                  </div>
-                )}
-
                 <div className="flex flex-wrap items-center gap-2 pt-1">
                   <Link to={focusCourseContinuePath}>
                     <Button asChild size="sm">
@@ -442,7 +426,7 @@ const DashboardPage = () => {
                   </Link>
                   <Link to={ROUTES.courseDetail(data.focusCourse.slug)}>
                     <Button asChild size="sm" variant="secondary">
-                      {language === 'tr' ? 'Detaylari ac' : 'View details'}
+                      {language === 'tr' ? 'Detayları aç' : 'View details'}
                     </Button>
                   </Link>
                 </div>
@@ -451,36 +435,6 @@ const DashboardPage = () => {
               </div>
             </div>
 
-            {data.focusCourse.modules.length > 0 ? (
-              <ul className="space-y-3 px-5 py-5">
-                {data.focusCourse.modules.slice(0, 4).map((module, index) => (
-                  <li key={module.id}>
-                    <Link
-                      className="flex items-start justify-between gap-4 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]"
-                      to={buildCoursePlayerPath(data.focusCourse.slug, module.id)}
-                    >
-                      <div className="flex min-w-0 items-start gap-3">
-                        <span className="theme-subtle mt-0.5 w-7 text-xs font-semibold">{String(index + 1).padStart(2, '0')}</span>
-                        <div className="min-w-0">
-                          <p className="theme-heading truncate text-sm font-medium">{module.title}</p>
-                          <div className="mt-1 flex flex-wrap items-center gap-2">
-                            <span className="rounded-[var(--radius-badges)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-2 py-0.5 text-[11px] font-medium theme-muted">
-                              {module.type}
-                            </span>
-                            <span className="theme-muted text-xs">{resolveLessonDurationLabel(module, language)}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <CirclePlay className="theme-subtle mt-0.5 h-4 w-4 shrink-0" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="theme-muted px-5 py-5 text-sm">
-                {language === 'tr' ? 'Bu kursta henuz ders bulunmuyor.' : 'No lessons are available for this course yet.'}
-              </p>
-            )}
             </Card>
           )}
         </DashboardSection>

@@ -1,16 +1,15 @@
-import { AlertTriangle, BriefcaseBusiness, Code2, Globe, ImagePlus, Link as LinkIcon, LoaderCircle, LogOut, Mail, RefreshCw, Trash2, UserRound } from 'lucide-react'
-import { type ChangeEvent, type FormEvent, useEffect, useRef, useState } from 'react'
+import { AlertTriangle, ImagePlus, LoaderCircle, LogOut, RefreshCw, Trash2 } from 'lucide-react'
+import { type ChangeEvent, type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
-import PageHeader from '../components/PageHeader'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
 import Input from '../components/ui/Input'
 import { useAuth } from '../hooks/useAuth'
 import { userService } from '../services/userService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { getFirstFieldErrorMap } from '../shared/errors/types'
 import { ROUTES } from '../utils/constants'
+import { cn } from '../utils/helpers'
 
 type FormErrors = Partial<Record<'firstName' | 'lastName' | 'headline' | 'biography' | 'avatar' | 'linkedin' | 'github' | 'website', string>>
 type PasswordFormErrors = Partial<Record<'oldPassword' | 'newPassword' | 'confirmNewPassword', string>>
@@ -130,19 +129,56 @@ const isValidUrl = (value: string) => {
 const getSocialValue = (socialLinks: Record<string, string> | undefined, key: string) =>
   Object.entries(socialLinks ?? {}).find(([label]) => label.toLocaleLowerCase() === key.toLocaleLowerCase())?.[1] ?? ''
 
-const getSocialIcon = (label: string) => {
-  const normalized = label.toLocaleLowerCase()
-
-  if (normalized.includes('linkedin')) {
-    return <LinkIcon className="h-4 w-4" />
-  }
-
-  if (normalized.includes('github')) {
-    return <Globe className="h-4 w-4" />
-  }
-
-  return <Globe className="h-4 w-4" />
+interface SettingsSectionProps {
+  children: ReactNode
+  description?: string
+  id: string
+  title: string
+  tone?: 'default' | 'danger'
 }
+
+const settingsInputClassName = 'rounded-md bg-[color:var(--surface-strong)]'
+
+const SettingsSection = ({ children, description, id, title, tone = 'default' }: SettingsSectionProps) => (
+  <section
+    className={cn(
+      'scroll-mt-24 border-t border-[color:var(--border)] py-7 first:border-t-0 first:pt-0',
+      tone === 'danger' && 'border-t-[color:var(--danger)]/25',
+    )}
+    id={id}
+  >
+    <div className="grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
+      <div>
+        <h2 className={cn('text-sm font-semibold', tone === 'danger' ? 'text-[color:var(--danger)]' : 'theme-heading')}>
+          {title}
+        </h2>
+        {description ? <p className="theme-muted mt-2 text-xs leading-5">{description}</p> : null}
+      </div>
+      <div className="min-w-0">{children}</div>
+    </div>
+  </section>
+)
+
+const DefinitionRow = ({ label, value }: { label: string; value: ReactNode }) => (
+  <div className="grid gap-1 border-t border-[color:var(--border)] py-3 first:border-t-0 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-6">
+    <dt className="theme-muted text-xs font-semibold uppercase tracking-[0.08em]">{label}</dt>
+    <dd className="theme-text min-w-0 text-sm leading-6">{value}</dd>
+  </div>
+)
+
+const InlineNotice = ({ message, tone }: { message: string; tone: 'success' | 'error' }) => (
+  <div
+    aria-live="polite"
+    className={cn(
+      'border px-3 py-2 text-sm',
+      tone === 'success'
+        ? 'border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--text)]'
+        : 'border-[color:var(--danger)]/35 bg-[color:var(--surface-soft-peach)] text-[color:var(--danger)]',
+    )}
+  >
+    {message}
+  </div>
+)
 
 const ProfilePage = () => {
   const { t, i18n } = useTranslation()
@@ -203,7 +239,12 @@ const ProfilePage = () => {
   }
 
   const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || user.name
-  const socialEntries = Object.entries(user.socialLinks ?? {})
+  const socialEntries = Object.entries(user.socialLinks ?? {}).filter(([, url]) => url.trim())
+  const isProfileActionBusy = isLoggingOut || isSaving || isDeactivating || isChangingPassword || uploadingAvatar
+
+  const clearProfileError = (field: keyof FormErrors) => {
+    setErrors((current) => ({ ...current, [field]: undefined }))
+  }
 
   const resetForm = () => {
     setFirstName(user.firstName ?? '')
@@ -405,7 +446,7 @@ const ProfilePage = () => {
 
     if (deactivateInput.trim() !== deactivatePhrase) {
       setDeactivateFeedback({
-        message: t('profile.deactivate.mismatch', { defaultValue: 'The confirmation sentence does not match.' }),
+        message: t('profile.deactivate.mismatch'),
         tone: 'error',
       })
       return
@@ -419,7 +460,7 @@ const ProfilePage = () => {
     } catch (error) {
       const appError = normalizeApiError(error)
       setDeactivateFeedback({
-        message: appError.message || t('profile.deactivate.requestError', { defaultValue: 'Profile deactivation failed. Please try again.' }),
+        message: appError.message || t('profile.deactivate.requestError'),
         tone: 'error',
       })
     } finally {
@@ -464,433 +505,528 @@ const ProfilePage = () => {
     }
   }
 
-  const renderPasswordCard = () => (
-    <Card>
-      <p className="theme-heading text-sm font-semibold">{t('profile.password.title')}</p>
-      <p className="theme-muted mt-1 text-xs">{t('profile.password.description')}</p>
-
-      {!isPasswordFormVisible ? (
-        <Button
-          className="mt-4"
-          disabled={isChangingPassword || isLoggingOut || isSaving}
-          onClick={() => {
-            setPasswordFeedback(null)
-            setIsPasswordFormVisible(true)
-          }}
-          variant="secondary"
-        >
-          {t('profile.password.open')}
-        </Button>
-      ) : (
-        <form className="mt-4 space-y-4" onSubmit={handleChangePassword}>
-          <Input
-            autoComplete="current-password"
-            error={passwordErrors.oldPassword}
-            id="profile-current-password"
-            label={t('profile.password.oldPassword')}
-            onChange={(event) => {
-              setOldPassword(event.target.value)
-              setPasswordErrors((current) => ({ ...current, oldPassword: undefined }))
-            }}
-            placeholder={t('profile.password.oldPasswordPlaceholder')}
-            type="password"
-            value={oldPassword}
-          />
-
-          <Input
-            autoComplete="new-password"
-            error={passwordErrors.newPassword}
-            id="profile-new-password"
-            label={t('profile.password.newPassword')}
-            onChange={(event) => {
-              setNewPassword(event.target.value)
-              setPasswordErrors((current) => ({ ...current, newPassword: undefined }))
-            }}
-            placeholder={t('profile.password.newPasswordPlaceholder')}
-            type="password"
-            value={newPassword}
-          />
-
-          <Input
-            autoComplete="new-password"
-            error={passwordErrors.confirmNewPassword}
-            id="profile-confirm-new-password"
-            label={t('profile.password.confirmNewPassword')}
-            onChange={(event) => {
-              setConfirmNewPassword(event.target.value)
-              setPasswordErrors((current) => ({ ...current, confirmNewPassword: undefined }))
-            }}
-            placeholder={t('profile.password.confirmNewPasswordPlaceholder')}
-            type="password"
-            value={confirmNewPassword}
-          />
-
-          {passwordFeedback ? (
-            <p className={`text-sm ${passwordFeedback.tone === 'success' ? 'theme-text' : 'text-[color:var(--danger)]'}`}>
-              {passwordFeedback.message}
+  const renderPasswordSection = () => (
+    <SettingsSection
+      description={t('profile.password.description')}
+      id="security"
+      title={t('profile.password.title')}
+    >
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="theme-heading text-sm font-medium">{t('profile.password.open')}</p>
+            <p className="theme-muted mt-1 text-xs leading-5">
+              {t('profile.password.description')}
             </p>
-          ) : null}
+          </div>
 
-          <div className="flex flex-wrap gap-2">
-            <Button className="flex-1" disabled={isChangingPassword || isLoggingOut || isSaving} type="submit">
-              {isChangingPassword ? t('profile.password.submitting') : t('profile.password.submit')}
-            </Button>
+          {!isPasswordFormVisible ? (
             <Button
-              className="flex-1"
-              disabled={isChangingPassword}
+              className="shrink-0 rounded-md"
+              disabled={isProfileActionBusy}
               onClick={() => {
-                resetPasswordForm()
                 setPasswordFeedback(null)
-                setIsPasswordFormVisible(false)
+                setIsPasswordFormVisible(true)
               }}
               variant="secondary"
             >
-              {t('profile.password.cancel')}
+              {t('profile.password.open')}
             </Button>
-          </div>
-        </form>
-      )}
-    </Card>
+          ) : null}
+        </div>
+
+        {isPasswordFormVisible ? (
+          <form className="mt-4 space-y-4" onSubmit={handleChangePassword}>
+            <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-3">
+              <Input
+                autoComplete="current-password"
+                className={settingsInputClassName}
+                error={passwordErrors.oldPassword}
+                id="profile-current-password"
+                label={t('profile.password.oldPassword')}
+                onChange={(event) => {
+                  setOldPassword(event.target.value)
+                  setPasswordErrors((current) => ({ ...current, oldPassword: undefined }))
+                }}
+                placeholder={t('profile.password.oldPasswordPlaceholder')}
+                type="password"
+                value={oldPassword}
+              />
+
+              <Input
+                autoComplete="new-password"
+                className={settingsInputClassName}
+                error={passwordErrors.newPassword}
+                id="profile-new-password"
+                label={t('profile.password.newPassword')}
+                onChange={(event) => {
+                  setNewPassword(event.target.value)
+                  setPasswordErrors((current) => ({ ...current, newPassword: undefined }))
+                }}
+                placeholder={t('profile.password.newPasswordPlaceholder')}
+                type="password"
+                value={newPassword}
+              />
+
+              <Input
+                autoComplete="new-password"
+                className={settingsInputClassName}
+                error={passwordErrors.confirmNewPassword}
+                id="profile-confirm-new-password"
+                label={t('profile.password.confirmNewPassword')}
+                onChange={(event) => {
+                  setConfirmNewPassword(event.target.value)
+                  setPasswordErrors((current) => ({ ...current, confirmNewPassword: undefined }))
+                }}
+                placeholder={t('profile.password.confirmNewPasswordPlaceholder')}
+                type="password"
+                value={confirmNewPassword}
+              />
+            </div>
+
+            {passwordFeedback ? (
+              <InlineNotice message={passwordFeedback.message} tone={passwordFeedback.tone} />
+            ) : null}
+
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                className="rounded-md"
+                disabled={isChangingPassword || isLoggingOut || isSaving || isDeactivating || uploadingAvatar}
+                type="submit"
+              >
+                {isChangingPassword ? t('profile.password.submitting') : t('profile.password.submit')}
+              </Button>
+              <Button
+                className="rounded-md"
+                disabled={isChangingPassword}
+                onClick={() => {
+                  resetPasswordForm()
+                  setPasswordFeedback(null)
+                  setIsPasswordFormVisible(false)
+                }}
+                variant="secondary"
+              >
+                {t('profile.password.cancel')}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          passwordFeedback ? (
+            <InlineNotice message={passwordFeedback.message} tone={passwordFeedback.tone} />
+          ) : null
+        )}
+      </div>
+    </SettingsSection>
   )
 
-  const renderDeactivateCard = () => (
-    <Card>
-      <div className="rounded-[18px] border border-[color:var(--danger)]/35 bg-[color:var(--surface-soft-peach)] p-4">
-        <div className="flex items-start gap-3">
-          <span className="mt-0.5 rounded-full border border-[color:var(--danger)]/35 p-1.5 text-[color:var(--danger)]">
-            <AlertTriangle className="h-4 w-4" />
-          </span>
-          <div>
-            <p className="theme-heading text-sm font-semibold">
-              {t('profile.deactivate.title', { defaultValue: 'Deactivate profile' })}
-            </p>
-            <p className="theme-muted mt-1 text-xs">
-              {t('profile.deactivate.description', { defaultValue: 'Type the sentence exactly to confirm profile deactivation.' })}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-4 rounded-[14px] border border-[color:var(--danger)]/25 bg-[color:var(--surface-strong)] px-3 py-2.5">
-          <p className="theme-subtle text-[11px] uppercase tracking-[0.2em]">
-            {t('profile.deactivate.promptLabel', { defaultValue: 'Confirmation sentence' })}
+  const renderDeactivateSection = () => (
+    <SettingsSection
+      description={t('profile.deactivate.description')}
+      id="danger-zone"
+      title={t('profile.deactivate.title')}
+      tone="danger"
+    >
+      <div className="border border-[color:var(--danger)]/35 bg-[color:var(--surface-soft-peach)] p-4">
+        <div className="flex items-start gap-3 text-[color:var(--danger)]">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <p className="text-sm font-medium">
+            {t('profile.deactivate.title')}
           </p>
-          <p className="theme-text mt-2 text-sm leading-6">{deactivatePhrase}</p>
         </div>
 
-        <form className="mt-4 space-y-3" onSubmit={handleDeactivateProfile}>
-          <label className="flex w-full flex-col gap-2" htmlFor="profile-deactivate-confirmation">
-            <span className="theme-heading text-sm font-semibold">
-              {t('profile.deactivate.inputLabel', { defaultValue: 'Type the sentence above' })}
-            </span>
-            <span className="flex rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--danger)] focus-within:ring-2 focus-within:ring-[color:rgba(180,35,61,0.2)]">
-              <textarea
-                aria-invalid={deactivateFeedback?.tone === 'error'}
-                className="theme-text theme-placeholder w-full resize-none bg-transparent text-sm leading-6 outline-none"
-                id="profile-deactivate-confirmation"
-                onChange={(event) => {
-                  setDeactivateInput(event.target.value)
-                  setDeactivateFeedback(null)
-                }}
-                placeholder={t('profile.deactivate.inputPlaceholder', { defaultValue: 'Write the sentence exactly as shown.' })}
-                rows={3}
-                value={deactivateInput}
-              />
-            </span>
-          </label>
-
-          {deactivateFeedback ? (
-            <p className={`text-sm ${deactivateFeedback.tone === 'success' ? 'theme-text' : 'text-[color:var(--danger)]'}`}>
-              {deactivateFeedback.message}
+        <div className="mt-4 grid gap-4 xl:grid-cols-[0.85fr_1.15fr]">
+          <div className="border border-[color:var(--danger)]/25 bg-[color:var(--surface-strong)] px-3 py-2.5">
+            <p className="theme-subtle text-[11px] uppercase tracking-[0.2em]">
+              {t('profile.deactivate.promptLabel')}
             </p>
-          ) : null}
-
-          <div className="flex flex-wrap gap-2">
-            <Button
-              className="flex-1 border-[color:var(--danger)] bg-[color:var(--danger)] text-white hover:border-[color:var(--danger)] hover:bg-[color:var(--danger)] hover:opacity-90"
-              disabled={isDeactivating || isLoggingOut || isSaving || isChangingPassword || uploadingAvatar || deactivateInput.trim() !== deactivatePhrase}
-              type="submit"
-            >
-              {isDeactivating
-                ? t('profile.deactivate.submitting', { defaultValue: 'Deactivating profile...' })
-                : t('profile.deactivate.submit', { defaultValue: 'Deactivate profile' })}
-            </Button>
-            <Button
-              className="flex-1"
-              disabled={isDeactivating}
-              onClick={handleRefreshDeactivatePhrase}
-              type="button"
-              variant="secondary"
-            >
-              <RefreshCw className="h-4 w-4" />
-              {t('profile.deactivate.newSentence', { defaultValue: 'New sentence' })}
-            </Button>
+            <p className="theme-text mt-2 text-sm leading-6">{deactivatePhrase}</p>
           </div>
-        </form>
+
+          <form className="space-y-3" onSubmit={handleDeactivateProfile}>
+            <label className="flex w-full flex-col gap-2" htmlFor="profile-deactivate-confirmation">
+              <span className="theme-heading text-sm font-semibold">
+                {t('profile.deactivate.inputLabel')}
+              </span>
+              <span className="flex rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--danger)] focus-within:ring-2 focus-within:ring-[color:rgba(180,35,61,0.2)]">
+                <textarea
+                  aria-invalid={deactivateFeedback?.tone === 'error'}
+                  className="theme-text theme-placeholder w-full resize-none bg-transparent text-sm leading-6 outline-none"
+                  id="profile-deactivate-confirmation"
+                  onChange={(event) => {
+                    setDeactivateInput(event.target.value)
+                    setDeactivateFeedback(null)
+                  }}
+                  placeholder={t('profile.deactivate.inputPlaceholder')}
+                  rows={3}
+                  value={deactivateInput}
+                />
+              </span>
+            </label>
+
+            {deactivateFeedback ? (
+              <InlineNotice message={deactivateFeedback.message} tone={deactivateFeedback.tone} />
+            ) : null}
+
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                className="rounded-md border-[color:var(--danger)] bg-[color:var(--danger)] text-white hover:border-[color:var(--danger)] hover:bg-[color:var(--danger)] hover:opacity-90"
+                disabled={isDeactivating || isLoggingOut || isSaving || isChangingPassword || uploadingAvatar || deactivateInput.trim() !== deactivatePhrase}
+                type="submit"
+              >
+                {isDeactivating
+                  ? t('profile.deactivate.submitting')
+                  : t('profile.deactivate.submit')}
+              </Button>
+              <Button
+                className="rounded-md"
+                disabled={isDeactivating}
+                onClick={handleRefreshDeactivatePhrase}
+                type="button"
+                variant="secondary"
+              >
+                <RefreshCw className="h-4 w-4" />
+                {t('profile.deactivate.newSentence')}
+              </Button>
+            </div>
+          </form>
+        </div>
       </div>
-    </Card>
+    </SettingsSection>
   )
 
   const displayAvatarUrl = isEditing ? (avatarUrl || user.avatarUrl) : user.avatarUrl
+  const roleLabel = t(user.roleLabelKey)
+  const profileStatusLabel = user.profileCompleted === false
+    ? t('profile.status.incomplete')
+    : t('profile.status.active')
+  const profileStatusTone = user.profileCompleted === false ? 'warning' : 'success'
 
   return (
-    <div className="space-y-7">
-      <PageHeader
-        description={t('profile.description')}
-        eyebrow={t('profile.eyebrow')}
-        title={t('profile.title')}
-      />
+    <div className="mx-auto max-w-6xl space-y-6">
+      <header className="flex flex-col gap-4 border-b border-[color:var(--border)] pb-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.14em]">{t('profile.eyebrow')}</p>
+          <h1 className="theme-heading mt-2 text-3xl font-semibold tracking-tight">{t('profile.title')}</h1>
+          <p className="theme-muted mt-2 max-w-2xl text-sm leading-6">{t('profile.description')}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {isEditing ? (
+            <Button
+              className="rounded-md"
+              disabled={isSaving || isLoggingOut || isDeactivating || uploadingAvatar}
+              onClick={handleCancelEditing}
+              variant="secondary"
+            >
+              {t('profile.cancelEdit')}
+            </Button>
+          ) : (
+            <Button className="rounded-md" disabled={isProfileActionBusy} onClick={handleStartEditing} variant="secondary">
+              {t('profile.edit')}
+            </Button>
+          )}
+          <Button className="rounded-md" disabled={isProfileActionBusy} onClick={handleLogout} variant="ghost">
+            <LogOut className="h-4 w-4" />
+            {isLoggingOut ? t('profile.loggingOut') : t('profile.logout')}
+          </Button>
+        </div>
+      </header>
 
-      <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card>
-          <div className="flex flex-col gap-6 border-b border-[color:var(--border)] pb-6 sm:flex-row sm:items-center">
-            <div className="flex h-24 w-24 items-center justify-center rounded-[28px] bg-[color:var(--primary)] text-2xl font-semibold text-white">
-              {displayAvatarUrl ? (
-                <img alt={fullName} className="h-full w-full rounded-[28px] object-cover" src={displayAvatarUrl} />
-              ) : (
-                user.initials
-              )}
+      <section className="theme-surface-strong border border-[color:var(--border)] px-4 py-4 sm:px-5">
+        <div className="flex min-w-0 items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[color:var(--primary)] text-base font-semibold text-white">
+            {displayAvatarUrl ? (
+              <img alt={fullName} className="h-full w-full object-cover" src={displayAvatarUrl} />
+            ) : (
+              user.initials
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="theme-heading min-w-0 text-lg font-semibold leading-6">{fullName}</h2>
+              <span
+                className={cn(
+                  'inline-flex items-center border px-2 py-0.5 text-[11px] font-semibold',
+                  profileStatusTone === 'success'
+                    ? 'border-[color:var(--border)] bg-[color:var(--surface-soft)] text-[color:var(--text-muted)]'
+                    : 'border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] text-[color:var(--danger)]',
+                )}
+              >
+                {profileStatusLabel}
+              </span>
             </div>
-            <div>
-              <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{t('profile.account')}</p>
-              <h2 className="theme-heading mt-2 text-3xl font-semibold">{fullName}</h2>
-              {user.headline ? <p className="theme-muted mt-2 text-base">{user.headline}</p> : null}
+            <div className="theme-muted mt-1 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-sm">
+              <span className="break-all">{user.email}</span>
+              <span className="hidden h-1 w-1 rounded-full bg-[color:var(--text-subtle)] sm:inline-block" />
+              <span>{roleLabel}</span>
+              {user.headline ? (
+                <>
+                  <span className="hidden h-1 w-1 rounded-full bg-[color:var(--text-subtle)] sm:inline-block" />
+                  <span className="min-w-0 truncate">{user.headline}</span>
+                </>
+              ) : null}
             </div>
           </div>
+        </div>
+      </section>
 
-          <div className="mt-6">
-            <div className="rounded-[18px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
-              <p className="theme-subtle text-xs uppercase tracking-[0.22em]">{t('profile.email')}</p>
-              <div className="theme-text mt-3 flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                <span>{user.email}</span>
-              </div>
-            </div>
+      {feedback ? <InlineNotice message={feedback.message} tone={feedback.tone} /> : null}
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {isEditing ? (
-                <Button disabled={isSaving || isLoggingOut || isDeactivating} onClick={handleCancelEditing} variant="secondary">
-                  {t('profile.cancelEdit')}
-                </Button>
-              ) : (
-                <Button disabled={isLoggingOut || isSaving || isDeactivating} onClick={handleStartEditing} variant="secondary">
-                  {t('profile.edit')}
-                </Button>
-              )}
-              <Button disabled={isLoggingOut || isSaving || isDeactivating} onClick={handleLogout} variant="ghost">
-                <LogOut className="h-4 w-4" />
-                {isLoggingOut ? t('profile.loggingOut') : t('profile.logout')}
-              </Button>
-            </div>
-          </div>
-        </Card>
+      <div className="grid gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <nav className="border-l border-[color:var(--border)] pl-3 text-sm">
+            {[
+              ['general', t('profile.nav.general')],
+              ['account', t('profile.nav.account')],
+              ['security', t('profile.nav.security')],
+              ['danger-zone', t('profile.nav.danger')],
+            ].map(([href, label]) => (
+              <a
+                className="theme-muted block border-l-2 border-transparent px-3 py-2 transition hover:border-[color:var(--border-strong)] hover:text-[color:var(--text-heading)]"
+                href={`#${href}`}
+                key={href}
+              >
+                {label}
+              </a>
+            ))}
+          </nav>
+        </aside>
 
-        {isEditing ? (
-          <div className="space-y-6">
-            <Card>
-              <p className="theme-heading text-sm font-semibold">{t('profile.editDetails')}</p>
-              <p className="theme-muted mt-1 text-xs">{t('profile.editDescription')}</p>
-
-              <form className="mt-4 space-y-4" onSubmit={handleSaveProfile}>
+        <main className="theme-surface-strong border border-[color:var(--border)] px-4 py-2 sm:px-6">
+          {isEditing ? (
+            <SettingsSection
+              description={t('profile.editDescription')}
+              id="general"
+              title={t('profile.editDetails')}
+            >
+              <form className="space-y-5" id="profile-details-form" onSubmit={handleSaveProfile}>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Input
+                    className={settingsInputClassName}
                     error={errors.firstName}
-                    icon={<UserRound className="h-4 w-4" />}
                     id="profile-first-name"
                     label={t('profileSetup.firstName')}
-                    onChange={(event) => setFirstName(event.target.value)}
+                    maxLength={35}
+                    onChange={(event) => {
+                      setFirstName(event.target.value)
+                      clearProfileError('firstName')
+                    }}
                     placeholder={t('profileSetup.firstNamePlaceholder')}
                     value={firstName}
                   />
                   <Input
+                    className={settingsInputClassName}
                     error={errors.lastName}
-                    icon={<UserRound className="h-4 w-4" />}
                     id="profile-last-name"
                     label={t('profileSetup.lastName')}
-                    onChange={(event) => setLastName(event.target.value)}
+                    maxLength={20}
+                    onChange={(event) => {
+                      setLastName(event.target.value)
+                      clearProfileError('lastName')
+                    }}
                     placeholder={t('profileSetup.lastNamePlaceholder')}
                     value={lastName}
                   />
                 </div>
 
                 <Input
+                  className={settingsInputClassName}
                   error={errors.headline}
-                  icon={<BriefcaseBusiness className="h-4 w-4" />}
                   id="profile-headline"
                   label={t('profileSetup.headline')}
-                  onChange={(event) => setHeadline(event.target.value)}
+                  maxLength={50}
+                  onChange={(event) => {
+                    setHeadline(event.target.value)
+                    clearProfileError('headline')
+                  }}
                   placeholder={t('profileSetup.headlinePlaceholder')}
                   value={headline}
                 />
 
-                <label className="flex flex-col gap-2">
-                  <span className="theme-heading text-sm font-semibold">{t('profileSetup.avatar')}</span>
-                  <div className="flex min-h-[104px] flex-col justify-between rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl bg-[color:var(--primary)] text-sm font-semibold text-white">
-                        {avatarUrl ? (
-                          <img alt={t('profileSetup.avatarPreviewAlt')} className="h-full w-full object-cover" src={avatarUrl} />
-                        ) : (
-                          user.initials
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="theme-heading truncate text-sm font-medium">
-                          {avatarFileName || (avatarUrl ? t('profileSetup.avatarReady') : t('profileSetup.avatarOptional'))}
-                        </p>
-                        <p className="theme-muted mt-1 text-xs">{t('profileSetup.avatarHelper')}</p>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex gap-2">
-                      <input
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarUpload}
-                        ref={fileInputRef}
-                        type="file"
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+                  <label className="flex w-full flex-col gap-2" htmlFor="profile-biography">
+                    <span className="theme-heading text-sm font-semibold">{t('profileSetup.biography')}</span>
+                    <span className="flex rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
+                      <textarea
+                        aria-invalid={Boolean(errors.biography)}
+                        className="theme-text theme-placeholder w-full resize-none bg-transparent text-sm leading-6 outline-none"
+                        id="profile-biography"
+                        maxLength={250}
+                        onChange={(event) => {
+                          setBiography(event.target.value)
+                          clearProfileError('biography')
+                        }}
+                        placeholder={t('profileSetup.biographyPlaceholder')}
+                        rows={6}
+                        value={biography}
                       />
-                      <Button
-                        className="flex-1"
-                        disabled={uploadingAvatar}
-                        onClick={() => fileInputRef.current?.click()}
-                        size="sm"
-                        type="button"
-                        variant="secondary"
-                      >
-                        {uploadingAvatar ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
-                        {uploadingAvatar ? t('profileSetup.uploadingAvatar') : t('profileSetup.selectAvatar')}
-                      </Button>
-                      {avatarUrl ? (
-                        <Button onClick={handleAvatarClear} size="sm" type="button" variant="ghost">
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  </div>
-                  {errors.avatar ? (
-                    <span className="text-xs text-[color:var(--danger)]">{errors.avatar}</span>
-                  ) : null}
-                </label>
-
-                <label className="flex w-full flex-col gap-2" htmlFor="profile-biography">
-                  <span className="theme-heading text-sm font-semibold">{t('profileSetup.biography')}</span>
-                  <span className="flex rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-3 transition focus-within:border-[color:var(--primary)] focus-within:ring-2 focus-within:ring-[color:var(--focus-ring)]">
-                    <textarea
-                      aria-invalid={Boolean(errors.biography)}
-                      className="theme-text theme-placeholder w-full resize-none bg-transparent text-sm leading-6 outline-none"
-                      id="profile-biography"
-                      onChange={(event) => setBiography(event.target.value)}
-                      placeholder={t('profileSetup.biographyPlaceholder')}
-                      rows={5}
-                      value={biography}
-                    />
-                  </span>
-                  {errors.biography ? (
-                    <span className="text-xs text-[color:var(--danger)]">{errors.biography}</span>
-                  ) : (
-                    <span className="theme-subtle text-xs">
-                      {t('profileSetup.biographyHelper', { count: biography.trim().length, max: 250 })}
                     </span>
-                  )}
-                </label>
+                    {errors.biography ? (
+                      <span className="text-xs text-[color:var(--danger)]">{errors.biography}</span>
+                    ) : (
+                      <span className="theme-subtle text-xs">
+                        {t('profileSetup.biographyHelper', { count: biography.trim().length, max: 250 })}
+                      </span>
+                    )}
+                  </label>
 
-                <div className="space-y-4 rounded-[24px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
-                  <div>
-                    <p className="theme-heading text-sm font-semibold">{t('profileSetup.socialLinks')}</p>
-                    <p className="theme-muted mt-1 text-xs">{t('profileSetup.socialLinksDescription')}</p>
-                  </div>
-                  <div className="grid gap-4 sm:grid-cols-2">
+                  <label className="flex flex-col gap-2">
+                    <span className="theme-heading text-sm font-semibold">{t('profileSetup.avatar')}</span>
+                    <div className="border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-[color:var(--primary)] text-sm font-semibold text-white">
+                          {avatarUrl ? (
+                            <img alt={t('profileSetup.avatarPreviewAlt')} className="h-full w-full object-cover" src={avatarUrl} />
+                          ) : (
+                            user.initials
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="theme-heading truncate text-sm font-medium">
+                            {avatarFileName || (avatarUrl ? t('profileSetup.avatarReady') : t('profileSetup.avatarOptional'))}
+                          </p>
+                          <p className="theme-muted mt-1 text-xs leading-5">{t('profileSetup.avatarHelper')}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex gap-2">
+                        <input
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleAvatarUpload}
+                          ref={fileInputRef}
+                          type="file"
+                        />
+                        <Button
+                          className="flex-1 rounded-md"
+                          disabled={uploadingAvatar}
+                          onClick={() => fileInputRef.current?.click()}
+                          size="sm"
+                          type="button"
+                          variant="secondary"
+                        >
+                          {uploadingAvatar ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+                          {uploadingAvatar ? t('profileSetup.uploadingAvatar') : t('profileSetup.selectAvatar')}
+                        </Button>
+                        {avatarUrl ? (
+                          <Button className="rounded-md" onClick={handleAvatarClear} size="sm" type="button" variant="ghost">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        ) : null}
+                      </div>
+                    </div>
+                    {errors.avatar ? (
+                      <span className="text-xs text-[color:var(--danger)]">{errors.avatar}</span>
+                    ) : null}
+                  </label>
+                </div>
+
+                <div className="border-t border-[color:var(--border)] pt-5">
+                  <p className="theme-heading text-sm font-semibold">{t('profileSetup.socialLinks')}</p>
+                  <p className="theme-muted mt-1 text-xs leading-5">{t('profileSetup.socialLinksDescription')}</p>
+                  <div className="mt-4 grid gap-4 md:grid-cols-3">
                     <Input
+                      className={settingsInputClassName}
                       error={errors.linkedin}
-                      icon={<LinkIcon className="h-4 w-4" />}
                       id="profile-linkedin"
                       label={t('profileSetup.linkedin')}
-                      onChange={(event) => setLinkedin(event.target.value)}
+                      onChange={(event) => {
+                        setLinkedin(event.target.value)
+                        clearProfileError('linkedin')
+                      }}
                       placeholder={t('profileSetup.socialPlaceholder')}
                       type="url"
                       value={linkedin}
                     />
                     <Input
+                      className={settingsInputClassName}
                       error={errors.github}
-                      icon={<Code2 className="h-4 w-4" />}
                       id="profile-github"
                       label={t('profileSetup.github')}
-                      onChange={(event) => setGithub(event.target.value)}
+                      onChange={(event) => {
+                        setGithub(event.target.value)
+                        clearProfileError('github')
+                      }}
                       placeholder={t('profileSetup.socialPlaceholder')}
                       type="url"
                       value={github}
                     />
+                    <Input
+                      className={settingsInputClassName}
+                      error={errors.website}
+                      id="profile-website"
+                      label={t('profileSetup.website')}
+                      onChange={(event) => {
+                        setWebsite(event.target.value)
+                        clearProfileError('website')
+                      }}
+                      placeholder={t('profileSetup.socialPlaceholder')}
+                      type="url"
+                      value={website}
+                    />
                   </div>
-                  <Input
-                    error={errors.website}
-                    icon={<Globe className="h-4 w-4" />}
-                    id="profile-website"
-                    label={t('profileSetup.website')}
-                    onChange={(event) => setWebsite(event.target.value)}
-                    placeholder={t('profileSetup.socialPlaceholder')}
-                    type="url"
-                    value={website}
-                  />
                 </div>
 
-                {feedback ? (
-                  <p className={`text-sm ${feedback.tone === 'success' ? 'theme-text' : 'text-[color:var(--danger)]'}`}>{feedback.message}</p>
-                ) : null}
-
-                <Button className="w-full" disabled={isSaving || isLoggingOut || isChangingPassword || uploadingAvatar} type="submit">
-                  {isSaving ? t('profile.savingChanges') : t('profile.saveChanges')}
-                </Button>
+                <div className="flex justify-end border-t border-[color:var(--border)] pt-5">
+                  <Button
+                    className="rounded-md"
+                    disabled={isSaving || isLoggingOut || isChangingPassword || isDeactivating || uploadingAvatar}
+                    type="submit"
+                  >
+                    {isSaving ? t('profile.savingChanges') : t('profile.saveChanges')}
+                  </Button>
+                </div>
               </form>
-            </Card>
+            </SettingsSection>
+          ) : (
+            <SettingsSection
+              description={t('profile.editDescription')}
+              id="general"
+              title={t('profile.nav.general')}
+            >
+              <dl>
+                <DefinitionRow label={t('profileSetup.firstName')} value={user.firstName || '-'} />
+                <DefinitionRow label={t('profileSetup.lastName')} value={user.lastName || '-'} />
+                <DefinitionRow label={t('profileSetup.headline')} value={user.headline || '-'} />
+                <DefinitionRow label={t('profile.about')} value={<span className="block whitespace-pre-wrap">{user.biography || '-'}</span>} />
+                <DefinitionRow
+                  label={t('profile.socialLinks')}
+                  value={socialEntries.length > 0 ? (
+                    <div className="space-y-2">
+                      {socialEntries.map(([label, url]) => (
+                        <a
+                          className="grid min-w-0 gap-1 border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2 text-sm transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] sm:grid-cols-[110px_minmax(0,1fr)]"
+                          href={url}
+                          key={label}
+                          rel="noreferrer"
+                          target="_blank"
+                        >
+                          <span className="theme-heading font-medium">{label}</span>
+                          <span className="theme-muted min-w-0 truncate">{url}</span>
+                        </a>
+                      ))}
+                    </div>
+                  ) : '-'}
+                />
+              </dl>
+            </SettingsSection>
+          )}
 
-            {renderPasswordCard()}
-            {renderDeactivateCard()}
-          </div>
-        ) : (
-          <div className="space-y-6">
-            <Card>
-              <p className="theme-heading text-sm font-semibold">{t('profile.about')}</p>
-              <p className="theme-muted mt-4 text-sm leading-7">{user.biography || '-'}</p>
-            </Card>
+          <SettingsSection
+            description={t('profile.accountDescription')}
+            id="account"
+            title={t('profile.account')}
+          >
+            <dl>
+              <DefinitionRow label={t('profile.email')} value={<span className="break-all">{user.email}</span>} />
+              <DefinitionRow label={t('profile.accountRole')} value={roleLabel} />
+              <DefinitionRow label={t('profile.accountStatus')} value={profileStatusLabel} />
+            </dl>
+          </SettingsSection>
 
-            <Card>
-              <p className="theme-heading text-sm font-semibold">{t('profile.socialLinks')}</p>
-              <div className="mt-4 space-y-3">
-                {socialEntries.length > 0 ? (
-                  socialEntries.map(([label, url]) => (
-                    <a
-                      key={label}
-                      className="theme-muted flex items-center gap-3 rounded-[18px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]"
-                      href={url}
-                      rel="noreferrer"
-                      target="_blank"
-                    >
-                      <span className="flex shrink-0 items-center gap-3">
-                        {getSocialIcon(label)}
-                        {label}
-                      </span>
-                      <span className="theme-subtle min-w-0 flex-1 truncate text-right">{url}</span>
-                    </a>
-                  ))
-                ) : (
-                  <div className="theme-muted rounded-[18px] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm">
-                    -
-                  </div>
-                )}
-              </div>
-            </Card>
-
-            {feedback ? (
-              <Card>
-                <p className={`text-sm ${feedback.tone === 'success' ? 'theme-text' : 'text-[color:var(--danger)]'}`}>{feedback.message}</p>
-              </Card>
-            ) : null}
-
-            {renderPasswordCard()}
-            {renderDeactivateCard()}
-          </div>
-        )}
-      </section>
+          {renderPasswordSection()}
+          {renderDeactivateSection()}
+        </main>
+      </div>
     </div>
   )
 }

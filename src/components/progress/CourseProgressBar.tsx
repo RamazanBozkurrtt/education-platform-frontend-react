@@ -24,7 +24,7 @@ const CourseProgressBar = ({
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-3 text-xs">
         <span className="theme-muted">
-          {language === 'tr' ? 'Ilerleme' : 'Progress'}
+          {language === 'tr' ? 'İlerleme' : 'Progress'}
           {lessonSummary ? ` (${lessonSummary})` : ''}
         </span>
         <span className="theme-heading font-medium">{Math.round(normalizedPercentage)}%</span>

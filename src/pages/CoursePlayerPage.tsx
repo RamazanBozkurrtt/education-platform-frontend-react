@@ -339,7 +339,7 @@ const CourseWatchPage = () => {
         <div className="mx-auto max-w-3xl space-y-5">
           <WatchPageBackButton label={t('common.backToCourse')} to={ROUTES.courseDetail(data.slug)} />
 
-          <section className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-6 py-8">
+          <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-6 py-8">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--text-subtle)]">{t('player.eyebrow')}</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[color:var(--text-heading)]">{t('player.lockedTitle')}</h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-[color:var(--text-muted)]">{t('player.lockedDescription')}</p>
@@ -365,13 +365,13 @@ const CourseWatchPage = () => {
   }
 
   const lessonEmptyMessage = lessons.length === 0
-    ? (language === 'tr' ? 'Bu kurs icin henuz ders eklenmemis.' : 'No lessons have been added for this course yet.')
+    ? (language === 'tr' ? 'Bu kurs için henüz ders eklenmemiş.' : 'No lessons have been added for this course yet.')
     : videoLoadState === 'missing' && activeLesson
-      ? (language === 'tr' ? 'Bu derse henuz video eklenmemis.' : 'No video has been added to this lesson yet.')
+      ? (language === 'tr' ? 'Bu derse henüz video eklenmemiş.' : 'No video has been added to this lesson yet.')
       : t('player.chooseLesson')
   const isFinalExamUnlocked = Boolean(courseProgressSummary && courseProgressSummary.overallPercentage >= 100)
   const finalExamLockedMessage = language === 'tr'
-    ? 'Final sinavini acmak icin tum dersleri bitirmen gerekiyor.'
+    ? 'Final sınavını açmak için tüm dersleri bitirmen gerekiyor.'
     : 'You need to complete all lessons before opening the final exam.'
   const playerProgressPercentage = courseProgressSummary?.overallPercentage ?? activeLessonProgress?.watchedPercentage ?? 0
   const showPlayerProgress = Boolean(courseProgressSummary || activeLessonProgress)
@@ -394,10 +394,8 @@ const CourseWatchPage = () => {
 
   return (
     <div className="theme-app relative min-h-screen overflow-hidden bg-[color:var(--bg)]">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_15%_0%,color-mix(in_srgb,var(--primary)_12%,transparent),transparent_35%),radial-gradient(circle_at_95%_8%,color-mix(in_srgb,var(--surface-soft)_92%,transparent),transparent_40%)]" />
-
       <div className="relative flex min-h-screen flex-col">
-        <header className="border-b border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface-strong)_78%,transparent)] backdrop-blur-md">
+        <header className="border-b border-[color:var(--border)] bg-[color:var(--surface-strong)]">
           <div className="mx-auto flex w-full max-w-[1740px] items-center justify-between gap-3 px-3 py-3 sm:px-4 lg:px-6">
             <WatchPageBackButton label={t('common.backToCourse')} to={ROUTES.courseDetail(data.slug)} />
 
@@ -406,12 +404,12 @@ const CourseWatchPage = () => {
 
               {showLessonCompletedFeedback ? (
                 <span className="hidden rounded-full border border-[color:var(--success)]/30 bg-[color:var(--surface-sky-haze)] px-3 py-1 text-xs font-medium text-[color:var(--success)] sm:inline-flex">
-                  {language === 'tr' ? 'Ders tamamlandi' : 'Lesson completed'}
+                  {language === 'tr' ? 'Ders tamamlandı' : 'Lesson completed'}
                 </span>
               ) : null}
 
               <button
-                aria-label={language === 'tr' ? 'Ders listesini ac veya kapat' : 'Toggle lesson list'}
+                aria-label={language === 'tr' ? 'Ders listesini aç veya kapat' : 'Toggle lesson list'}
                 className="hidden items-center gap-2 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2 text-sm font-medium text-[color:var(--text-heading)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] lg:inline-flex"
                 onClick={() => setIsLessonSidebarOpen((current) => !current)}
                 type="button"
@@ -421,7 +419,7 @@ const CourseWatchPage = () => {
               </button>
 
               <button
-                aria-label={language === 'tr' ? 'Ders listesini ac' : 'Open lesson list'}
+                aria-label={language === 'tr' ? 'Ders listesini aç' : 'Open lesson list'}
                 className="inline-flex items-center gap-2 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2 text-sm font-medium text-[color:var(--text-heading)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] lg:hidden"
                 onClick={() => setIsMobileSidebarOpen(true)}
                 type="button"
@@ -434,15 +432,15 @@ const CourseWatchPage = () => {
         </header>
 
         <main className="flex-1 px-3 pb-3 pt-3 sm:px-4 lg:px-6">
-          <div className="mx-auto flex h-full min-h-[calc(100vh-92px)] w-full max-w-[1740px] gap-3">
+          <div className="mx-auto flex h-full min-h-[calc(100vh-92px)] w-full max-w-[1740px] gap-2 lg:gap-3">
             <section className="min-w-0 flex-1">
               <div
                 className={cn(
-                  'flex h-full min-h-[460px] flex-col rounded-2xl border border-[color:var(--border)] bg-[color:color-mix(in_srgb,var(--surface-strong)_88%,transparent)] p-3 shadow-[0_22px_70px_rgba(4,12,21,0.20)] transition-[padding] sm:p-4 lg:p-5',
+                  'flex h-full min-h-[460px] flex-col rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-2 shadow-none transition-[padding] sm:p-3 lg:p-4',
                   isLessonSidebarOpen ? 'xl:pr-4' : 'xl:pr-5',
                 )}
               >
-                <div className="mb-4 flex flex-col gap-3 border-b border-[color:var(--border)] pb-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mb-3 flex flex-col gap-3 border-b border-[color:var(--border)] pb-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--text-subtle)]">
                       {language === 'tr' ? 'Kurs' : 'Course'}
@@ -469,6 +467,7 @@ const CourseWatchPage = () => {
                   <CourseVideoPlayer
                     emptyMessage={lessonEmptyMessage}
                     isSourceLoading={isVideoLoading}
+                    language={language}
                     onVideoEnded={handleVideoEnded}
                     onVideoError={handleVideoError}
                     onVideoLoadedMetadata={handleVideoLoadedMetadata}
@@ -495,9 +494,9 @@ const CourseWatchPage = () => {
               lessonProgressByLessonId={lessonProgressByLessonId}
               lessons={lessons}
               finalExamHint={language === 'tr'
-                ? (isFinalExamUnlocked ? 'Final sinavi baslatabilirsin.' : 'Final sinavi acmak icin tum dersleri tamamla.')
+                ? (isFinalExamUnlocked ? 'Final sınavını başlatabilirsin.' : 'Final sınavını açmak için tüm dersleri tamamla.')
                 : (isFinalExamUnlocked ? 'You can start the final exam now.' : 'Complete all lessons to unlock the final exam.')}
-              finalExamLabel={language === 'tr' ? 'Final sinavi' : 'Final exam'}
+              finalExamLabel={language === 'tr' ? 'Final sınavı' : 'Final exam'}
               isFinalExamLocked={!isFinalExamUnlocked}
               onLessonSelect={handleLessonSelect}
               onFinalExamSelect={handleFinalExamSelect}

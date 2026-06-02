@@ -70,7 +70,7 @@ const InstructorCourseCreatePage = () => {
   })
   const copy = language === 'tr'
     ? {
-      eyebrow: 'Egitmen kurs yonetimi',
+      eyebrow: 'Eğitmen kurs yönetimi',
       title: 'Yeni kurs olustur',
       description: 'Temel kurs bilgilerini kaydet, sonra ders ve video adimina gec.',
       titleLabel: 'Kurs basligi',
@@ -122,7 +122,7 @@ const InstructorCourseCreatePage = () => {
       validationTags: 'Ayni etiket birden fazla kez kullanilamaz.',
       validationTagsMax: `En fazla ${MAX_TAG_COUNT} etiket girilebilir.`,
       validationImage: 'Kurs gorseli PNG, JPG, JPEG, WEBP veya SVG formatinda olmalidir.',
-      invalidCategory: 'Secilen kategori gecersiz. Lutfen tekrar secin.',
+      invalidCategory: 'Seçilen kategori geçersiz. Lütfen tekrar seçin.',
       invalidLevel: 'Gecersiz kurs seviyesi secildi.',
       imageUploadFailed: 'Kurs olusturuldu fakat gorsel yuklenemedi. Varsayilan gorsel kullanilacak.',
     }

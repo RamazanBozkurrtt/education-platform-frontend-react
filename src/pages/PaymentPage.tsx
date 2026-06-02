@@ -337,32 +337,32 @@ const PaymentPage = () => {
   const hasItems = hasCartIds && items.length > 0
   const canCheckout = hasItems && !isResolvingItems
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
-  const freeLabel = language === 'tr' ? 'Ucretsiz' : 'Free'
+  const freeLabel = language === 'tr' ? 'Ücretsiz' : 'Free'
   const summaryCurrency = items[0]?.course.currency ?? 'TRY'
   const paymentRequiredMessage = language === 'tr'
-    ? 'Bu kurs icin once basarili odeme gerekli.'
+    ? 'Bu kurs için önce başarılı ödeme gerekli.'
     : 'You need to complete payment before enrolling in this course.'
   const paymentFailedMessage = language === 'tr'
-    ? 'Odeme islemi tamamlanamadi. Lutfen tekrar deneyin.'
+    ? 'Ödeme işlemi tamamlanamadı. Lütfen tekrar deneyin.'
     : 'Payment could not be completed. Please try again.'
   const paymentDeclinedFallbackReason = language === 'tr'
-    ? 'Odeme saglayici islemi onaylamadi.'
+    ? 'Ödeme sağlayıcı işlemi onaylamadı.'
     : 'The payment provider declined the transaction.'
   const enrollmentFailedMessage = language === 'tr'
-    ? 'Kurs kaydi olusturulamadi. Lutfen tekrar deneyin.'
+    ? 'Kurs kaydı oluşturulamadı. Lütfen tekrar deneyin.'
     : 'Enrollment could not be created. Please try again.'
   const enrollmentAfterPaymentFailedMessage = language === 'tr'
-    ? 'Odeme alindi ancak kayit islemi tamamlanamadi. Lutfen tekrar deneyin veya destek ile iletisime gecin.'
+    ? 'Ödeme alındı ancak kayıt işlemi tamamlanamadı. Lütfen tekrar deneyin veya destek ile iletişime geçin.'
     : 'Payment was captured but enrollment could not be completed. Please try again or contact support.'
-  const paymentPreparingMessage = language === 'tr' ? 'Odeme hazirlaniyor...' : 'Preparing payment...'
-  const paymentConfirmingMessage = language === 'tr' ? 'Odeme dogrulaniyor...' : 'Confirming payment...'
-  const enrollmentCreatingMessage = language === 'tr' ? 'Kayit olusturuluyor...' : 'Creating enrollment...'
+  const paymentPreparingMessage = language === 'tr' ? 'Ödeme hazırlanıyor...' : 'Preparing payment...'
+  const paymentConfirmingMessage = language === 'tr' ? 'Ödeme doğrulanıyor...' : 'Confirming payment...'
+  const enrollmentCreatingMessage = language === 'tr' ? 'Kayıt oluşturuluyor...' : 'Creating enrollment...'
   const cardSectionTitle = language === 'tr' ? 'Kart Bilgileri' : 'Card details'
   const cardSectionHint = language === 'tr'
     ? 'Bu alanlar gorsel ve dogrulama amaclidir, PSP tarafina gonderilmez.'
     : 'These fields are for UI and validation purposes only and are not sent to PSP.'
   const successMessage = language === 'tr'
-    ? 'Odeme basarili. Kurs kaydiniz olusturuldu.'
+    ? 'Ödeme başarılı. Kurs kaydınız oluşturuldu.'
     : 'Payment succeeded. Your enrollment has been created.'
   const actionLabel = language === 'tr' ? 'Islem' : 'Action'
   const webhookSecretFromEnv = toNonEmptyString(import.meta.env.VITE_PAYMENT_GATEWAY_WEBHOOK_SECRET)
@@ -708,10 +708,10 @@ const PaymentPage = () => {
                     <CreditCard className="h-4 w-4 text-[color:var(--primary)]" />
                   </span>
                   <div>
-                    <p className="theme-heading text-sm font-semibold">{language === 'tr' ? 'Odeme Ozeti' : 'Payment summary'}</p>
+                    <p className="theme-heading text-sm font-semibold">{language === 'tr' ? 'Ödeme Özeti' : 'Payment summary'}</p>
                     <p className="theme-muted mt-1 text-sm leading-6">
                       {language === 'tr'
-                        ? 'Odeme olusturma ve dogrulama adimlari ayri olarak calisir.'
+                        ? 'Ödeme oluşturma ve doğrulama adımları ayrı olarak çalışır.'
                         : 'Payment creation and confirmation are handled as separate steps.'}
                     </p>
                   </div>
@@ -725,7 +725,7 @@ const PaymentPage = () => {
               </div>
 
               <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
-                <p className="theme-heading text-sm font-semibold">{language === 'tr' ? 'Odeme Bilgileri' : 'Payment details'}</p>
+                <p className="theme-heading text-sm font-semibold">{language === 'tr' ? 'Ödeme Bilgileri' : 'Payment details'}</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <label className="flex flex-col gap-2">
                     <span className="theme-heading text-sm font-semibold">Provider</span>
@@ -741,7 +741,7 @@ const PaymentPage = () => {
                   </label>
 
                   <label className="flex flex-col gap-2">
-                    <span className="theme-heading text-sm font-semibold">{language === 'tr' ? 'Odeme Yontemi' : 'Payment method'}</span>
+                    <span className="theme-heading text-sm font-semibold">{language === 'tr' ? 'Ödeme Yöntemi' : 'Payment method'}</span>
                     <input
                       className="h-12 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 text-sm theme-text"
                       readOnly
@@ -857,7 +857,7 @@ const PaymentPage = () => {
                           <StatusBadge tone={item.course.price > 0 ? 'warning' : 'success'}>
                             {item.course.price > 0
                               ? (language === 'tr' ? 'Ucretli kurs' : 'Paid course')
-                              : (language === 'tr' ? 'Ucretsiz kurs' : 'Free course')}
+                              : (language === 'tr' ? 'Ücretsiz kurs' : 'Free course')}
                           </StatusBadge>
                         </td>
                       </tr>
@@ -886,7 +886,7 @@ const PaymentPage = () => {
               ) : null}
 
               <Button className="w-full justify-center" disabled={isSubmitting || !canCheckout} onClick={() => void handleCheckout()} size="lg">
-                {progressMessage ?? (language === 'tr' ? 'Odemeyi Tamamla ve Kursa Katil' : 'Complete Payment and Join Course')}
+                {progressMessage ?? (language === 'tr' ? 'Ödemeyi Tamamla ve Kursa Katıl' : 'Complete Payment and Join Course')}
               </Button>
               </div>
             ) : (
@@ -897,9 +897,9 @@ const PaymentPage = () => {
                   </Link>
                 )}
                 description={language === 'tr'
-                  ? 'Sepetindeki kurslarin detaylari yuklenemedi. Lutfen sepete donup tekrar dene.'
+                  ? 'Sepetindeki kursların detayları yüklenemedi. Lütfen sepete dönüp tekrar dene.'
                   : 'Cart course details could not be loaded. Please go back to the cart and try again.'}
-                title={language === 'tr' ? 'Odeme detaylari yuklenemedi' : 'Checkout details unavailable'}
+                title={language === 'tr' ? 'Ödeme detayları yüklenemedi' : 'Checkout details unavailable'}
               />
             )
           ) : (
@@ -948,12 +948,12 @@ const PaymentPage = () => {
           : 'Choose the demo result. Approve maps to SUCCEEDED, decline maps to FAILED.'}
         onClose={() => resolvePaymentDecision(false)}
         open={Boolean(pendingDecisionCourseTitle)}
-        title={language === 'tr' ? 'Odeme Sonucu Simulasyonu' : 'Payment Result Simulation'}
+        title={language === 'tr' ? 'Ödeme Sonucu Simülasyonu' : 'Payment Result Simulation'}
       >
         <div className="space-y-4">
           <p className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm theme-heading">
             {language === 'tr'
-              ? `"${pendingDecisionCourseTitle ?? ''}" icin odeme sonucunu secin.`
+              ? `"${pendingDecisionCourseTitle ?? ''}" için ödeme sonucunu seçin.`
               : `Choose a payment outcome for "${pendingDecisionCourseTitle ?? ''}".`}
           </p>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -980,7 +980,7 @@ const PaymentPage = () => {
         description={language === 'tr' ? 'Secilen kurslariniz aktif hale getirildi.' : 'Your selected courses are now active.'}
         onClose={() => setIsSuccessModalOpen(false)}
         open={isSuccessModalOpen}
-        title={language === 'tr' ? 'Odeme Basarili' : 'Payment successful'}
+        title={language === 'tr' ? 'Ödeme Başarılı' : 'Payment successful'}
       >
         <div className="space-y-4">
           <p className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm theme-heading">

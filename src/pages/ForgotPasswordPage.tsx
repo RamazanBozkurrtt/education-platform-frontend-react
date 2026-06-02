@@ -66,7 +66,7 @@ const ForgotPasswordPage = () => {
   return (
     <div className="mx-auto flex max-w-sm flex-col">
       <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">{t('auth.forgotPassword.eyebrow')}</p>
-      <h2 className="theme-heading mt-3 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">{t('auth.forgotPassword.title')}</h2>
+      <h2 className="theme-heading mt-3 text-2xl font-semibold sm:text-3xl">{t('auth.forgotPassword.title')}</h2>
       <p className="theme-muted mt-3 text-sm leading-6">
         {t('auth.forgotPassword.description')}
       </p>
@@ -86,12 +86,12 @@ const ForgotPasswordPage = () => {
           value={email}
         />
         {formError ? (
-          <div className="rounded-2xl border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
+          <div className="rounded-md border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
             {formError}
           </div>
         ) : null}
         {successMessage ? (
-          <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] px-4 py-3 text-sm theme-heading">
+          <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] px-4 py-3 text-sm theme-heading">
             {successMessage}
           </div>
         ) : null}

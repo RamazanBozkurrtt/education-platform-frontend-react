@@ -16,7 +16,7 @@ const DashboardPageHeader = ({ actions, className, description, eyebrow, title }
         {eyebrow ? (
           <p className="theme-subtle text-[11px] font-semibold uppercase tracking-[0.16em]">{eyebrow}</p>
         ) : null}
-        <h1 className="theme-heading text-2xl font-semibold tracking-tight md:text-3xl">{title}</h1>
+        <h1 className="theme-heading text-2xl font-semibold md:text-3xl">{title}</h1>
         <p className="theme-muted text-sm leading-6">{description}</p>
       </div>
       {actions ? <div className="flex w-full flex-wrap items-center gap-2.5 lg:w-auto lg:justify-end">{actions}</div> : null}

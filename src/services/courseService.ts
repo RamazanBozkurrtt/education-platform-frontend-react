@@ -2,6 +2,7 @@ import api from './api'
 import { API_ENDPOINTS } from './endpoints'
 import { extractCourseCollection, mapBackendCourseToCourse } from './courseMappers'
 import { resolveLessonDurationLabel } from '../utils/duration'
+import { parseStudentCount } from '../utils/helpers'
 import type {
   ApiEnvelope,
   AppLanguage,
@@ -370,8 +371,10 @@ const createDashboardOverview = (courses: Course[], language: AppLanguage): Dash
     totalDurationSeconds: null,
     lessons: 0,
     progress: 0,
+    studentsCount: 0,
     students: '0',
     rating: 0,
+    ratingCount: 0,
     price: 0,
     accent: 'from-cyan-500/30 via-sky-500/10 to-transparent',
     summary: language === 'tr' ? 'Henüz kayıtlı kursunuz yok.' : 'You do not have any enrolled courses yet.',
@@ -387,17 +390,12 @@ const createDashboardOverview = (courses: Course[], language: AppLanguage): Dash
   }
   const totalLessons = courses.reduce((sum, course) => sum + course.lessons, 0)
   const totalLearners = courses.reduce((sum, course) => {
-    const asNumber = Number(course.students.replace(/[^0-9.]/g, ''))
-
-    if (Number.isNaN(asNumber)) {
-      return sum
-    }
-
-    const multiplier = course.students.toLocaleLowerCase('en-US').includes('k') ? 1000 : 1
-    return sum + (asNumber * multiplier)
+    const studentCount = course.studentsCount ?? parseStudentCount(course.students)
+    return sum + (studentCount ?? 0)
   }, 0)
-  const averageRating = hasCourses
-    ? courses.reduce((sum, course) => sum + course.rating, 0) / courses.length
+  const ratedCourses = courses.filter((course) => (course.ratingCount ?? 0) > 0 || course.rating > 0)
+  const averageRating = ratedCourses.length > 0
+    ? ratedCourses.reduce((sum, course) => sum + course.rating, 0) / ratedCourses.length
     : 0
 
   return {
@@ -422,7 +420,7 @@ const createDashboardOverview = (courses: Course[], language: AppLanguage): Dash
       },
       {
         label: language === 'tr' ? 'Ortalama puan' : 'Average rating',
-        value: averageRating.toFixed(1),
+        value: ratedCourses.length > 0 ? averageRating.toFixed(1) : (language === 'tr' ? 'Yok' : 'N/A'),
         progress: Math.min(100, Math.round((averageRating / 5) * 100)),
         tone: 'indigo',
       },

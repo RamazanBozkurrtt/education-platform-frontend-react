@@ -129,10 +129,10 @@ const INITIAL_COURSE_FORM: CourseFormState = {
 }
 
 const getCourseCategoryNotFoundMessage = (isTurkish: boolean) =>
-  isTurkish ? 'Secilen kategori gecersiz. Lutfen tekrar secin.' : 'The selected category is invalid. Please choose again.'
+  isTurkish ? 'Seçilen kategori geçersiz. Lütfen tekrar seçin.' : 'The selected category is invalid. Please choose again.'
 
 const getCourseLevelNotFoundMessage = (isTurkish: boolean) =>
-  isTurkish ? 'Gecersiz kurs seviyesi secildi.' : 'The selected course level is invalid.'
+  isTurkish ? 'Geçersiz kurs seviyesi seçildi.' : 'The selected course level is invalid.'
 const normalizeCategoryIds = (categoryIds: string[]) =>
   [...new Set(
     categoryIds
@@ -321,7 +321,7 @@ const InstructorCourseVideoUploadPage = () => {
 
   const validateSelectedFile = (file: File) => {
     if (!isMp4File(file)) {
-      return txt('Sadece MP4 formatindaki videolar yuklenebilir.', 'Only MP4 format videos can be uploaded.')
+      return txt('Sadece MP4 formatındaki videolar yüklenebilir.', 'Only MP4 format videos can be uploaded.')
     }
 
     if (file.size > MAX_VIDEO_SIZE_BYTES) {
@@ -490,7 +490,7 @@ const InstructorCourseVideoUploadPage = () => {
 
     if (!isAllowedImageFile(file)) {
       setSelectedCourseImageFile(null)
-      setCourseFormErrors((current) => ({ ...current, image: txt('Kurs gorseli PNG, JPG, JPEG, WEBP veya SVG formatinda olmalidir.', 'Course image must be PNG, JPG, JPEG, WEBP, or SVG format.') }))
+      setCourseFormErrors((current) => ({ ...current, image: txt('Kurs görseli PNG, JPG, JPEG, WEBP veya SVG formatında olmalıdır.', 'Course image must be PNG, JPG, JPEG, WEBP, or SVG format.') }))
       return
     }
 
@@ -529,35 +529,35 @@ const InstructorCourseVideoUploadPage = () => {
     const nextErrors: CourseFormErrors = {}
 
     if (!title) {
-      nextErrors.title = txt('Kurs basligi zorunludur.', 'Course title is required.')
+      nextErrors.title = txt('Kurs başlığı zorunludur.', 'Course title is required.')
     }
 
     if (!description) {
-      nextErrors.description = txt('Kurs aciklamasi zorunludur.', 'Course description is required.')
+      nextErrors.description = txt('Kurs açıklaması zorunludur.', 'Course description is required.')
     }
 
     if (!levelId) {
-      nextErrors.levelId = txt('Kurs seviyesi secimi zorunludur.', 'Course level selection is required.')
+      nextErrors.levelId = txt('Kurs seviyesi seçimi zorunludur.', 'Course level selection is required.')
     }
 
     if (categoryIds.length < MIN_CATEGORY_COUNT) {
       nextErrors.categoryIds = isTurkish
-        ? `En az ${MIN_CATEGORY_COUNT} kategori secmelisin.`
+        ? `En az ${MIN_CATEGORY_COUNT} kategori seçmelisin.`
         : `You must select at least ${MIN_CATEGORY_COUNT} category.`
     }
 
     if (categoryIds.length > MAX_CATEGORY_COUNT) {
       nextErrors.categoryIds = isTurkish
-        ? `En fazla ${MAX_CATEGORY_COUNT} kategori secebilirsin.`
+        ? `En fazla ${MAX_CATEGORY_COUNT} kategori seçebilirsin.`
         : `You can select at most ${MAX_CATEGORY_COUNT} categories.`
     }
 
     if (!Number.isFinite(price) || price < 0) {
-      nextErrors.price = txt('Fiyat 0 veya daha buyuk bir sayi olmalidir.', 'Price must be a number greater than or equal to 0.')
+      nextErrors.price = txt('Fiyat 0 veya daha büyük bir sayı olmalıdır.', 'Price must be a number greater than or equal to 0.')
     }
 
     if (learningOutcomes.length !== LEARNING_OUTCOME_COUNT) {
-      nextErrors.learningOutcomes = txt('Tam olarak 4 ogrenim ciktisi doldurulmalidir.', 'All 4 learning outcomes must be filled.')
+      nextErrors.learningOutcomes = txt('Tam olarak 4 öğrenim çıktısı doldurulmalıdır.', 'All 4 learning outcomes must be filled.')
     }
 
     if (tags.length === 0) {
@@ -565,14 +565,14 @@ const InstructorCourseVideoUploadPage = () => {
     }
 
     if (selectedCourseImageFile && !isAllowedImageFile(selectedCourseImageFile)) {
-      nextErrors.image = txt('Kurs gorseli PNG, JPG, JPEG, WEBP veya SVG formatinda olmalidir.', 'Course image must be PNG, JPG, JPEG, WEBP, or SVG format.')
+      nextErrors.image = txt('Kurs görseli PNG, JPG, JPEG, WEBP veya SVG formatında olmalıdır.', 'Course image must be PNG, JPG, JPEG, WEBP, or SVG format.')
     }
 
     if (Object.keys(nextErrors).length > 0) {
       setCourseFormErrors(nextErrors)
       setMessage({
         type: 'error',
-        text: Object.values(nextErrors)[0] ?? txt('Lutfen form alanlarini kontrol et.', 'Please check the form fields.'),
+        text: Object.values(nextErrors)[0] ?? txt('Lütfen form alanlarını kontrol et.', 'Please check the form fields.'),
       })
       return
     }
@@ -598,7 +598,7 @@ const InstructorCourseVideoUploadPage = () => {
         try {
           await instructorCourseService.uploadCourseImage(courseId, selectedCourseImageFile)
         } catch (uploadError: unknown) {
-          imageUploadFailure = extractErrorMessage(uploadError, txt('Kurs gorseli guncellenemedi.', 'Course image could not be updated.'))
+          imageUploadFailure = extractErrorMessage(uploadError, txt('Kurs görseli güncellenemedi.', 'Course image could not be updated.'))
         }
       }
 
@@ -607,11 +607,11 @@ const InstructorCourseVideoUploadPage = () => {
       if (imageUploadFailure) {
         setCourseFormErrors((current) => ({
           ...current,
-          image: imageUploadFailure?.text ?? txt('Kurs gorseli guncellenemedi.', 'Course image could not be updated.'),
+          image: imageUploadFailure?.text ?? txt('Kurs görseli güncellenemedi.', 'Course image could not be updated.'),
         }))
         setMessage({
           type: 'error',
-          text: txt('Kurs bilgileri guncellendi fakat kurs gorseli yuklenemedi.', 'Course details were updated but the course image could not be uploaded.'),
+          text: txt('Kurs bilgileri güncellendi fakat kurs görseli yüklenemedi.', 'Course details were updated but the course image could not be uploaded.'),
           details: imageUploadFailure.details.length > 0 ? imageUploadFailure.details : [imageUploadFailure.text],
         })
       } else {
@@ -619,7 +619,7 @@ const InstructorCourseVideoUploadPage = () => {
         setIsCourseEditOpen(false)
         setMessage({
           type: 'success',
-          text: txt('Kurs bilgileri basariyla guncellendi.', 'Course details updated successfully.'),
+          text: txt('Kurs bilgileri başarıyla güncellendi.', 'Course details updated successfully.'),
         })
       }
     } catch (updateError: unknown) {
@@ -659,7 +659,7 @@ const InstructorCourseVideoUploadPage = () => {
         setCourseFormErrors((current) => ({ ...current, ...serverErrors }))
       }
 
-      const resolvedError = extractErrorMessage(updateError, txt('Kurs guncellenirken bir sorun olustu.', 'An issue occurred while updating the course.'))
+      const resolvedError = extractErrorMessage(updateError, txt('Kurs güncellenirken bir sorun oluştu.', 'An issue occurred while updating the course.'))
       setMessage({
         type: 'error',
         text: hasServerFieldErrors
@@ -677,7 +677,7 @@ const InstructorCourseVideoUploadPage = () => {
       return
     }
 
-    const confirmed = window.confirm(txt('Bu kursu tamamen silmek istedigine emin misin? Bu islem geri alinamaz.', 'Are you sure you want to permanently delete this course? This action cannot be undone.'))
+    const confirmed = window.confirm(txt('Bu kursu tamamen silmek istediğine emin misin? Bu işlem geri alınamaz.', 'Are you sure you want to permanently delete this course? This action cannot be undone.'))
 
     if (!confirmed) {
       return
@@ -812,10 +812,10 @@ const InstructorCourseVideoUploadPage = () => {
       setExpandedLessonId(null)
       setMessage({
         type: 'success',
-        text: isTurkish ? `"${title}" dersi guncellendi.` : `"${title}" lesson updated.`,
+        text: isTurkish ? `"${title}" dersi güncellendi.` : `"${title}" lesson updated.`,
       })
     } catch (updateError: unknown) {
-      const resolvedError = extractErrorMessage(updateError, txt('Ders guncellenirken bir sorun olustu.', 'An issue occurred while updating the lesson.'))
+      const resolvedError = extractErrorMessage(updateError, txt('Ders güncellenirken bir sorun oluştu.', 'An issue occurred while updating the lesson.'))
       setMessage({
         type: 'error',
         text: resolvedError.text,
@@ -831,7 +831,7 @@ const InstructorCourseVideoUploadPage = () => {
       return
     }
 
-    const confirmed = window.confirm(txt('Bu dersi silmek istedigine emin misin? Derse ait video da silinir.', 'Are you sure you want to delete this lesson? Its video will also be deleted.'))
+    const confirmed = window.confirm(txt('Bu dersi silmek istediğine emin misin? Derse ait video da silinir.', 'Are you sure you want to delete this lesson? Its video will also be deleted.'))
 
     if (!confirmed) {
       return
@@ -951,7 +951,7 @@ const InstructorCourseVideoUploadPage = () => {
     if (!selectedFile) {
       setMessage({
         type: 'error',
-        text: txt('Lutfen once bir video dosyasi secin.', 'Please select a video file first.'),
+        text: txt('Lütfen önce bir video dosyası seçin.', 'Please select a video file first.'),
       })
       return
     }
@@ -996,10 +996,10 @@ const InstructorCourseVideoUploadPage = () => {
       setExpandedLessonId(null)
       setMessage({
         type: 'success',
-        text: txt('Video basariyla yuklendi.', 'Video uploaded successfully.'),
+        text: txt('Video başarıyla yüklendi.', 'Video uploaded successfully.'),
       })
     } catch (uploadError: unknown) {
-      const resolvedError = extractErrorMessage(uploadError, txt('Video yuklenirken bir sorun olustu.', 'An issue occurred while uploading the video.'))
+      const resolvedError = extractErrorMessage(uploadError, txt('Video yüklenirken bir sorun oluştu.', 'An issue occurred while uploading the video.'))
       setMessage({
         type: 'error',
         text: resolvedError.text,
@@ -1015,7 +1015,7 @@ const InstructorCourseVideoUploadPage = () => {
       return
     }
 
-    const confirmed = window.confirm(txt('Bu videoyu silmek istedigine emin misin?', 'Are you sure you want to delete this video?'))
+    const confirmed = window.confirm(txt('Bu videoyu silmek istediğine emin misin?', 'Are you sure you want to delete this video?'))
 
     if (!confirmed) {
       return
@@ -1085,7 +1085,7 @@ const InstructorCourseVideoUploadPage = () => {
         [lesson.id]: url,
       }))
     } catch (previewError: unknown) {
-      const resolvedError = extractErrorMessage(previewError, txt('Video onizlemesi yuklenemedi.', 'Video preview could not be loaded.'))
+      const resolvedError = extractErrorMessage(previewError, txt('Video önizlemesi yüklenemedi.', 'Video preview could not be loaded.'))
       setPreviewErrorsByLesson((current) => ({
         ...current,
         [lesson.id]: resolvedError.text,
@@ -1121,7 +1121,7 @@ const InstructorCourseVideoUploadPage = () => {
   }
 
   if (isLoading || !courseDetail) {
-    return <Loader label={txt('Kurs detaylari yukleniyor...', 'Loading course details...')} />
+    return <Loader label={txt('Kurs detayları yükleniyor...', 'Loading course details...')} />
   }
 
   const isPublished = courseDetail.status === 'PUBLISHED'
@@ -1138,7 +1138,7 @@ const InstructorCourseVideoUploadPage = () => {
       .filter((categoryId) => !courseCategories.some((item) => item.id === categoryId))
       .map((categoryId) => ({
         id: categoryId,
-        categoryName: isTurkish ? `Mevcut degil: ${categoryId}` : `Not available: ${categoryId}`,
+        categoryName: isTurkish ? `Mevcut değil: ${categoryId}` : `Not available: ${categoryId}`,
       })),
   ]
   const levelOptions = [
@@ -1165,7 +1165,7 @@ const InstructorCourseVideoUploadPage = () => {
     {
       id: 'course-info',
       title: txt('2. Kurs bilgileri', '2. Course details'),
-      description: txt('Baslik, aciklama, fiyat ve kategorileri guncelle.', 'Update title, description, price, and categories.'),
+      description: txt('Başlık, açıklama, fiyat ve kategorileri güncelle.', 'Update title, description, price, and categories.'),
     },
     {
       id: 'add-lesson',
@@ -1179,8 +1179,8 @@ const InstructorCourseVideoUploadPage = () => {
     },
     {
       id: 'final-exam',
-      title: txt('5. Final sinavi', '5. Final exam'),
-      description: txt('Final sinavini olustur, kaydet ve soru havuzunu yonet.', 'Create and save the final exam, then manage the question pool.'),
+      title: txt('5. Final sınavı', '5. Final exam'),
+      description: txt('Final sınavını oluştur, kaydet ve soru havuzunu yönet.', 'Create and save the final exam, then manage the question pool.'),
     },
   ] as const
 
@@ -1188,7 +1188,7 @@ const InstructorCourseVideoUploadPage = () => {
     <div className="space-y-7">
       <PageHeader
         description={txt(
-          'Akisi adim adim takip ederek kurs ayarlarini, ders planini ve video yayinini tek yerden yonet.',
+          'Akışı adım adım takip ederek kurs ayarlarını, ders planını ve video yayınını tek yerden yönet.',
           'Follow the workflow step by step and manage course settings, lesson plans, and video publishing from one place.',
         )}
         eyebrow={txt('Ders ve video yonetimi', 'Lesson and video management')}
@@ -1197,7 +1197,7 @@ const InstructorCourseVideoUploadPage = () => {
 
       <Card className="border-[color:var(--border-strong)] bg-[color:var(--surface-strong)]">
         <SectionHeader
-          description={txt('Ilk bakista kursun yayin hazirligini gor.', 'See course publishing readiness at a glance.')}
+          description={txt('İlk bakışta kursun yayın hazırlığını gör.', 'See course publishing readiness at a glance.')}
           title={txt('Yonetim ozeti', 'Management summary')}
         />
         <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -1211,11 +1211,11 @@ const InstructorCourseVideoUploadPage = () => {
             </div>
           </div>
           <div className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 text-center">
-            <p className="theme-subtle text-xs uppercase tracking-[0.12em]">{txt('Sure bilgisi', 'Duration info')}</p>
+            <p className="theme-subtle text-xs uppercase tracking-[0.12em]">{txt('Süre bilgisi', 'Duration info')}</p>
             <p className="theme-heading mt-2 text-lg font-semibold">%{durationCoverageRate}</p>
             <p className="theme-muted mt-1 text-sm">
               {isTurkish
-                ? `${lessonsWithDuration} / ${totalLessons} derste sure hazir`
+                ? `${lessonsWithDuration} / ${totalLessons} derste süre hazır`
                 : `Duration ready in ${lessonsWithDuration} / ${totalLessons} lessons`}
             </p>
           </div>
@@ -1232,7 +1232,7 @@ const InstructorCourseVideoUploadPage = () => {
         <div className="mt-4 rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3 text-center">
           <p className="theme-text text-sm">
             {hasDraftGaps
-              ? txt('Sonraki adim: Eksik ders veya video alanlarini tamamlayip kursu yayina alin.', 'Next step: Complete missing lesson or video items, then publish the course.')
+              ? txt('Sonraki adım: Eksik ders veya video alanlarını tamamlayıp kursu yayına alın.', 'Next step: Complete missing lesson or video items, then publish the course.')
               : txt('Kurs yapisi hazir gorunuyor. Dilersen yayina alip ogrenci erisimini acabilirsin.', 'Course structure looks ready. You can publish and open learner access.')}
           </p>
         </div>
@@ -1240,8 +1240,8 @@ const InstructorCourseVideoUploadPage = () => {
 
       <Card className="border-[color:var(--border-strong)] bg-[color:var(--surface-strong)]">
         <SectionHeader
-          description={txt('Paneldeki adimlari sirayla takip ederek kursu yayina ve final sinavina hazirlayin.', 'Follow the steps in order to prepare the course for publishing and final exam.')}
-          title={txt('Yonetim adimlari', 'Management steps')}
+          description={txt('Paneldeki adımları sırayla takip ederek kursu yayına ve final sınavına hazırlayın.', 'Follow the steps in order to prepare the course for publishing and final exam.')}
+          title={txt('Yönetim adımları', 'Management steps')}
         />
         <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {workflowSteps.map((step) => (
@@ -1284,7 +1284,7 @@ const InstructorCourseVideoUploadPage = () => {
                 onClick={() => setIsUnpublishConfirmOpen(true)}
                 variant="ghost"
               >
-                {unpublishingCourse ? txt('Kaldiriliyor...', 'Unpublishing...') : txt('Kursu yayindan kaldir', 'Unpublish course')}
+                {unpublishingCourse ? txt('Kaldırılıyor...', 'Unpublishing...') : txt('Kursu yayindan kaldir', 'Unpublish course')}
               </Button>
             ) : (
               <Button
@@ -1302,7 +1302,7 @@ const InstructorCourseVideoUploadPage = () => {
       <Card className="border-l-4 border-l-[color:var(--border-strong)]" id="course-info">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <SectionHeader
-            description={txt('Baslik, aciklama, fiyat, kategori ve ogrenim ciktisi gibi temel bilgileri duzenle.', 'Edit core details such as title, description, price, category, and learning outcomes.')}
+            description={txt('Başlık, açıklama, fiyat, kategori ve öğrenim çıktısı gibi temel bilgileri düzenle.', 'Edit core details such as title, description, price, category, and learning outcomes.')}
             title={txt('2. Kurs bilgileri', '2. Course details')}
           />
           <div className="flex flex-wrap items-center gap-2">
@@ -1311,7 +1311,7 @@ const InstructorCourseVideoUploadPage = () => {
               type="button"
               variant="secondary"
             >
-              {isCourseEditOpen ? txt('Guncellemeyi kapat', 'Close edit mode') : txt('Guncelle', 'Edit')}
+              {isCourseEditOpen ? txt('Güncellemeyi kapat', 'Close edit mode') : txt('Güncelle', 'Edit')}
             </Button>
             <Button
               className="border-[color:var(--border)] hover:border-[color:var(--border-strong)]"
@@ -1364,18 +1364,18 @@ const InstructorCourseVideoUploadPage = () => {
                 {courseFormErrors.price ? <span className="text-xs text-[color:var(--danger)]">{courseFormErrors.price}</span> : null}
               </label>
               <CourseLevelSelector
-                emptyStateText={txt('Secim icin uygun seviye bulunamadi.', 'No levels are available for selection.')}
+                emptyStateText={txt('Seçim için uygun seviye bulunamadı.', 'No levels are available for selection.')}
                 errorMessage={courseFormErrors.levelId}
                 hasLoadError={Boolean(levelsError)}
-                helperText={txt('Kurs seviyesi secimi zorunludur.', 'Course level selection is required.')}
+                helperText={txt('Kurs seviyesi seçimi zorunludur.', 'Course level selection is required.')}
                 label={txt('Seviye', 'Level')}
                 levels={levelOptions}
                 loadFailedText={txt('Seviye listesi alinamadi.', 'Level list could not be loaded.')}
                 loading={levelsLoading}
-                loadingText={txt('Seviyeler yukleniyor...', 'Loading levels...')}
+                loadingText={txt('Seviyeler yükleniyor...', 'Loading levels...')}
                 onChange={handleLevelIdChange}
                 onRetry={() => void refetchLevels()}
-                placeholder={txt('Seviye secin', 'Select level')}
+                placeholder={txt('Seviye seçin', 'Select level')}
                 retryLabel={txt('Tekrar yukle', 'Retry')}
                 selectedId={courseForm.levelId}
               />
@@ -1383,23 +1383,23 @@ const InstructorCourseVideoUploadPage = () => {
             <div>
               <CourseCategorySelector
                 categories={categoryOptions}
-                clearLabel={txt('Secimi temizle', 'Clear selection')}
-                emptyStateText={txt('Secim icin uygun kategori bulunamadi.', 'No categories are available for selection.')}
+                clearLabel={txt('Seçimi temizle', 'Clear selection')}
+                emptyStateText={txt('Seçim için uygun kategori bulunamadı.', 'No categories are available for selection.')}
                 errorMessage={courseFormErrors.categoryIds}
                 hasLoadError={Boolean(categoriesError)}
                 helperText={isTurkish
-                  ? `En az ${MIN_CATEGORY_COUNT}, en fazla ${MAX_CATEGORY_COUNT} kategori sec.`
+                  ? `En az ${MIN_CATEGORY_COUNT}, en fazla ${MAX_CATEGORY_COUNT} kategori seç.`
                   : `Select at least ${MIN_CATEGORY_COUNT} and at most ${MAX_CATEGORY_COUNT} categories.`}
                 label={txt('Kategoriler', 'Categories')}
-                loadFailedText={txt('Kategori listesi alinamadi.', 'Category list could not be loaded.')}
+                loadFailedText={txt('Kategori listesi alınamadı.', 'Category list could not be loaded.')}
                 loading={categoriesLoading}
-                loadingText={txt('Kategoriler yukleniyor...', 'Loading categories...')}
+                loadingText={txt('Kategoriler yükleniyor...', 'Loading categories...')}
                 onChange={handleCategoryIdsChange}
                 onRetry={() => void refetchCategories()}
                 retryLabel={txt('Tekrar yukle', 'Retry')}
                 selectedIds={courseForm.categoryIds}
                 selectedSummary={isTurkish
-                  ? `Secilen: ${courseForm.categoryIds.length}/${MAX_CATEGORY_COUNT}`
+                  ? `Seçilen: ${courseForm.categoryIds.length}/${MAX_CATEGORY_COUNT}`
                   : `Selected: ${courseForm.categoryIds.length}/${MAX_CATEGORY_COUNT}`}
               />
             </div>
@@ -1407,7 +1407,7 @@ const InstructorCourseVideoUploadPage = () => {
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)]">
               <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="theme-subtle text-xs">{txt('Kurs gorseli (opsiyonel)', 'Course image (optional)')}</span>
+                  <span className="theme-subtle text-xs">{txt('Kurs görseli (opsiyonel)', 'Course image (optional)')}</span>
                   {selectedCourseImageFile ? (
                     <Button
                       onClick={() => handleCourseImageChange(null)}
@@ -1415,7 +1415,7 @@ const InstructorCourseVideoUploadPage = () => {
                       type="button"
                       variant="ghost"
                     >
-                      {txt('Secimi temizle', 'Clear selection')}
+                      {txt('Seçimi temizle', 'Clear selection')}
                     </Button>
                   ) : null}
                 </div>
@@ -1426,7 +1426,7 @@ const InstructorCourseVideoUploadPage = () => {
                   type="file"
                 />
                 <span className="theme-subtle text-xs">
-                  {txt('Gorsel secmezsen mevcut kurs gorseli korunur.', 'If no image is selected, the current course image is kept.')}
+                  {txt('Görsel seçmezsen mevcut kurs görseli korunur.', 'If no image is selected, the current course image is kept.')}
                 </span>
                 {courseFormErrors.image ? <span className="text-xs text-[color:var(--danger)]">{courseFormErrors.image}</span> : null}
               </div>
@@ -1434,12 +1434,12 @@ const InstructorCourseVideoUploadPage = () => {
               <div className="space-y-3 rounded-[var(--radius-cards)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
                 <div className="flex items-center justify-between gap-2">
                   <span className="theme-text text-sm font-medium">{txt('Kurs karti onizlemesi', 'Course card preview')}</span>
-                  <span className="theme-subtle text-xs">{selectedCourseImageFile?.name ?? txt('Mevcut gorsel', 'Current image')}</span>
+                  <span className="theme-subtle text-xs">{selectedCourseImageFile?.name ?? txt('Mevcut görsel', 'Current image')}</span>
                 </div>
                 <div className="overflow-hidden rounded-[var(--radius-navigation)] border border-[color:var(--border)]">
                   {courseImageDisplayUrl ? (
                     <img
-                      alt={txt('Kurs gorseli onizlemesi', 'Course image preview')}
+                      alt={txt('Kurs görseli önizlemesi', 'Course image preview')}
                       className="h-44 w-full object-cover"
                       onError={(event) => {
                         const target = event.currentTarget
@@ -1456,26 +1456,26 @@ const InstructorCourseVideoUploadPage = () => {
                   ) : (
                     <div className="flex h-44 w-full flex-col items-center justify-center gap-2 bg-[color:var(--surface-strong)] text-center">
                       <ImageIcon aria-hidden className="h-6 w-6 text-[color:var(--text-muted)]" />
-                      <p className="theme-subtle text-xs">{txt('Kurs gorseli bulunamadi', 'Course image not found')}</p>
+                      <p className="theme-subtle text-xs">{txt('Kurs görseli bulunamadı', 'Course image not found')}</p>
                     </div>
                   )}
                 </div>
                 <p className="text-clamp-2 theme-heading text-sm font-semibold">
                   {courseForm.title.trim() || txt('Kurs basligi', 'Course title')}
                 </p>
-                <span className="theme-subtle block text-xs">{txt('Gorselin kurs kartinda kirpilmis gorunumu.', 'How the image appears cropped on the course card.')}</span>
+                <span className="theme-subtle block text-xs">{txt('Görselin kurs kartında kırpılmış görünümü.', 'How the image appears cropped on the course card.')}</span>
               </div>
             </div>
 
             <div className="space-y-2">
-              <p className="theme-subtle text-xs">{txt('Ogrenim ciktisi (4 adet)', 'Learning outcomes (4 items)')}</p>
+              <p className="theme-subtle text-xs">{txt('Öğrenim çıktısı (4 adet)', 'Learning outcomes (4 items)')}</p>
               <div className="grid gap-3 md:grid-cols-2">
                 {courseForm.learningOutcomes.map((item, index) => (
                   <input
                     className="theme-text h-10 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
                     key={`learning-outcome-${index + 1}`}
                     onChange={(event) => handleLearningOutcomeChange(index, event.target.value)}
-                    placeholder={isTurkish ? `Ogrenim ciktisi ${index + 1}` : `Learning outcome ${index + 1}`}
+                    placeholder={isTurkish ? `Öğrenim çıktısı ${index + 1}` : `Learning outcome ${index + 1}`}
                     value={item}
                   />
                 ))}
@@ -1525,7 +1525,7 @@ const InstructorCourseVideoUploadPage = () => {
                 type="button"
                 variant="secondary"
               >
-                {savingCourse ? txt('Kaydediliyor...', 'Saving...') : txt('Kursu guncelle', 'Update course')}
+                {savingCourse ? txt('Kaydediliyor...', 'Saving...') : txt('Kursu güncelle', 'Update course')}
               </Button>
             </div>
           </div>
@@ -1553,7 +1553,7 @@ const InstructorCourseVideoUploadPage = () => {
                   ))}
                 </div>
               ) : (
-                <p className="theme-subtle mt-1 text-sm">{txt('Kategori secilmedi', 'No category selected')}</p>
+                <p className="theme-subtle mt-1 text-sm">{txt('Kategori seçilmedi', 'No category selected')}</p>
               )}
             </div>
             <div className="border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
@@ -1577,7 +1577,7 @@ const InstructorCourseVideoUploadPage = () => {
           <div className="rounded-[var(--radius-navigation)] border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-3 py-2">
             <p className="theme-subtle text-xs">
               {txt(
-                'Video suresi yukleme sonrasi sistem tarafindan otomatik hesaplanir.',
+                'Video süresi yükleme sonrası sistem tarafından otomatik hesaplanır.',
                 'Video duration is calculated automatically by the system after upload.',
               )}
             </p>
@@ -1588,7 +1588,7 @@ const InstructorCourseVideoUploadPage = () => {
               <input
                 className="theme-text h-10 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 text-sm focus:border-[color:var(--primary)] focus:outline-none focus:ring-2 focus:ring-[color:var(--focus-ring)]"
                 onChange={(event) => setNewLessonTitle(event.target.value)}
-                placeholder={txt('Ornek: React giris dersi', 'Example: React introduction lesson')}
+                placeholder={txt('Örnek: React giriş dersi', 'Example: React introduction lesson')}
                 value={newLessonTitle}
               />
             </label>
@@ -1627,14 +1627,14 @@ const InstructorCourseVideoUploadPage = () => {
 
       <Card className="border-l-4 border-l-[color:var(--success)]" id="lesson-list">
         <SectionHeader
-          description={txt('Her ders kartindan bilgileri guncelle, video yukle, onizle veya gerekirse sil.', 'Update lesson details, upload video, preview, or delete as needed from each lesson card.')}
+          description={txt('Her ders kartından bilgileri güncelle, video yükle, önizle veya gerekirse sil.', 'Update lesson details, upload video, preview, or delete as needed from each lesson card.')}
           title={txt('4. Dersler ve video islemleri', '4. Lessons and video actions')}
         />
         <div className="mt-4 space-y-4">
           {lessons.length === 0 ? (
             <div className="rounded-lg border border-dashed border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-4 py-6 text-center">
-              <p className="theme-heading text-base font-semibold">{txt('Bu kurs icin henuz ders eklenmemis.', 'No lessons have been added for this course yet.')}</p>
-              <p className="theme-muted mt-2 text-sm">{txt('Once "Ders ekle" bolumunden ilk dersi olusturarak devam edebilirsin.', 'Start by creating your first lesson from the "Add lesson" section.')}</p>
+              <p className="theme-heading text-base font-semibold">{txt('Bu kurs için henüz ders eklenmemiş.', 'No lessons have been added for this course yet.')}</p>
+              <p className="theme-muted mt-2 text-sm">{txt('Önce "Ders ekle" bölümünden ilk dersi oluşturarak devam edebilirsin.', 'Start by creating your first lesson from the "Add lesson" section.')}</p>
             </div>
           ) : lessons.map((lesson) => {
             const hasVideo = Boolean(lesson.videoUrl)
@@ -1646,14 +1646,14 @@ const InstructorCourseVideoUploadPage = () => {
             const draft = lessonDraftsById[lesson.id] ?? toLessonDraft(lesson)
             const isExpanded = expandedLessonId === lesson.id
             const durationText = typeof lesson.durationSeconds === 'number' && lesson.durationSeconds > 0
-              ? (isTurkish ? `Sure: ${formatDuration(lesson.durationSeconds, 'tr')}` : `Duration: ${formatDuration(lesson.durationSeconds, 'en')}`)
+              ? (isTurkish ? `Süre: ${formatDuration(lesson.durationSeconds, 'tr')}` : `Duration: ${formatDuration(lesson.durationSeconds, 'en')}`)
               : getDurationPendingLabel(isTurkish ? 'tr' : 'en')
             const statusText = isUploading
-              ? (isTurkish ? `Yukleniyor... %${uploadProgress}` : `Uploading... ${uploadProgress}%`)
+              ? (isTurkish ? `Yükleniyor... %${uploadProgress}` : `Uploading... ${uploadProgress}%`)
               : selectedFile
-                ? txt('Yeni video secildi', 'New video selected')
+                ? txt('Yeni video seçildi', 'New video selected')
               : hasVideo
-                ? txt('Video yuklendi', 'Video uploaded')
+                ? txt('Video yüklendi', 'Video uploaded')
                 : txt('Video yok', 'No video')
 
             return (
@@ -1691,7 +1691,7 @@ const InstructorCourseVideoUploadPage = () => {
                 {isExpanded ? (
                   <div className="space-y-4 border-t border-[color:var(--border)] px-4 py-4">
                     <div className="space-y-3 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4">
-                      <p className="theme-subtle text-xs uppercase tracking-[0.12em]">{txt('Ders bilgilerini guncelle', 'Update lesson details')}</p>
+                      <p className="theme-subtle text-xs uppercase tracking-[0.12em]">{txt('Ders bilgilerini güncelle', 'Update lesson details')}</p>
                       <div className="grid gap-3 md:grid-cols-2">
                         <label className="flex flex-col gap-1">
                           <span className="theme-subtle text-xs">{txt('Ders basligi', 'Lesson title')}</span>
@@ -1723,7 +1723,7 @@ const InstructorCourseVideoUploadPage = () => {
                           />
                         </label>
                         <label className="flex flex-col gap-1">
-                          <span className="theme-subtle text-xs">{txt('Sure', 'Duration')}</span>
+                          <span className="theme-subtle text-xs">{txt('Süre', 'Duration')}</span>
                           <p className="theme-text h-10 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 text-sm leading-10">
                             {typeof lesson.durationSeconds === 'number' && lesson.durationSeconds > 0
                               ? formatDuration(lesson.durationSeconds, isTurkish ? 'tr' : 'en')
@@ -1749,13 +1749,13 @@ const InstructorCourseVideoUploadPage = () => {
                           type="button"
                           variant="secondary"
                         >
-                          {isUpdating ? txt('Guncelleniyor...', 'Updating...') : txt('Dersi guncelle', 'Update lesson')}
+                          {isUpdating ? txt('Güncelleniyor...', 'Updating...') : txt('Dersi güncelle', 'Update lesson')}
                         </Button>
                       </div>
                     </div>
 
                     <div className="space-y-3 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4">
-                      <p className="theme-subtle text-xs uppercase tracking-[0.12em]">{txt('Video islemleri', 'Video actions')}</p>
+                      <p className="theme-subtle text-xs uppercase tracking-[0.12em]">{txt('Video işlemleri', 'Video actions')}</p>
                       <LessonVideoActions
                         hasVideo={hasVideo}
                         isUploading={isUploading}
@@ -1785,7 +1785,7 @@ const InstructorCourseVideoUploadPage = () => {
       ) : null}
 
       <Modal
-        description={txt('Bu islem kursu taslak durumuna alir. Ogrenciler kursa yeni kayit yapamaz.', 'This action moves the course to draft. Learners can no longer enroll in this course.')}
+        description={txt('Bu işlem kursu taslak durumuna alır. Öğrenciler kursa yeni kayıt yapamaz.', 'This action moves the course to draft. Learners can no longer enroll in this course.')}
         onClose={() => {
           if (unpublishingCourse) {
             return
@@ -1799,7 +1799,7 @@ const InstructorCourseVideoUploadPage = () => {
         <div className="space-y-4">
           <div className="rounded-[var(--radius-buttons)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
             <p className="theme-text text-sm">
-              {txt('Kursu tekrar yayinlamak istersen panelden yeniden yayina alabilirsin.', 'If you want to publish the course again, you can do it from this panel.')}
+              {txt('Kursu tekrar yayınlamak istersen panelden yeniden yayına alabilirsin.', 'If you want to publish the course again, you can do it from this panel.')}
             </p>
           </div>
           <div className="flex flex-wrap justify-end gap-3">
@@ -1809,7 +1809,7 @@ const InstructorCourseVideoUploadPage = () => {
               onClick={() => setIsUnpublishConfirmOpen(false)}
               variant="ghost"
             >
-              {txt('Vazgec', 'Cancel')}
+              {txt('Vazgeç', 'Cancel')}
             </Button>
             <Button
               className="border-[color:var(--danger)] bg-[color:var(--danger)] text-white hover:border-[color:var(--danger)] hover:bg-[color:var(--danger)] hover:opacity-90"
@@ -1817,7 +1817,7 @@ const InstructorCourseVideoUploadPage = () => {
               onClick={() => void handleUnpublishCourse()}
               variant="primary"
             >
-              {unpublishingCourse ? txt('Kaldiriliyor...', 'Unpublishing...') : txt('Yayindan kaldir', 'Unpublish')}
+              {unpublishingCourse ? txt('Kaldırılıyor...', 'Unpublishing...') : txt('Yayından kaldır', 'Unpublish')}
             </Button>
           </div>
         </div>

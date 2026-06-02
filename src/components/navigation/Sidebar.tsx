@@ -78,7 +78,7 @@ const Sidebar = ({
             </div>
             <div className={cn('min-w-0 overflow-hidden transition-all', collapsed ? 'lg:w-0 lg:opacity-0' : 'w-auto opacity-100')}>
               <p className="theme-subtle text-[10px] font-semibold uppercase tracking-[0.22em]">{t('nav.workspace')}</p>
-              <h2 className="theme-heading truncate text-base font-semibold tracking-tight">{APP_NAME}</h2>
+              <h2 className="theme-heading truncate text-base font-semibold">{APP_NAME}</h2>
             </div>
           </div>
           <div className="flex items-center gap-2">

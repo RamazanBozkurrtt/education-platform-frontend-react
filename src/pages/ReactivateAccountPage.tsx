@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, CheckCircle2, CircleAlert } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Button from '../components/ui/Button'
+import { useLanguage } from '../hooks/useLanguage'
 import { authApi } from '../services/authApi'
 import { ROUTES } from '../utils/constants'
 
@@ -29,9 +30,23 @@ const reactivateAccountOnce = (token: string) => {
 const ReactivateAccountPage = () => {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  const { language } = useLanguage()
   const token = useMemo(() => searchParams.get('token')?.trim() || '', [searchParams])
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>(token ? 'loading' : 'error')
   const [message, setMessage] = useState<string>(token ? LOADING_MESSAGE : INVALID_MESSAGE)
+  const copy = language === 'tr'
+    ? {
+      eyebrow: 'Hesap kurtarma',
+      title: 'Hesabı yeniden aktifleştir',
+      backToSignIn: 'Giriş sayfasına dön',
+      forgotPassword: 'Şifremi Unuttum',
+    }
+    : {
+      eyebrow: 'Account recovery',
+      title: 'Reactivate account',
+      backToSignIn: 'Back to sign in',
+      forgotPassword: 'Forgot password?',
+    }
 
   useEffect(() => {
     if (!token) {
@@ -81,11 +96,11 @@ const ReactivateAccountPage = () => {
 
   return (
     <div className="mx-auto flex max-w-sm flex-col">
-      <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">Account recovery</p>
-      <h2 className="theme-heading mt-3 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">Reactivate account</h2>
+      <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">{copy.eyebrow}</p>
+      <h2 className="theme-heading mt-3 text-2xl font-semibold sm:text-3xl">{copy.title}</h2>
 
       <div
-        className={`mt-6 rounded-2xl border px-4 py-3 text-sm ${
+        className={`mt-6 rounded-md border px-4 py-3 text-sm ${
           status === 'success'
             ? 'border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] theme-heading'
             : status === 'error'
@@ -105,13 +120,13 @@ const ReactivateAccountPage = () => {
 
       <Link className="mt-5" to={ROUTES.login}>
         <Button asChild className="w-full text-white" size="lg">
-          Back to sign in
+          {copy.backToSignIn}
         </Button>
       </Link>
 
       <Link className="theme-heading mt-4 inline-flex items-center gap-2 text-sm font-semibold transition hover:opacity-80" to={ROUTES.forgotPassword}>
         <ArrowLeft className="h-4 w-4" />
-        Forgot password?
+        {copy.forgotPassword}
       </Link>
     </div>
   )
