@@ -25,7 +25,7 @@ import {
   type InstructorCourseLesson,
 } from '../services/instructorCourseService'
 import { ROUTES } from '../utils/constants'
-import { formatDuration } from '../utils/duration'
+import { formatDuration, getDurationPendingLabel } from '../utils/duration'
 
 const MAX_VIDEO_SIZE_BYTES = 2 * 1024 * 1024 * 1024
 const MP4_MIME_TYPE = 'video/mp4'
@@ -1647,7 +1647,7 @@ const InstructorCourseVideoUploadPage = () => {
             const isExpanded = expandedLessonId === lesson.id
             const durationText = typeof lesson.durationSeconds === 'number' && lesson.durationSeconds > 0
               ? (isTurkish ? `Sure: ${formatDuration(lesson.durationSeconds, 'tr')}` : `Duration: ${formatDuration(lesson.durationSeconds, 'en')}`)
-              : txt('Sure hesaplanıyor', 'Duration is being calculated')
+              : getDurationPendingLabel(isTurkish ? 'tr' : 'en')
             const statusText = isUploading
               ? (isTurkish ? `Yukleniyor... %${uploadProgress}` : `Uploading... ${uploadProgress}%`)
               : selectedFile
@@ -1727,7 +1727,7 @@ const InstructorCourseVideoUploadPage = () => {
                           <p className="theme-text h-10 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 text-sm leading-10">
                             {typeof lesson.durationSeconds === 'number' && lesson.durationSeconds > 0
                               ? formatDuration(lesson.durationSeconds, isTurkish ? 'tr' : 'en')
-                              : txt('Sure backend tarafinda islendikten sonra gorunecek', 'Duration will appear after backend processing')}
+                              : getDurationPendingLabel(isTurkish ? 'tr' : 'en')}
                           </p>
                         </label>
                       </div>

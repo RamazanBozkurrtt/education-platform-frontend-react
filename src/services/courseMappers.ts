@@ -1,5 +1,5 @@
 import { resolveServiceUrl } from '../config/api'
-import { formatDuration } from '../utils/duration'
+import { formatDuration, normalizeDurationSeconds } from '../utils/duration'
 import type { Course, CourseLevelOption, CourseModule } from '../utils/types'
 
 export interface BackendInstructorResponse {
@@ -20,12 +20,16 @@ export interface BackendLessonResponse {
   title?: string | null
   description?: string | null
   duration?: string | number | null
-  durationInMinutes?: number | null
-  duration_in_minutes?: number | null
-  durationMinutes?: number | null
-  durationInSeconds?: number | null
-  duration_seconds?: number | null
-  durationSeconds?: number | null
+  durationInMinutes?: string | number | null
+  duration_in_minutes?: string | number | null
+  durationMinutes?: string | number | null
+  durationInSeconds?: string | number | null
+  duration_seconds?: string | number | null
+  durationSeconds?: string | number | null
+  duration_in_seconds?: string | number | null
+  videoDuration?: string | number | null
+  videoDurationSeconds?: string | number | null
+  video_duration_seconds?: string | number | null
   lessonType?: string | null
   type?: string | null
   completed?: boolean | null
@@ -66,15 +70,17 @@ export interface BackendCourseResponse {
   level?: string | BackendCourseLevelResponse | null
   levelName?: string | null
   duration?: string | number | null
-  durationInMinutes?: number | null
-  duration_in_minutes?: number | null
-  durationMinutes?: number | null
-  durationInSeconds?: number | null
-  duration_seconds?: number | null
-  durationSeconds?: number | null
-  totalDurationInSeconds?: number | null
-  total_duration_seconds?: number | null
-  totalDurationSeconds?: number | null
+  durationInMinutes?: string | number | null
+  duration_in_minutes?: string | number | null
+  durationMinutes?: string | number | null
+  durationInSeconds?: string | number | null
+  duration_seconds?: string | number | null
+  durationSeconds?: string | number | null
+  duration_in_seconds?: string | number | null
+  totalDuration?: string | number | null
+  totalDurationInSeconds?: string | number | null
+  total_duration_seconds?: string | number | null
+  totalDurationSeconds?: string | number | null
   lessons?: number | BackendLessonResponse[] | null
   lessonCount?: number | null
   students?: string | number | null
@@ -175,116 +181,12 @@ const toAbsoluteMediaUrl = (value: string | undefined) => {
     return ''
   }
 
-  if (/^https?:\/\//i.test(value)) {
-    return value
-  }
-
   return resolveServiceUrl(value)
 }
 
 const getAccent = (courseId: string) => {
   const hash = courseId.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0)
   return ACCENT_PALETTE[hash % ACCENT_PALETTE.length]
-}
-
-type BareDurationUnit = 'seconds' | 'minutes'
-
-const LESSON_BARE_DURATION_INFER_MAX_MINUTES = 180
-const LESSON_BARE_DURATION_INFER_MIN_SECONDS = 240
-
-const toSeconds = (
-  value: unknown,
-  options?: {
-    bareNumberUnit?: 'seconds' | 'minutes'
-  },
-) => {
-  const bareNumberUnit = options?.bareNumberUnit ?? 'seconds'
-  const numeric = toNumber(value)
-
-  if (typeof numeric === 'number' && numeric >= 0) {
-    if (bareNumberUnit === 'minutes') {
-      return Math.round(numeric * 60)
-    }
-
-    return Math.round(numeric)
-  }
-
-  const asText = trimToUndefined(value)
-
-  if (!asText) {
-    return undefined
-  }
-
-  const hhMmSsMatch = asText.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/)
-
-  if (hhMmSsMatch) {
-    const [, first, second, third] = hhMmSsMatch
-    const firstPart = Number(first)
-    const secondPart = Number(second)
-    const thirdPart = typeof third === 'string' ? Number(third) : undefined
-
-    if (Number.isFinite(firstPart) && Number.isFinite(secondPart)) {
-      if (typeof thirdPart === 'number' && Number.isFinite(thirdPart)) {
-        return (firstPart * 3600) + (secondPart * 60) + thirdPart
-      }
-
-      return (firstPart * 60) + secondPart
-    }
-  }
-
-  const isoDurationMatch = asText.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/i)
-
-  if (isoDurationMatch) {
-    const [, hoursPart, minutesPart, secondsPart] = isoDurationMatch
-    const hours = Number(hoursPart ?? 0)
-    const minutes = Number(minutesPart ?? 0)
-    const seconds = Number(secondsPart ?? 0)
-
-    if (Number.isFinite(hours) && Number.isFinite(minutes) && Number.isFinite(seconds)) {
-      return Math.round((hours * 3600) + (minutes * 60) + seconds)
-    }
-  }
-
-  const durationUnitRegex = /(\d+(?:[.,]\d+)?)\s*(h|hr|hrs|hour|hours|m|min|mins|minute|minutes|s|sec|secs|second|seconds)\b/gi
-  let unitMatch: RegExpExecArray | null
-  let totalSecondsFromUnits = 0
-  let hasUnitMatch = false
-
-  while ((unitMatch = durationUnitRegex.exec(asText)) !== null) {
-    const amount = Number(unitMatch[1].replace(',', '.'))
-    const unit = unitMatch[2].toLocaleLowerCase('en-US')
-
-    if (!Number.isFinite(amount)) {
-      continue
-    }
-
-    hasUnitMatch = true
-
-    if (unit.startsWith('h')) {
-      totalSecondsFromUnits += amount * 3600
-      continue
-    }
-
-    if (unit.startsWith('m')) {
-      totalSecondsFromUnits += amount * 60
-      continue
-    }
-
-    totalSecondsFromUnits += amount
-  }
-
-  if (hasUnitMatch && totalSecondsFromUnits >= 0) {
-    return Math.round(totalSecondsFromUnits)
-  }
-
-  return undefined
-}
-
-const DURATION_UNIT_TOKEN_REGEX = /[a-z]/i
-
-const hasDurationUnitToken = (value: unknown) => {
-  const asText = trimToUndefined(value)
-  return typeof asText === 'string' && DURATION_UNIT_TOKEN_REGEX.test(asText)
 }
 
 const toDurationMinutesFromCandidates = (candidates: unknown[]) => {
@@ -301,10 +203,10 @@ const toDurationMinutesFromCandidates = (candidates: unknown[]) => {
 
 const toDurationSecondsFromCandidates = (candidates: unknown[]) => {
   for (const candidate of candidates) {
-    const parsed = toNumber(candidate)
+    const parsed = normalizeDurationSeconds(candidate)
 
-    if (typeof parsed === 'number' && parsed >= 0) {
-      return Math.round(parsed)
+    if (typeof parsed === 'number') {
+      return parsed
     }
   }
 
@@ -321,29 +223,29 @@ const toDurationMinutes = (lesson: BackendLessonResponse & Record<string, unknow
 
 const toDurationSecondsFromLesson = (
   lesson: BackendLessonResponse & Record<string, unknown>,
-  bareNumberUnit: BareDurationUnit = 'seconds',
 ) => {
   const explicitSeconds = toDurationSecondsFromCandidates([
+    lesson.durationSeconds,
     lesson.durationInSeconds,
     lesson.duration_seconds,
-    lesson.durationSeconds,
     lesson.duration_in_seconds,
+    lesson.videoDurationSeconds,
+    lesson.video_duration_seconds,
+    lesson.videoDuration,
+    lesson.duration,
   ])
 
-  if (typeof explicitSeconds === 'number') {
-    return explicitSeconds
-  }
-
-  return toSeconds(lesson.duration, { bareNumberUnit })
+  return typeof explicitSeconds === 'number' ? explicitSeconds : undefined
 }
 
 const toCourseDurationSeconds = (
   course: BackendCourseResponse & Record<string, unknown>,
 ) => {
   const explicitTotalSeconds = toDurationSecondsFromCandidates([
+    course.totalDurationSeconds,
     course.totalDurationInSeconds,
     course.total_duration_seconds,
-    course.totalDurationSeconds,
+    course.totalDuration,
   ])
 
   if (typeof explicitTotalSeconds === 'number') {
@@ -351,60 +253,17 @@ const toCourseDurationSeconds = (
   }
 
   const explicitSeconds = toDurationSecondsFromCandidates([
+    course.durationSeconds,
     course.durationInSeconds,
     course.duration_seconds,
-    course.durationSeconds,
+    course.duration_in_seconds,
+    course.duration,
   ])
 
   if (typeof explicitSeconds === 'number') {
     return explicitSeconds
   }
-  
   return undefined
-}
-
-const hasExplicitLessonDuration = (lesson: BackendLessonResponse & Record<string, unknown>) =>
-  typeof toDurationMinutes(lesson) === 'number'
-  || typeof toDurationSecondsFromCandidates([
-    lesson.durationInSeconds,
-    lesson.duration_seconds,
-    lesson.durationSeconds,
-    lesson.duration_in_seconds,
-  ]) === 'number'
-
-const toBareLessonDurationNumber = (lesson: BackendLessonResponse & Record<string, unknown>) => {
-  if (hasExplicitLessonDuration(lesson) || hasDurationUnitToken(lesson.duration)) {
-    return undefined
-  }
-
-  const numeric = toNumber(lesson.duration)
-  return typeof numeric === 'number' && numeric >= 0 ? numeric : undefined
-}
-
-const inferBareLessonDurationUnit = (rawLessons: unknown[]): BareDurationUnit => {
-  // Legacy payloads sometimes provide bare numeric durations as minutes.
-  // Infer a unit once per course and apply it consistently to all lessons.
-  const bareNumericValues = rawLessons
-    .map((rawLesson) => toBareLessonDurationNumber(toRecord(rawLesson) as BackendLessonResponse & Record<string, unknown>))
-    .filter((value): value is number => typeof value === 'number')
-
-  if (bareNumericValues.length === 0) {
-    return 'seconds'
-  }
-
-  const maxValue = Math.max(...bareNumericValues)
-  const minValue = Math.min(...bareNumericValues)
-  const averageValue = bareNumericValues.reduce((sum, value) => sum + value, 0) / bareNumericValues.length
-
-  if (maxValue <= LESSON_BARE_DURATION_INFER_MAX_MINUTES) {
-    return 'minutes'
-  }
-
-  if (minValue >= LESSON_BARE_DURATION_INFER_MIN_SECONDS) {
-    return 'seconds'
-  }
-
-  return averageValue <= LESSON_BARE_DURATION_INFER_MAX_MINUTES ? 'minutes' : 'seconds'
 }
 
 const toRecord = (value: unknown): Record<string, unknown> =>
@@ -501,12 +360,11 @@ const mapLesson = (
   courseId: string,
   value: unknown,
   index: number,
-  bareDurationUnit: BareDurationUnit,
 ): CourseModule => {
   const lesson = toRecord(value) as BackendLessonResponse & Record<string, unknown>
   const lessonId = toIdentifier(lesson.id) ?? `${courseId}-lesson-${index + 1}`
   const durationMinutes = toDurationMinutes(lesson)
-  const durationInSeconds = toDurationSecondsFromLesson(lesson, bareDurationUnit)
+  const durationInSeconds = toDurationSecondsFromLesson(lesson)
   const normalizedDurationSeconds = typeof durationInSeconds === 'number'
     ? durationInSeconds
     : typeof durationMinutes === 'number'
@@ -568,53 +426,25 @@ const resolveInstructor = (course: BackendCourseResponse) => {
   }
 }
 
-const resolveLessonDurationTotalSeconds = (
-  modules: CourseModule[],
-  rawLessons: unknown[],
-  inferredLessonDurationUnit: BareDurationUnit,
-) => {
-  let totalSeconds = 0
-  let hasAnyDuration = false
-
-  for (const rawLesson of rawLessons) {
-    const lesson = toRecord(rawLesson) as BackendLessonResponse & Record<string, unknown>
-    const durationInMinutes = toDurationMinutes(lesson)
-    const durationInSeconds = toDurationSecondsFromLesson(lesson, inferredLessonDurationUnit)
-
-    if (typeof durationInSeconds === 'number') {
-      totalSeconds += durationInSeconds
-      hasAnyDuration = true
-      continue
-    }
-
-    if (typeof durationInMinutes === 'number') {
-      totalSeconds += Math.round(durationInMinutes * 60)
-      hasAnyDuration = true
-    }
+const resolveLessonDurationTotalSeconds = (modules: CourseModule[]) => {
+  if (modules.length === 0) {
+    return undefined
   }
 
-  if (hasAnyDuration && totalSeconds > 0) {
-    return totalSeconds
+  const parsedModuleSeconds = modules
+    .map((module) => normalizeDurationSeconds(module.durationSeconds))
+    .filter((value): value is number => typeof value === 'number')
+
+  if (parsedModuleSeconds.length !== modules.length) {
+    return undefined
   }
 
-  if (modules.length > 0) {
-    const parsedModuleSeconds = modules
-      .map((module) => toDurationSecondsFromCandidates([module.durationSeconds]))
-      .filter((value): value is number => typeof value === 'number')
-
-    if (parsedModuleSeconds.length > 0) {
-      return parsedModuleSeconds.reduce((sum, value) => sum + value, 0)
-    }
-  }
-
-  return undefined
+  return parsedModuleSeconds.reduce((sum, value) => sum + value, 0)
 }
 
 const resolveCourseTotalDurationSeconds = (
   course: BackendCourseResponse,
   modules: CourseModule[],
-  rawLessons: unknown[],
-  inferredLessonDurationUnit: BareDurationUnit,
 ) => {
   const durationFromCourseSeconds = toCourseDurationSeconds(
     course as BackendCourseResponse & Record<string, unknown>,
@@ -624,16 +454,14 @@ const resolveCourseTotalDurationSeconds = (
     return durationFromCourseSeconds
   }
 
-  return resolveLessonDurationTotalSeconds(modules, rawLessons, inferredLessonDurationUnit)
+  return resolveLessonDurationTotalSeconds(modules)
 }
 
 const resolveCourseDurationLabel = (
   course: BackendCourseResponse,
   modules: CourseModule[],
-  rawLessons: unknown[],
-  inferredLessonDurationUnit: BareDurationUnit,
 ) => {
-  const totalDurationSeconds = resolveCourseTotalDurationSeconds(course, modules, rawLessons, inferredLessonDurationUnit)
+  const totalDurationSeconds = resolveCourseTotalDurationSeconds(course, modules)
 
   return formatDuration(totalDurationSeconds, 'en')
 }
@@ -642,9 +470,8 @@ export const mapBackendCourseToCourse = (value: unknown): Course => {
   const course = toRecord(value) as BackendCourseResponse
   const id = toIdentifier(course.id) ?? crypto.randomUUID()
   const rawLessons = extractLessonList(course)
-  const inferredLessonDurationUnit = inferBareLessonDurationUnit(rawLessons)
-  const lessons = rawLessons.map((lesson, index) => mapLesson(id, lesson, index, inferredLessonDurationUnit))
-  const totalDurationSeconds = resolveCourseTotalDurationSeconds(course, lessons, rawLessons, inferredLessonDurationUnit)
+  const lessons = rawLessons.map((lesson, index) => mapLesson(id, lesson, index))
+  const totalDurationSeconds = resolveCourseTotalDurationSeconds(course, lessons)
   const categoryObject = toCourseCategory(course.category)
   const legacyCategoryId = toIdentifier(course.categoryId) ?? toIdentifier(categoryObject?.id)
   const categoryIdsFromResponse = toIdentifierArray(course.categoryIds)
@@ -710,7 +537,7 @@ export const mapBackendCourseToCourse = (value: unknown): Course => {
     levelId: levelId ?? resolvedLevel.id,
     level: resolvedLevel,
     levelKey: slugify(levelName) || 'all-levels',
-    duration: resolveCourseDurationLabel(course, lessons, rawLessons, inferredLessonDurationUnit),
+    duration: resolveCourseDurationLabel(course, lessons),
     durationSeconds: totalDurationSeconds,
     totalDurationSeconds,
     lessons: resolveLessonsCount(course, lessons),

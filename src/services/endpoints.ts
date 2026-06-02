@@ -33,6 +33,7 @@ export const API_ENDPOINTS = {
       update: (courseId: string, lessonId: string) => `/api/v1/courses/${courseId}/lessons/${lessonId}`,
       remove: (courseId: string, lessonId: string) => `/api/v1/courses/${courseId}/lessons/${lessonId}`,
       video: (courseId: string, lessonId: string) => `/api/v1/courses/${courseId}/lessons/${lessonId}/video`,
+      videoStream: (courseId: string, lessonId: string) => `/api/v1/courses/public/${courseId}/lessons/${lessonId}/video/stream`,
       playbackUrl: (courseId: string, lessonId: string) => `/api/v1/courses/${courseId}/lessons/${lessonId}/video/playback-url`,
       progress: (courseId: string, lessonId: string) => `/api/v1/courses/${courseId}/lessons/${lessonId}/progress`,
       courseProgress: (courseId: string) => `/api/v1/courses/${courseId}/lessons/progress`,

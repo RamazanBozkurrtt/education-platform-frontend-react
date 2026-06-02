@@ -127,6 +127,60 @@ const getRequestBearerToken = (config: RetryableRequestConfig) => {
   return match?.[1]?.trim() || null
 }
 
+const getBasePathname = (baseUrl?: string) => {
+  if (!baseUrl) {
+    return ''
+  }
+
+  const trimmed = baseUrl.trim()
+  if (!trimmed) {
+    return ''
+  }
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const pathname = new URL(trimmed).pathname
+      return pathname === '/' ? '' : pathname.replace(/\/+$/, '')
+    } catch {
+      return ''
+    }
+  }
+
+  if (trimmed.startsWith('/')) {
+    return trimmed.replace(/\/+$/, '')
+  }
+
+  return ''
+}
+
+const normalizeRequestPathForBasePath = (config: InternalAxiosRequestConfig | RetryableRequestConfig) => {
+  const url = config.url?.trim()
+  if (!url || /^https?:\/\//i.test(url)) {
+    return
+  }
+
+  const basePathname = getBasePathname(config.baseURL)
+  if (!basePathname || basePathname === '/') {
+    return
+  }
+
+  if (!url.startsWith('/')) {
+    return
+  }
+
+  const lowerBasePath = basePathname.toLocaleLowerCase('en-US')
+  const lowerUrl = url.toLocaleLowerCase('en-US')
+
+  if (lowerUrl === lowerBasePath) {
+    config.url = '/'
+    return
+  }
+
+  if (lowerUrl.startsWith(`${lowerBasePath}/`)) {
+    config.url = url.slice(basePathname.length)
+  }
+}
+
 // Refresh should only run for unauthenticated requests.
 // 403 usually means the token is valid but the user lacks permission.
 const isAuthFailureStatus = (status?: number) => status === 401
@@ -204,7 +258,21 @@ const refreshSession = async () => {
   return refreshPromise
 }
 
+authClient.interceptors.request.use((config) => {
+  normalizeRequestPathForBasePath(config)
+
+  if (isFormDataPayload(config.data)) {
+    const headers = AxiosHeaders.from(config.headers)
+    headers.delete('Content-Type')
+    config.headers = headers
+  }
+
+  return config
+})
+
 apiClient.interceptors.request.use((config) => {
+  normalizeRequestPathForBasePath(config)
+
   const token = getAccessToken()
 
   if (token && shouldAttachAuthorizationHeader(config)) {

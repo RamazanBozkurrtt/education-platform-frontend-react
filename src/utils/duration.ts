@@ -1,13 +1,24 @@
 import type { Course, CourseModule } from './types'
 
-type DurationLanguage = 'en' | 'tr'
+export type DurationLanguage = 'en' | 'tr'
 
-const toWholeSeconds = (value: unknown) => {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
+const DURATION_PENDING_LABELS: Record<DurationLanguage, string> = {
+  en: 'Duration is being prepared',
+  tr: 'Süre bilgisi hazırlanıyor',
+}
+
+export const normalizeDurationSeconds = (value: unknown) => {
+  const numericValue = typeof value === 'number'
+    ? value
+    : typeof value === 'string' && value.trim().length > 0
+      ? Number(value.trim())
+      : null
+
+  if (typeof numericValue !== 'number' || !Number.isFinite(numericValue)) {
     return null
   }
 
-  const normalized = Math.floor(value)
+  const normalized = Math.floor(numericValue)
 
   if (normalized <= 0) {
     return null
@@ -16,14 +27,19 @@ const toWholeSeconds = (value: unknown) => {
   return normalized
 }
 
+export const hasDurationSeconds = (value: unknown) => normalizeDurationSeconds(value) !== null
+
+export const getDurationPendingLabel = (language: DurationLanguage = 'tr') =>
+  DURATION_PENDING_LABELS[language]
+
 export const formatDuration = (
-  seconds: number | null | undefined,
+  seconds: unknown,
   language: DurationLanguage = 'tr',
 ) => {
-  const safeSeconds = toWholeSeconds(seconds)
+  const safeSeconds = normalizeDurationSeconds(seconds)
 
   if (safeSeconds === null) {
-    return language === 'tr' ? 'Süre bilgisi yok' : 'Duration unavailable'
+    return getDurationPendingLabel(language)
   }
 
   if (safeSeconds < 60) {
@@ -44,12 +60,20 @@ export const formatDuration = (
   return language === 'tr' ? `${minutes} dk` : `${minutes} min`
 }
 
+export const formatDurationOrNull = (
+  seconds: unknown,
+  language: DurationLanguage = 'tr',
+) => {
+  const safeSeconds = normalizeDurationSeconds(seconds)
+  return safeSeconds === null ? null : formatDuration(safeSeconds, language)
+}
+
 const sumModuleDurationSeconds = (modules: CourseModule[]) => {
   const validDurations = modules
-    .map((module) => toWholeSeconds(module.durationSeconds))
+    .map((module) => normalizeDurationSeconds(module.durationSeconds))
     .filter((duration): duration is number => duration !== null)
 
-  if (validDurations.length === 0) {
+  if (validDurations.length === 0 || validDurations.length !== modules.length) {
     return null
   }
 
@@ -57,13 +81,13 @@ const sumModuleDurationSeconds = (modules: CourseModule[]) => {
 }
 
 export const resolveCourseTotalDurationSeconds = (course: Course) => {
-  const totalDuration = toWholeSeconds(course.totalDurationSeconds)
+  const totalDuration = normalizeDurationSeconds(course.totalDurationSeconds)
 
   if (totalDuration !== null) {
     return totalDuration
   }
 
-  const courseDuration = toWholeSeconds(course.durationSeconds)
+  const courseDuration = normalizeDurationSeconds(course.durationSeconds)
 
   if (courseDuration !== null) {
     return courseDuration
@@ -75,5 +99,11 @@ export const resolveCourseTotalDurationSeconds = (course: Course) => {
 export const resolveCourseDurationLabel = (course: Course, language: DurationLanguage = 'tr') =>
   formatDuration(resolveCourseTotalDurationSeconds(course), language)
 
+export const resolveCourseDurationLabelOrNull = (course: Course, language: DurationLanguage = 'tr') =>
+  formatDurationOrNull(resolveCourseTotalDurationSeconds(course), language)
+
 export const resolveLessonDurationLabel = (lesson: CourseModule, language: DurationLanguage = 'tr') =>
   formatDuration(lesson.durationSeconds, language)
+
+export const resolveLessonDurationLabelOrNull = (lesson: CourseModule, language: DurationLanguage = 'tr') =>
+  formatDurationOrNull(lesson.durationSeconds, language)

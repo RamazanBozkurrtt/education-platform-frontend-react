@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ArrowLeft, CheckCircle2, CircleAlert } from 'lucide-react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Button from '../components/ui/Button'
 import { authApi } from '../services/authApi'
-import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { ROUTES } from '../utils/constants'
 
-const EXPIRED_MESSAGE = 'This reactivation link has expired. Please request a new one from the sign-in page.'
-const INVALID_MESSAGE = 'This reactivation link is invalid or has already been used.'
-const GENERIC_ERROR_MESSAGE = 'We could not reactivate your account right now. Please try again.'
+const SUCCESS_MESSAGE = 'Hesabınız başarıyla aktifleştirildi. Giriş sayfasına yönlendiriliyorsunuz.'
+const INVALID_MESSAGE = 'Aktivasyon bağlantısı geçersiz veya süresi dolmuş.'
+const LOADING_MESSAGE = 'Hesabınız aktifleştiriliyor...'
+const LOGIN_REDIRECT_DELAY_MS = 2000
 const reactivationRequestCache = new Map<string, Promise<string>>()
 
 const reactivateAccountOnce = (token: string) => {
@@ -26,33 +26,12 @@ const reactivateAccountOnce = (token: string) => {
   return request
 }
 
-const resolveReactivationErrorMessage = (error: unknown) => {
-  const appError = normalizeApiError(error)
-  const code = (appError.code || '').toLowerCase()
-  const message = (appError.message || '').toLowerCase()
-
-  if (appError.httpStatus === 401 || code.includes('expired') || code.includes('token_expired')) {
-    return EXPIRED_MESSAGE
-  }
-
-  if (
-    appError.httpStatus === 403 ||
-    code.includes('invalid') ||
-    code.includes('signature') ||
-    code.includes('used') ||
-    message.includes('invalid')
-  ) {
-    return INVALID_MESSAGE
-  }
-
-  return appError.message || GENERIC_ERROR_MESSAGE
-}
-
 const ReactivateAccountPage = () => {
   const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
   const token = useMemo(() => searchParams.get('token')?.trim() || '', [searchParams])
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>(token ? 'loading' : 'error')
-  const [message, setMessage] = useState<string>(token ? 'Reactivating your account...' : INVALID_MESSAGE)
+  const [message, setMessage] = useState<string>(token ? LOADING_MESSAGE : INVALID_MESSAGE)
 
   useEffect(() => {
     if (!token) {
@@ -62,27 +41,33 @@ const ReactivateAccountPage = () => {
     }
 
     let cancelled = false
+    let redirectTimeoutId: number | undefined
 
     const activate = async () => {
       setStatus('loading')
-      setMessage('Reactivating your account...')
+      setMessage(LOADING_MESSAGE)
 
       try {
-        const successMessage = await reactivateAccountOnce(token)
+        await reactivateAccountOnce(token)
 
         if (cancelled) {
           return
         }
 
         setStatus('success')
-        setMessage(successMessage || 'Your account has been reactivated. You can sign in now.')
-      } catch (error) {
+        setMessage(SUCCESS_MESSAGE)
+        redirectTimeoutId = window.setTimeout(() => {
+          if (!cancelled) {
+            navigate(ROUTES.login, { replace: true })
+          }
+        }, LOGIN_REDIRECT_DELAY_MS)
+      } catch {
         if (cancelled) {
           return
         }
 
         setStatus('error')
-        setMessage(resolveReactivationErrorMessage(error))
+        setMessage(INVALID_MESSAGE)
       }
     }
 
@@ -90,8 +75,9 @@ const ReactivateAccountPage = () => {
 
     return () => {
       cancelled = true
+      window.clearTimeout(redirectTimeoutId)
     }
-  }, [token])
+  }, [navigate, token])
 
   return (
     <div className="mx-auto flex max-w-sm flex-col">

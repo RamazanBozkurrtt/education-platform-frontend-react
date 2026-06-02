@@ -22,7 +22,7 @@ const RecommendationCourseCard = ({ item, language }: RecommendationCourseCardPr
   const detailPath = ROUTES.courseDetail(item.courseId)
   const reason = truncateRecommendationText(item.reason, 160)
   const description = truncateRecommendationText(item.description, 140)
-  const recommendationDurationSeconds = item.totalDurationSeconds ?? item.durationSeconds
+  const recommendationDurationSeconds = item.totalDurationSeconds ?? item.totalDuration ?? item.durationSeconds ?? item.duration
 
   return (
     <article className="flex h-full flex-col rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-4">

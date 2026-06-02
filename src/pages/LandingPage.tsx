@@ -8,9 +8,9 @@ import LandingFinalCta from '../components/landing/LandingFinalCta'
 import LandingHero from '../components/landing/LandingHero'
 import LandingValueSection from '../components/landing/LandingValueSection'
 import PublicNavbar from '../components/navigation/PublicNavbar'
+import Button from '../components/ui/Button'
 import QueryErrorState from '../components/ui/QueryErrorState'
 import '../components/landing/landing.css'
-import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../hooks/useLanguage'
 import { courseService } from '../services/courseService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
@@ -33,7 +33,6 @@ const parseStudentCount = (value: string) => {
 const LandingPage = () => {
   const { t } = useTranslation()
   const { language } = useLanguage()
-  const { isBootstrapping } = useAuth()
 
   const copy = language === 'tr'
     ? {
@@ -147,6 +146,8 @@ const LandingPage = () => {
       coursesLabel: 'kurs',
       lessonsLabel: 'ders',
       emptyCategoryHighlight: 'Kurs kapsamlarini goruntule',
+      categoryLoadFailed: 'Kategoriler yuklenemedi.',
+      retryCategoryLoad: 'Tekrar dene',
     }
     : {
       navSections: [
@@ -259,15 +260,23 @@ const LandingPage = () => {
       coursesLabel: 'courses',
       lessonsLabel: 'lessons',
       emptyCategoryHighlight: 'View course scope',
+      categoryLoadFailed: 'Categories could not be loaded.',
+      retryCategoryLoad: 'Retry',
     }
 
   const { data: courses, error, isLoading } = useQuery({
     queryKey: ['landing-courses', language],
     queryFn: () => courseService.getCourses(language),
   })
-  const { data: categoriesFromApi = [] } = useQuery({
+  const {
+    data: categoriesFromApi = [],
+    error: categoriesError,
+    refetch: refetchCategories,
+    isFetching: isFetchingCategories,
+  } = useQuery({
     queryKey: ['landing-categories'],
     queryFn: () => courseService.getPublicCategories(),
+    staleTime: 0,
   })
 
   const appError = error ? normalizeApiError(error) : null
@@ -356,10 +365,6 @@ const LandingPage = () => {
     })
   }
 
-  if (isBootstrapping) {
-    return <main className="theme-muted flex min-h-screen items-center justify-center px-4">{t('loader.restoringWorkspace')}</main>
-  }
-
   if (error && !hasRecoverablePublicError) {
     return <QueryErrorState error={error} fullScreen />
   }
@@ -378,6 +383,17 @@ const LandingPage = () => {
       />
 
       <main className="landing-main">
+        {categoriesError ? (
+          <section className="mx-auto w-full max-w-[1200px] px-5 pt-8">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-cards)] border border-[color:var(--danger)] bg-[color:var(--surface-soft-peach)] px-4 py-3">
+              <p className="theme-text text-sm font-medium">{copy.categoryLoadFailed}</p>
+              <Button disabled={isFetchingCategories} onClick={() => void refetchCategories()} size="sm" type="button" variant="secondary">
+                {copy.retryCategoryLoad}
+              </Button>
+            </div>
+          </section>
+        ) : null}
+
         <LandingHero
           analyticsLabel={copy.heroAnalyticsLabel}
           coursesLabel={copy.heroCoursesLabel}

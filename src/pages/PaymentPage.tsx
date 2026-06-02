@@ -16,8 +16,9 @@ import { useLanguage } from '../hooks/useLanguage'
 import { useLibrary } from '../hooks/useLibrary'
 import { useConfirmPaymentMutation, useCreatePaymentMutation } from '../hooks/usePayments'
 import { enrollmentService } from '../services/enrollmentService'
-import type { PaymentProvider } from '../services/paymentService'
+import type { ConfirmPaymentRequest, Payment, PaymentProvider } from '../services/paymentService'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
+import type { AppError } from '../shared/errors/types'
 import { getFirstFieldErrorMap } from '../shared/errors/types'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
@@ -144,6 +145,160 @@ const trimOrUndefined = (value: string) => {
   return trimmedValue.length > 0 ? trimmedValue : undefined
 }
 
+const DEFAULT_LOCAL_PAYMENT_WEBHOOK_SECRET = 'local-payment-webhook-secret-change-me'
+
+const toRecord = (value: unknown): Record<string, unknown> =>
+  (typeof value === 'object' && value !== null) ? value as Record<string, unknown> : {}
+
+const toNonEmptyString = (value: unknown) => {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : undefined
+}
+
+const normalizeBackendErrors = (errors: unknown): string[] => {
+  if (typeof errors === 'string') {
+    const single = toNonEmptyString(errors)
+    return single ? [single] : []
+  }
+
+  if (Array.isArray(errors)) {
+    return errors
+      .map((entry) => toNonEmptyString(entry))
+      .filter((entry): entry is string => Boolean(entry))
+  }
+
+  const errorsRecord = toRecord(errors)
+  const detailEntries: string[] = []
+
+  for (const [field, value] of Object.entries(errorsRecord)) {
+    if (typeof value === 'string') {
+      const message = toNonEmptyString(value)
+      if (message) {
+        detailEntries.push(field === '_error' ? message : `${field}: ${message}`)
+      }
+      continue
+    }
+
+    if (Array.isArray(value)) {
+      for (const candidate of value) {
+        const message = toNonEmptyString(candidate)
+        if (!message) {
+          continue
+        }
+
+        detailEntries.push(field === '_error' ? message : `${field}: ${message}`)
+      }
+    }
+  }
+
+  return detailEntries
+}
+
+const toUniqueMessages = (messages: string[]) => {
+  const seen = new Set<string>()
+  const unique: string[] = []
+
+  for (const message of messages) {
+    const normalized = message.trim()
+    if (!normalized || seen.has(normalized)) {
+      continue
+    }
+
+    seen.add(normalized)
+    unique.push(normalized)
+  }
+
+  return unique
+}
+
+const resolveConfirmPaymentId = (createdPayment: Payment) => {
+  const paymentId = createdPayment.id?.trim()
+  if (!paymentId) {
+    throw new Error('Payment create response did not include paymentId.')
+  }
+
+  return paymentId
+}
+
+const toGatewayTransactionId = (provider: PaymentProvider) => {
+  const suffix = `${Date.now()}_${Math.floor(Math.random() * 1_000_000)}`
+
+  if (provider === 'STRIPE') {
+    return `pi_${suffix}`
+  }
+
+  if (provider === 'IYZICO') {
+    return `iyz_${suffix}`
+  }
+
+  return `mock_${suffix}`
+}
+
+const arrayBufferToBase64 = (buffer: ArrayBuffer) => {
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
+
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte)
+  }
+
+  return btoa(binary)
+}
+
+const buildGatewaySignaturePayload = (
+  payment: Payment,
+  gatewayTransactionId: string,
+  approved: boolean,
+  timestamp: number,
+  userIdFallback?: string,
+) => {
+  const userId = toNonEmptyString(payment.userId) ?? toNonEmptyString(userIdFallback)
+  const amount = toNonEmptyString(payment.amountRaw) ?? (
+    typeof payment.amount === 'number' && Number.isFinite(payment.amount)
+      ? String(payment.amount)
+      : undefined
+  )
+  const provider = toNonEmptyString(payment.provider)
+  const providerPaymentId = toNonEmptyString(payment.providerPaymentId)
+  const courseId = toNonEmptyString(payment.courseId)
+  const currency = toNonEmptyString(payment.currency)
+  const paymentId = toNonEmptyString(payment.id)
+
+  if (!paymentId || !provider || !providerPaymentId || !userId || !courseId || !amount || !currency) {
+    return null
+  }
+
+  return [
+    paymentId,
+    provider,
+    providerPaymentId,
+    userId,
+    courseId,
+    amount,
+    currency,
+    gatewayTransactionId,
+    String(approved),
+    String(timestamp),
+  ].join('|')
+}
+
+const computeGatewaySignature = async (payload: string, secret: string) => {
+  const encoder = new TextEncoder()
+  const secretKey = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const signatureBuffer = await crypto.subtle.sign('HMAC', secretKey, encoder.encode(payload))
+  return arrayBufferToBase64(signatureBuffer)
+}
+
 const PaymentPage = () => {
   const { t } = useTranslation()
   const { language } = useLanguage()
@@ -156,6 +311,7 @@ const PaymentPage = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null)
+  const [checkoutErrorDetails, setCheckoutErrorDetails] = useState<string[]>([])
   const [progressMessage, setProgressMessage] = useState<string | null>(null)
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
   const [recentlyPurchasedCourseTitles, setRecentlyPurchasedCourseTitles] = useState<string[]>([])
@@ -209,6 +365,8 @@ const PaymentPage = () => {
     ? 'Odeme basarili. Kurs kaydiniz olusturuldu.'
     : 'Payment succeeded. Your enrollment has been created.'
   const actionLabel = language === 'tr' ? 'Islem' : 'Action'
+  const webhookSecretFromEnv = toNonEmptyString(import.meta.env.VITE_PAYMENT_GATEWAY_WEBHOOK_SECRET)
+  const gatewayWebhookSecret = webhookSecretFromEnv ?? DEFAULT_LOCAL_PAYMENT_WEBHOOK_SECRET
 
   const requestPaymentDecision = (courseTitle: string) =>
     new Promise<boolean>((resolve) => {
@@ -338,6 +496,64 @@ const PaymentPage = () => {
   const applyServerValidationErrors = (error: unknown) => {
     const appError = normalizeApiError(error)
     setFieldErrors(getFirstFieldErrorMap(appError.fieldErrors))
+    return appError
+  }
+
+  const extractCheckoutErrorFeedback = (appError: AppError) => {
+    const rawPayload = toRecord(appError.raw)
+    const rawMessage = toNonEmptyString(rawPayload.message)
+    const rawErrors = normalizeBackendErrors(rawPayload.errors)
+    const fieldErrors = appError.fieldErrors
+      ? Object.entries(appError.fieldErrors).flatMap(([field, messages]) =>
+        messages
+          .map((message) => toNonEmptyString(message))
+          .filter((message): message is string => Boolean(message))
+          .map((message) => (field === '_error' ? message : `${field}: ${message}`)))
+      : []
+
+    const combinedDetails = toUniqueMessages([...rawErrors, ...fieldErrors])
+    const resolvedMessage = rawMessage ?? toNonEmptyString(appError.message)
+
+    return {
+      message: resolvedMessage,
+      details: combinedDetails,
+    }
+  }
+
+  const buildConfirmPayload = async (
+    createdPayment: Payment,
+    approved: boolean,
+    buyerPayload: ReturnType<typeof buildBuyerPayload>,
+  ): Promise<ConfirmPaymentRequest> => {
+    const payload: ConfirmPaymentRequest = {
+      approved,
+      failureReason: approved ? undefined : paymentDeclinedFallbackReason,
+      ...buyerPayload,
+    }
+
+    const provider = createdPayment.provider ?? buyerForm.provider
+    if (provider === 'MOCK_GATEWAY') {
+      return payload
+    }
+
+    const gatewayTransactionId = toGatewayTransactionId(provider)
+    const gatewayTimestampEpochSeconds = Math.floor(Date.now() / 1000)
+    const signaturePayload = buildGatewaySignaturePayload(
+      createdPayment,
+      gatewayTransactionId,
+      approved,
+      gatewayTimestampEpochSeconds,
+      user?.id,
+    )
+
+    if (!signaturePayload || !globalThis.crypto?.subtle) {
+      return payload
+    }
+
+    payload.gatewayTransactionId = gatewayTransactionId
+    payload.gatewayTimestampEpochSeconds = gatewayTimestampEpochSeconds
+    payload.gatewaySignature = await computeGatewaySignature(signaturePayload, gatewayWebhookSecret)
+    return payload
   }
 
   const handleCheckout = async () => {
@@ -351,6 +567,7 @@ const PaymentPage = () => {
 
     setIsSubmitting(true)
     setCheckoutMessage(null)
+    setCheckoutErrorDetails([])
     setProgressMessage(null)
     setFieldErrors({})
     setCardErrors({})
@@ -377,14 +594,12 @@ const PaymentPage = () => {
 
           const approved = await requestPaymentDecision(item.course.title)
           setProgressMessage(paymentConfirmingMessage)
+          const paymentId = resolveConfirmPaymentId(createdPayment)
+          const confirmPayload = await buildConfirmPayload(createdPayment, approved, buyerPayload)
 
           const confirmedPayment = await confirmPaymentMutation.mutateAsync({
-            paymentId: createdPayment.id,
-            payload: {
-              approved,
-              failureReason: approved ? undefined : paymentDeclinedFallbackReason,
-              ...buyerPayload,
-            },
+            paymentId,
+            payload: confirmPayload,
           })
 
           if (confirmedPayment.status !== 'SUCCEEDED') {
@@ -428,9 +643,11 @@ const PaymentPage = () => {
 
       setRecentlyPurchasedCourseTitles(successfulCourseTitles)
       setCheckoutMessage(successMessage)
+      setCheckoutErrorDetails([])
       setIsSuccessModalOpen(true)
     } catch (error) {
-      applyServerValidationErrors(error)
+      const appError = applyServerValidationErrors(error)
+      const { message: backendMessage, details: backendDetails } = extractCheckoutErrorFeedback(appError)
 
       if (successfulCourseIds.length > 0) {
         purchaseCourses(successfulCourseIds)
@@ -444,10 +661,16 @@ const PaymentPage = () => {
         ])
       }
 
-      const message = error instanceof Error && error.message.trim()
-        ? error.message.trim()
-        : paymentFailedMessage
+      if (appError.httpStatus === 400) {
+        console.error('Payment checkout failed with 400 response body:', appError.raw)
+      }
 
+      const message = backendMessage
+        ?? (error instanceof Error && error.message.trim()
+          ? error.message.trim()
+          : paymentFailedMessage)
+
+      setCheckoutErrorDetails(backendDetails)
       setCheckoutMessage(message)
     } finally {
       setProgressMessage(null)
@@ -644,15 +867,22 @@ const PaymentPage = () => {
               </TableShell>
 
               {checkoutMessage ? (
-                <p
+                <div
                   className={`rounded-sm border px-4 py-3 text-sm ${
                     checkoutMessage === successMessage
                       ? 'border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] theme-heading'
                       : 'border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] text-[color:var(--danger)]'
                   }`}
                 >
-                  {checkoutMessage}
-                </p>
+                  <p>{checkoutMessage}</p>
+                  {checkoutMessage !== successMessage && checkoutErrorDetails.length > 0 ? (
+                    <ul className="mt-2 list-disc pl-5 text-xs leading-6">
+                      {checkoutErrorDetails.map((detail) => (
+                        <li key={detail}>{detail}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
               ) : null}
 
               <Button className="w-full justify-center" disabled={isSubmitting || !canCheckout} onClick={() => void handleCheckout()} size="lg">

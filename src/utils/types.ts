@@ -267,8 +267,10 @@ export interface RecommendationCourse {
   description: string
   category: string
   level: string
-  durationSeconds?: number | null
-  totalDurationSeconds?: number | null
+  duration?: string | number | null
+  durationSeconds?: string | number | null
+  totalDuration?: string | number | null
+  totalDurationSeconds?: string | number | null
   lessonCount: number
   rating?: number | null
   thumbnailUrl?: string | null

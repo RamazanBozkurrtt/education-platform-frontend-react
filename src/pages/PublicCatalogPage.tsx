@@ -6,6 +6,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import CatalogCourseCard from '../components/CatalogCourseCard'
 import '../components/catalog/catalog.css'
 import PublicNavbar from '../components/navigation/PublicNavbar'
+import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
 import Loader from '../components/ui/Loader'
 import QueryErrorState from '../components/ui/QueryErrorState'
@@ -58,6 +59,8 @@ const PublicCatalogPage = () => {
         categoryPrefix: 'Kategori',
       },
       navSections: [{ id: 'course-results', label: 'Kurslar' }],
+      categoryLoadFailed: 'Kategoriler yuklenemedi.',
+      retryCategoryLoad: 'Tekrar dene',
     }
     : {
       eyebrow: 'EduBase Catalog',
@@ -87,15 +90,23 @@ const PublicCatalogPage = () => {
         categoryPrefix: 'Category',
       },
       navSections: [{ id: 'course-results', label: 'Courses' }],
+      categoryLoadFailed: 'Categories could not be loaded.',
+      retryCategoryLoad: 'Retry',
     }
 
   const { data: courses, error, isLoading } = useQuery({
     queryKey: ['public-catalog', language],
     queryFn: () => courseService.getCourses(language),
   })
-  const { data: categoriesFromApi = [] } = useQuery({
+  const {
+    data: categoriesFromApi = [],
+    error: categoriesError,
+    refetch: refetchCategories,
+    isFetching: isFetchingCategories,
+  } = useQuery({
     queryKey: ['public-catalog-categories'],
     queryFn: () => courseService.getPublicCategories(),
+    staleTime: 0,
   })
 
   const appError = error ? normalizeApiError(error) : null
@@ -212,6 +223,17 @@ const PublicCatalogPage = () => {
       />
 
       <main className="catalog-main">
+        {categoriesError ? (
+          <section className="mx-auto mb-4 w-full max-w-[1200px] px-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-cards)] border border-[color:var(--danger)] bg-[color:var(--surface-soft-peach)] px-4 py-3">
+              <p className="theme-text text-sm font-medium">{copy.categoryLoadFailed}</p>
+              <Button disabled={isFetchingCategories} onClick={() => void refetchCategories()} size="sm" type="button" variant="secondary">
+                {copy.retryCategoryLoad}
+              </Button>
+            </div>
+          </section>
+        ) : null}
+
         <section className="catalog-hero">
           <div className="catalog-hero-copy">
             <p className="catalog-eyebrow">{copy.eyebrow}</p>

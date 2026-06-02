@@ -4,6 +4,7 @@ import { courseMediaService } from './courseMediaService'
 import { courseService } from './courseService'
 import { API_ENDPOINTS } from './endpoints'
 import { mapBackendCourseToCourse } from './courseMappers'
+import { normalizeDurationSeconds } from '../utils/duration'
 import type { ApiEnvelope, CourseCategoryOption, CourseLevelOption } from '../utils/types'
 
 const VIDEO_UPLOAD_TIMEOUT_MS = 30 * 60_000
@@ -111,45 +112,6 @@ const toNumber = (value: unknown) => {
   }
 
   return undefined
-}
-
-const toDurationSeconds = (value: unknown) => {
-  const numeric = toNumber(value)
-
-  if (typeof numeric === 'number' && numeric >= 0) {
-    return Math.trunc(numeric)
-  }
-
-  if (typeof value !== 'string') {
-    return null
-  }
-
-  const trimmed = value.trim()
-
-  if (!trimmed) {
-    return null
-  }
-
-  const match = trimmed.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/)
-
-  if (!match) {
-    return null
-  }
-
-  const [, first, second, third] = match
-  const firstPart = Number(first)
-  const secondPart = Number(second)
-  const thirdPart = typeof third === 'string' ? Number(third) : undefined
-
-  if (!Number.isFinite(firstPart) || !Number.isFinite(secondPart)) {
-    return null
-  }
-
-  if (typeof thirdPart === 'number' && Number.isFinite(thirdPart)) {
-    return (firstPart * 3600) + (secondPart * 60) + thirdPart
-  }
-
-  return (firstPart * 60) + secondPart
 }
 
 const toBoolean = (value: unknown) => {
@@ -302,10 +264,14 @@ const toCourseDetail = (payload: unknown): InstructorCourseDetail => {
     const summaryTitle = toText(lesson.summaryTitle) ?? (createSummaryTitle(trimmedTitle) || trimmedTitle)
     const description = toText(lesson.description ?? lesson.summary)
     const orderIndex = toNumber(lesson.orderIndex ?? lesson.order) ?? index + 1
-    const durationSeconds = toDurationSeconds(
+    const durationSeconds = normalizeDurationSeconds(
       lesson.durationSeconds
       ?? lesson.durationInSeconds
       ?? lesson.duration_seconds
+      ?? lesson.duration_in_seconds
+      ?? lesson.videoDurationSeconds
+      ?? lesson.video_duration_seconds
+      ?? lesson.videoDuration
       ?? lesson.duration,
     )
     const completed = toBoolean(lesson.completed) ?? false
@@ -444,7 +410,7 @@ const toCourseDetail = (payload: unknown): InstructorCourseDetail => {
       title: module.title,
       summaryTitle: createSummaryTitle(module.title) || module.title,
       description: module.description,
-      durationSeconds: toDurationSeconds(module.durationSeconds ?? module.duration),
+      durationSeconds: normalizeDurationSeconds(module.durationSeconds),
       orderIndex: module.order ?? index + 1,
       completed: module.completed,
       videoUrl: module.videoUrl?.trim() || null,
