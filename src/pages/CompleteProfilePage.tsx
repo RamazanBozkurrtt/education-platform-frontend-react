@@ -292,7 +292,7 @@ const CompleteProfilePage = () => {
       <div className="flex flex-col gap-4 border-b border-[color:var(--border)] pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">{t('profileSetup.eyebrow')}</p>
-          <h2 className="theme-heading mt-4 text-3xl font-semibold tracking-[-0.04em] sm:text-4xl">{t('profileSetup.title')}</h2>
+          <h2 className="theme-heading mt-4 text-3xl font-semibold sm:text-4xl">{t('profileSetup.title')}</h2>
           <p className="theme-muted mt-4 max-w-[52ch] text-sm leading-6">{t('profileSetup.description')}</p>
         </div>
 

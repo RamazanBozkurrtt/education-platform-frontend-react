@@ -11,6 +11,7 @@ interface CourseVideoPlayerProps {
   emptyMessage: string
   isSourceLoading: boolean
   sourceErrorMessage?: string | null
+  language?: 'en' | 'tr'
   onVideoPlay: () => void
   onVideoLoadedMetadata: () => void
   onVideoError: () => void
@@ -67,6 +68,7 @@ const CourseVideoPlayer = ({
   title,
   emptyMessage,
   isSourceLoading,
+  language = 'en',
   sourceErrorMessage,
   onVideoEnded,
   onVideoError,
@@ -96,6 +98,9 @@ const CourseVideoPlayer = ({
 
   const hasSource = Boolean(src)
   const hasError = Boolean(sourceErrorMessage)
+  const loadingLabel = language === 'tr' ? 'Video yükleniyor...' : 'Loading video...'
+  const playLabel = language === 'tr' ? 'Videoyu oynat' : 'Play video'
+  const errorTitle = language === 'tr' ? 'Video yüklenemedi' : 'Video could not be loaded'
   const showCenterPlay = hasSource && !hasStarted && !isSourceLoading && !hasError
   const shouldShowLoader = isSourceLoading || (isBuffering && hasSource)
 
@@ -416,7 +421,7 @@ const CourseVideoPlayer = ({
 
       <div
         className={cn(
-          'relative overflow-hidden rounded-2xl border border-[color:rgba(255,255,255,0.16)] bg-[#0a1219] shadow-[0_20px_60px_rgba(5,10,16,0.45)]',
+          'relative overflow-hidden rounded-md border border-[color:rgba(255,255,255,0.16)] bg-[#0a1219] shadow-none',
           isPlaying && !showControls ? 'cursor-none' : 'cursor-default',
         )}
         onBlur={queueAutoHideControls}
@@ -494,7 +499,7 @@ const CourseVideoPlayer = ({
 
         {showCenterPlay ? (
           <button
-            aria-label="Play video"
+            aria-label={playLabel}
             className="absolute inset-0 z-20 flex items-center justify-center bg-[color:rgba(7,12,18,0.38)]"
             data-no-video-toggle="true"
             onClick={togglePlayPause}
@@ -510,16 +515,16 @@ const CourseVideoPlayer = ({
           <div className="absolute inset-0 z-30 flex items-center justify-center bg-[color:rgba(7,12,18,0.48)]" data-no-video-toggle="true">
             <div className="inline-flex items-center gap-2 rounded-full border border-[color:rgba(255,255,255,0.18)] bg-[color:rgba(10,16,24,0.86)] px-4 py-2 text-sm text-white">
               <LoaderCircle className="h-4 w-4 animate-spin" />
-              <span>Loading video...</span>
+              <span>{loadingLabel}</span>
             </div>
           </div>
         ) : null}
 
         {hasError ? (
           <div className="absolute inset-0 z-40 flex items-center justify-center bg-[color:rgba(7,12,18,0.82)] px-6" data-no-video-toggle="true">
-            <div className="max-w-md rounded-xl border border-[color:rgba(255,255,255,0.18)] bg-[color:rgba(12,18,28,0.94)] p-5 text-center text-sm text-white">
+            <div className="max-w-md rounded-md border border-[color:rgba(255,255,255,0.18)] bg-[color:rgba(12,18,28,0.94)] p-5 text-center text-sm text-white">
               <AlertCircle className="mx-auto mb-3 h-6 w-6 text-[color:var(--danger)]" />
-              <p className="font-semibold">Video could not be loaded</p>
+              <p className="font-semibold">{errorTitle}</p>
               <p className="mt-2 text-[color:rgba(255,255,255,0.76)]">{sourceErrorMessage}</p>
             </div>
           </div>
@@ -533,7 +538,7 @@ const CourseVideoPlayer = ({
             )}
             data-no-video-toggle="true"
           >
-            <div className="rounded-xl border border-[color:rgba(255,255,255,0.12)] bg-[color:rgba(6,11,18,0.82)] p-3 backdrop-blur-md sm:p-3.5">
+            <div className="rounded-md border border-[color:rgba(255,255,255,0.12)] bg-[color:rgba(6,11,18,0.82)] p-3 backdrop-blur-md sm:p-3.5">
               <div className="mb-2">
                 <div className="relative h-1.5 overflow-hidden rounded-full bg-[color:rgba(255,255,255,0.14)]">
                   <div

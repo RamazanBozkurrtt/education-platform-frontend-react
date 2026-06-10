@@ -2,7 +2,7 @@ export const resources = {
   en: {
     translation: {
       app: {
-        name: 'Luma Academy',
+        name: 'EduBase',
       },
       language: {
         label: 'Language',
@@ -38,7 +38,7 @@ export const resources = {
       },
       auth: {
         badge: 'Online learning',
-        heroTitle: 'Learn practical skills with Edubase.',
+        heroTitle: 'Learn practical skills with EduBase.',
         heroDescription:
           'Browse courses, review instructors, and keep your learning progress in one account.',
         completionRate: 'Completion rate',
@@ -60,7 +60,7 @@ export const resources = {
         needAccount: 'Need an account?',
         createOne: 'Create one',
         createWorkspace: 'Create your workspace',
-        registerTitle: 'Create your Edubase account.',
+        registerTitle: 'Create your EduBase account.',
         registerDescription:
           'Set up your account to save courses and continue learning.',
         fullName: 'Full name',
@@ -429,6 +429,31 @@ export const resources = {
         savingChanges: 'Saving changes...',
         updateSuccess: 'Profile details were updated successfully.',
         updateError: 'Profile details could not be updated. Try again.',
+        nav: {
+          general: 'General information',
+          account: 'Account',
+          security: 'Security',
+          danger: 'Danger zone',
+        },
+        status: {
+          active: 'Active',
+          incomplete: 'Needs attention',
+        },
+        accountDescription: 'Review account identity and access details.',
+        accountRole: 'Role',
+        accountStatus: 'Status',
+        deactivate: {
+          title: 'Deactivate profile',
+          description: 'Type the sentence exactly to confirm profile deactivation.',
+          promptLabel: 'Confirmation sentence',
+          inputLabel: 'Type the sentence above',
+          inputPlaceholder: 'Write the sentence exactly as shown.',
+          submit: 'Deactivate profile',
+          submitting: 'Deactivating profile...',
+          newSentence: 'New sentence',
+          mismatch: 'The confirmation sentence does not match.',
+          requestError: 'Profile deactivation failed. Please try again.',
+        },
         password: {
           title: 'Change password',
           description: 'Enter your current password and set a new password with at least 6 characters.',
@@ -518,7 +543,7 @@ export const resources = {
   tr: {
     translation: {
       app: {
-        name: 'Luma Academy',
+        name: 'EduBase',
       },
       language: {
         label: 'Dil',
@@ -554,7 +579,7 @@ export const resources = {
       },
       auth: {
         badge: 'Online eğitim',
-        heroTitle: 'Edubase ile pratik beceriler öğren.',
+        heroTitle: 'EduBase ile pratik beceriler öğren.',
         heroDescription:
           'Kursları incele, eğitmenleri değerlendir ve ilerlemeni hesabından takip et.',
         completionRate: 'Tamamlama orani',
@@ -576,7 +601,7 @@ export const resources = {
         needAccount: 'Hesabin yok mu?',
         createOne: 'Hesap olustur',
         createWorkspace: 'Calisma alanini olustur',
-        registerTitle: 'Edubase hesabını oluştur.',
+        registerTitle: 'EduBase hesabını oluştur.',
         registerDescription:
           'Kurslarını kaydetmek ve öğrenmeye devam etmek için hesabını hazırla.',
         fullName: 'Ad soyad',
@@ -945,6 +970,31 @@ export const resources = {
         savingChanges: 'Değişiklikler kaydediliyor...',
         updateSuccess: 'Profil bilgileri başarıyla güncellendi.',
         updateError: 'Profil bilgileri güncellenemedi. Tekrar dene.',
+        nav: {
+          general: 'Genel bilgiler',
+          account: 'Hesap',
+          security: 'Güvenlik',
+          danger: 'Riskli işlemler',
+        },
+        status: {
+          active: 'Aktif',
+          incomplete: 'İlgilenilmeli',
+        },
+        accountDescription: 'Hesap kimliğini ve erişim bilgilerini incele.',
+        accountRole: 'Rol',
+        accountStatus: 'Durum',
+        deactivate: {
+          title: 'Profili devre dışı bırak',
+          description: 'Profili devre dışı bırakmayı onaylamak için cümleyi aynen yaz.',
+          promptLabel: 'Onay cümlesi',
+          inputLabel: 'Yukarıdaki cümleyi yaz',
+          inputPlaceholder: 'Cümleyi gösterildiği gibi aynen yaz.',
+          submit: 'Profili devre dışı bırak',
+          submitting: 'Profil devre dışı bırakılıyor...',
+          newSentence: 'Yeni cümle',
+          mismatch: 'Onay cümlesi eşleşmiyor.',
+          requestError: 'Profil devre dışı bırakılamadı. Lütfen tekrar dene.',
+        },
         password: {
           title: 'Şifre değiştir',
           description: 'Mevcut şifreni gir ve en az 6 karakterlik yeni bir şifre belirle.',

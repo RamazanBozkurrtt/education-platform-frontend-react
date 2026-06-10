@@ -55,11 +55,11 @@ const SidebarContent = ({
 }: SidebarContentProps) => {
   const lessonsLabel = language === 'tr' ? 'ders' : 'lessons'
   const contentTitle = language === 'tr' ? 'Ders listesi' : 'Lesson list'
-  const contentDescription = language === 'tr' ? 'Kurs icerigini buradan takip edebilirsin.' : 'Follow the course content from here.'
+  const contentDescription = language === 'tr' ? 'Kurs içeriğini buradan takip edebilirsin.' : 'Follow the course content from here.'
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
-      <div className="border-b border-[color:var(--border)] px-4 py-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
+      <div className="border-b border-[color:var(--border)] px-4 py-3.5">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.13em] text-[color:var(--text-subtle)]">{contentTitle}</p>
@@ -127,7 +127,7 @@ const SidebarContent = ({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
                     <p className="truncate text-sm font-semibold text-[color:var(--text-heading)]">
-                      {finalExamLabel ?? (language === 'tr' ? 'Final sinavi' : 'Final exam')}
+                  {finalExamLabel ?? (language === 'tr' ? 'Final sınavı' : 'Final exam')}
                     </p>
                     {isFinalExamLocked ? (
                       <LockKeyhole className="h-4 w-4 shrink-0 text-[color:var(--text-muted)]" />
@@ -138,8 +138,8 @@ const SidebarContent = ({
 
                   <p className="mt-1.5 text-[11px] text-[color:var(--text-muted)]">
                     {finalExamHint ?? (isFinalExamLocked
-                      ? (language === 'tr' ? 'Tum dersleri tamamladiktan sonra acilir.' : 'Unlocks after all lessons are completed.')
-                      : (language === 'tr' ? 'Sinav hazir, baslayabilirsin.' : 'Exam is ready to start.'))}
+                      ? (language === 'tr' ? 'Tüm dersleri tamamladıktan sonra açılır.' : 'Unlocks after all lessons are completed.')
+                      : (language === 'tr' ? 'Sınav hazır, başlayabilirsin.' : 'Exam is ready to start.'))}
                   </p>
                 </div>
               </div>
@@ -172,7 +172,7 @@ const LessonSidebar = ({
     <aside
       className={cn(
         'hidden h-full min-h-0 transition-[width] duration-300 ease-out lg:block',
-        isDesktopOpen ? 'w-[360px] xl:w-[390px]' : 'w-0',
+        isDesktopOpen ? 'w-[336px] xl:w-[360px]' : 'w-0',
       )}
     >
       <div

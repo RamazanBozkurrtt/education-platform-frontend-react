@@ -29,7 +29,7 @@ import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
 import { resolveCourseDurationLabel, resolveLessonDurationLabel } from '../utils/duration'
-import { formatCoursePrice } from '../utils/helpers'
+import { formatCoursePrice, formatStudentCountLabel, parseStudentCount } from '../utils/helpers'
 import { isAdmin } from '../utils/roles'
 import type { CreateReviewRequest, Review, UpdateReviewRequest } from '../utils/types'
 import { buildCoursePlayerPath, resolveContinueLessonId, resolveLessonProgressStatus } from '../utils/courseProgress'
@@ -75,27 +75,27 @@ const resolveErrorMessageFromPayload = (error: unknown) => {
   }
 
   if (appError.httpStatus === 400) {
-    return 'Lutfen girdigin bilgileri kontrol et.'
+    return 'Lütfen girdiğin bilgileri kontrol et.'
   }
 
   if (appError.httpStatus === 401) {
-    return 'Degerlendirme yapmak icin giris yapmalisin.'
+    return 'Değerlendirme yapmak için giriş yapmalısın.'
   }
 
   if (appError.httpStatus === 403) {
-    return 'Bu islem icin yetkin yok.'
+    return 'Bu işlem için yetkin yok.'
   }
 
   if (appError.httpStatus === 404) {
-    return 'Kurs veya degerlendirme bulunamadi.'
+    return 'Kurs veya değerlendirme bulunamadı.'
   }
 
   if (appError.httpStatus === 409) {
-    return 'Bu kurs icin daha once degerlendirme yapmissin.'
+    return 'Bu kurs için daha önce değerlendirme yapmışsın.'
   }
 
   if (appError.httpStatus && appError.httpStatus >= 500) {
-    return 'Degerlendirme sirasinda beklenmeyen bir sorun olustu.'
+    return 'Değerlendirme sırasında beklenmeyen bir sorun oluştu.'
   }
 
   return appError.message
@@ -145,29 +145,29 @@ const CourseDetailPage = () => {
 
   const copy = language === 'tr'
     ? {
-      detailsTitle: 'Kurs detaylari',
-      detailsDescription: 'Kurs ozeti, dersler ve degerlendirmeler.',
+      detailsTitle: 'Kurs detayları',
+      detailsDescription: 'Kurs özeti, dersler ve değerlendirmeler.',
       lessonsTitle: 'Dersler',
-      lessonsDescription: 'Bu kurs icin ders listesi.',
+      lessonsDescription: 'Bu kurs için ders listesi.',
       tags: 'Etiketler',
       ratingLabel: 'Puan',
       statusTitle: 'Kurs durumu',
       statusDescription: 'Erisim ve satin alma islemleri.',
       purchased: 'Kursa erisimin var',
-      notPurchased: 'Henuz satin alinmadi',
-      reviewTitle: 'Degerlendirmeler',
-      reviewCount: 'degerlendirme',
-      reviewWriteTitle: 'Degerlendirme yap',
-      reviewListTitle: 'Tum yorumlar',
-      yourReview: 'Bu kurs icin degerlendirmen',
-      deleteReview: 'Degerlendirmeyi sil',
-      reviewLoginRequired: 'Devam etmek icin giris yapmalisin.',
-      reviewPurchaseRequired: 'Degerlendirme yapmak icin kursu satin almalisin.',
+      notPurchased: 'Henüz satın alınmadı',
+      reviewTitle: 'Değerlendirmeler',
+      reviewCount: 'değerlendirme',
+      reviewWriteTitle: 'Değerlendirme yap',
+      reviewListTitle: 'Tüm yorumlar',
+      yourReview: 'Bu kurs için değerlendirmen',
+      deleteReview: 'Değerlendirmeyi sil',
+      reviewLoginRequired: 'Devam etmek için giriş yapmalısın.',
+      reviewPurchaseRequired: 'Değerlendirme yapmak için kursu satın almalısın.',
       noTag: 'Etiket yok.',
-      noOutcome: 'Bu kurs icin ogrenim kazanimi eklenmemis.',
-      noLessons: 'Bu kurs icin henuz ders eklenmedi.',
-      instructorTitle: 'Egitmen',
-      progressTitle: 'Ilerleme',
+      noOutcome: 'Bu kurs için öğrenim kazanımı eklenmemiş.',
+      noLessons: 'Bu kurs için henüz ders eklenmedi.',
+      instructorTitle: 'Eğitmen',
+      progressTitle: 'İlerleme',
       level: 'Seviye',
       includedOutcomes: 'Kazanacagin yetkinlikler',
       enrollFree: 'Kursa Katıl',
@@ -268,7 +268,6 @@ const CourseDetailPage = () => {
   const finalExamPath = data
     ? ROUTES.courseFinalExamOverview(data.id)
     : ROUTES.courseFinalExamOverview(courseId)
-
   const {
     data: reviewSummary,
     isLoading: isReviewSummaryLoading,
@@ -278,6 +277,15 @@ const CourseDetailPage = () => {
     queryFn: () => reviewService.getCourseReviewSummary(courseId),
     enabled: Boolean(courseId),
   })
+  const displayedRating = reviewSummary && !isReviewSummaryLoading
+    ? reviewSummary.averageRating
+    : data?.rating ?? 0
+  const hasDisplayedRating = reviewSummary && !isReviewSummaryLoading
+    ? reviewSummary.totalReviews > 0
+    : Boolean(data && ((data.ratingCount ?? 0) > 0 || data.rating > 0))
+  const displayedRatingLabel = hasDisplayedRating
+    ? displayedRating.toFixed(1)
+    : (language === 'tr' ? 'Yeni' : 'New')
 
   const {
     data: reviewPages,
@@ -489,6 +497,8 @@ const CourseDetailPage = () => {
     .slice(0, 2)
     .join('')
   const coursePreviewLabel = language === 'tr' ? 'Kurs gorseli' : 'Course preview'
+  const studentCount = data.studentsCount ?? parseStudentCount(data.students) ?? 0
+  const studentLabel = formatStudentCountLabel(studentCount, language)
 
   const handleMediaImageError = (event: SyntheticEvent<HTMLImageElement>, fallbackSrc: string) => {
     const target = event.currentTarget
@@ -556,10 +566,10 @@ const CourseDetailPage = () => {
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
         <article className="overflow-hidden rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
           <div className="grid lg:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]">
-            <div className="relative flex min-h-[260px] items-center justify-center bg-[linear-gradient(145deg,var(--surface-soft),var(--surface-hover))] p-4 md:min-h-[320px] md:p-5">
+            <div className="relative flex max-w-full items-center justify-center justify-self-center overflow-hidden bg-[color:var(--surface-strong)]">
               <img
                 alt={data.title}
-                className="h-full max-h-[420px] w-full rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-strong)] object-contain"
+                className="block h-auto max-h-[420px] max-w-full"
                 loading="lazy"
                 onError={(event) => handleMediaImageError(event, fallbackCourseImageUrl)}
                 src={courseImageUrl}
@@ -607,7 +617,7 @@ const CourseDetailPage = () => {
               <div className="grid gap-2.5 sm:grid-cols-2">
                 <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
                   <p className="theme-subtle flex items-center gap-1.5 text-xs"><Star className="h-3.5 w-3.5" />{copy.ratingLabel}</p>
-                  <p className="theme-heading mt-1 text-sm font-semibold">{data.rating.toFixed(1)}</p>
+                  <p className="theme-heading mt-1 text-sm font-semibold">{displayedRatingLabel}</p>
                 </div>
                 <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
                   <p className="theme-subtle flex items-center gap-1.5 text-xs"><Clock3 className="h-3.5 w-3.5" />{t('courseDetail.duration')}</p>
@@ -619,7 +629,7 @@ const CourseDetailPage = () => {
                 </div>
                 <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2.5">
                   <p className="theme-subtle flex items-center gap-1.5 text-xs"><Users2 className="h-3.5 w-3.5" />{t('courseDetail.enrolled')}</p>
-                  <p className="theme-heading mt-1 text-sm font-semibold">{t('courseDetail.enrolledValue', { students: data.students })}</p>
+                  <p className="theme-heading mt-1 text-sm font-semibold">{studentLabel}</p>
                 </div>
               </div>
 

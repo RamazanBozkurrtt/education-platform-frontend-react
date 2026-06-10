@@ -53,7 +53,7 @@ const LessonSidebarItem = ({
 
           <div className="mt-1.5 flex items-center gap-2 text-[11px] text-[color:var(--text-muted)]">
             <Clock3 className="h-3.5 w-3.5" />
-            <span>{resolveLessonDurationLabel(lesson, language)}</span>
+            <span className="truncate">{resolveLessonDurationLabel(lesson, language)}</span>
           </div>
 
           <div className="mt-2">

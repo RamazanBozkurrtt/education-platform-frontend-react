@@ -50,7 +50,7 @@ const LoginPage = () => {
 
     if (!password.trim()) {
       setFieldErrors({
-        password: 'Password is required.',
+        password: t('auth.passwordRequired', { defaultValue: 'Şifre zorunludur.' }),
       })
       return
     }
@@ -113,7 +113,7 @@ const LoginPage = () => {
   return (
     <div className="mx-auto flex max-w-sm flex-col">
       <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">{t('auth.welcomeBack')}</p>
-      <h2 className="theme-heading mt-3 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">{t('auth.signIn')}</h2>
+      <h2 className="theme-heading mt-3 text-2xl font-semibold sm:text-3xl">{t('auth.signIn')}</h2>
 
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
         <Input
@@ -148,12 +148,12 @@ const LoginPage = () => {
           </Link>
         </div>
         {formError ? (
-          <div className="rounded-2xl border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
+          <div className="rounded-md border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
             {formError}
           </div>
         ) : null}
         {reactivationPrompt ? (
-          <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-muted-mandarin)] px-4 py-3 text-sm text-[color:var(--text-heading)]">
+          <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-muted-mandarin)] px-4 py-3 text-sm text-[color:var(--text-heading)]">
             <p>{reactivationPrompt.message}</p>
             <p className="mt-2">
               {t('auth.reactivation.prompt', { defaultValue: 'Send a reactivation email to' })}{' '}

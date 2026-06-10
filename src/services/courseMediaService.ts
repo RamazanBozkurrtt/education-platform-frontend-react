@@ -54,7 +54,7 @@ const toEpochMilliseconds = (value: unknown) => {
     return null
   }
 
-  // Values greater than 1e12 are most likely already in milliseconds.
+
   return numericValue > 1_000_000_000_000 ? numericValue : numericValue * 1_000
 }
 
@@ -72,12 +72,12 @@ const resolveDirectExpiryValue = (value: string) => {
       return numericCandidate
     }
 
-    // Typical JWT-style epoch seconds.
+
     if (numericCandidate > 1_000_000_000) {
       return numericCandidate * 1_000
     }
 
-    // Some providers return relative lifetime in seconds.
+
     if (numericCandidate <= 604_800) {
       return Date.now() + (numericCandidate * 1_000)
     }

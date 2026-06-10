@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { LIBRARY_STORAGE_KEY } from '../utils/constants'
+import { LEGACY_LIBRARY_STORAGE_KEY, LIBRARY_STORAGE_KEY } from '../utils/constants'
 import { useLanguage } from './useLanguage'
 import { useAuth } from './useAuth'
 import { getAccessToken } from '../services/authSession'
@@ -30,6 +30,7 @@ export const LibraryProvider = ({ children }: { children: ReactNode }) => {
   const canLoadPrivateLibrary = isAuthenticated && Boolean(user?.profileCompleted)
   const storageScope = user?.id ? encodeURIComponent(user.id) : 'guest'
   const storageKey = `${LIBRARY_STORAGE_KEY}.${storageScope}`
+  const legacyStorageKey = `${LEGACY_LIBRARY_STORAGE_KEY}.${storageScope}`
   const [localPurchasedCourseIds, setLocalPurchasedCourseIds] = useState<string[]>([])
   const [optimisticCourseIds, setOptimisticCourseIds] = useState<string[]>([])
   const [hydratedStorageKey, setHydratedStorageKey] = useState<string | null>(null)
@@ -39,7 +40,7 @@ export const LibraryProvider = ({ children }: { children: ReactNode }) => {
       return
     }
 
-    const storedLibrary = localStorage.getItem(storageKey)
+    const storedLibrary = localStorage.getItem(storageKey) ?? localStorage.getItem(legacyStorageKey)
 
     if (!storedLibrary) {
       setLocalPurchasedCourseIds([])
@@ -49,13 +50,16 @@ export const LibraryProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const parsed = JSON.parse(storedLibrary) as string[]
-      setLocalPurchasedCourseIds(Array.isArray(parsed) ? parsed : [])
+      const normalized = Array.isArray(parsed) ? parsed : []
+      setLocalPurchasedCourseIds(normalized)
+      localStorage.setItem(storageKey, JSON.stringify(normalized))
+      localStorage.removeItem(legacyStorageKey)
     } catch {
       setLocalPurchasedCourseIds([])
     }
 
     setHydratedStorageKey(storageKey)
-  }, [isAuthenticated, isBootstrapping, storageKey])
+  }, [isAuthenticated, isBootstrapping, legacyStorageKey, storageKey])
 
   useEffect(() => {
     if (isBootstrapping || isAuthenticated || hydratedStorageKey !== storageKey) {

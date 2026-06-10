@@ -1,5 +1,4 @@
 ﻿import { ArrowRight, Clock3, GraduationCap, Star, UserRound } from 'lucide-react'
-import type { SyntheticEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '../hooks/useLanguage'
@@ -8,8 +7,9 @@ import { API_ENDPOINTS } from '../services/endpoints'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
 import { resolveCourseDurationLabel } from '../utils/duration'
-import { formatCoursePrice } from '../utils/helpers'
+import { formatCoursePrice, formatStudentCountLabel, parseStudentCount } from '../utils/helpers'
 import type { Course } from '../utils/types'
+import CourseImage from './CourseImage'
 
 interface CatalogCourseCardProps {
   course: Course
@@ -24,30 +24,24 @@ const CatalogCourseCard = ({ course, compact = false }: CatalogCourseCardProps) 
   const locale = language === 'tr' ? 'tr-TR' : 'en-US'
   const freeLabel = language === 'tr' ? 'Ücretsiz' : 'Free'
   const durationLabel = resolveCourseDurationLabel(course, language)
-
-  const handleImageError = (event: SyntheticEvent<HTMLImageElement>) => {
-    const target = event.currentTarget
-
-    if (target.dataset.fallbackApplied === 'true') {
-      return
-    }
-
-    target.dataset.fallbackApplied = 'true'
-    target.src = fallbackImageUrl
-  }
+  const ratingLabel = language === 'tr' ? 'Puan' : 'Rating'
+  const studentCount = course.studentsCount ?? parseStudentCount(course.students) ?? 0
+  const studentLabel = formatStudentCountLabel(studentCount, language)
+  const hasRating = (course.ratingCount ?? 0) > 0 || course.rating > 0
+  const ratingValue = hasRating ? course.rating.toFixed(1) : (language === 'tr' ? 'Yeni' : 'New')
 
   const visibleTags = course.tags.slice(0, compact ? 2 : 3)
 
   return (
     <article className="catalog-course-card">
       <div className="catalog-course-media">
-        <img
+        <CourseImage
           alt={course.title}
-          loading="lazy"
-          onError={handleImageError}
+          className="h-full w-full"
+          fit="cover"
+          fallbackSrc={fallbackImageUrl}
           src={courseImageUrl}
         />
-        <div className="catalog-course-overlay" />
       </div>
 
       <div className="catalog-course-body">
@@ -78,11 +72,11 @@ const CatalogCourseCard = ({ course, compact = false }: CatalogCourseCardProps) 
           </span>
           <span className="catalog-course-meta-item">
             <GraduationCap className="h-4 w-4" />
-            {course.students}
+            {studentLabel}
           </span>
           <span className="catalog-course-meta-item catalog-course-meta-item-rating">
             <Star className="h-4 w-4" />
-            {course.rating}
+            {ratingLabel}: {ratingValue}
           </span>
         </div>
 

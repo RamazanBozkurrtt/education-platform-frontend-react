@@ -212,8 +212,10 @@ export interface Course {
   totalDurationSeconds?: number | null
   lessons: number
   progress: number
+  studentsCount?: number
   students: string
   rating: number
+  ratingCount?: number
   price: number
   currency?: string
   accent: string
@@ -272,7 +274,14 @@ export interface RecommendationCourse {
   totalDuration?: string | number | null
   totalDurationSeconds?: string | number | null
   lessonCount: number
+  students?: string | number | null
+  studentsCount?: number | null
+  enrollmentCount?: number | null
+  enrolledStudentCount?: number | null
+  totalStudents?: number | null
   rating?: number | null
+  averageRating?: string | number | null
+  ratingCount?: number | null
   thumbnailUrl?: string | null
   score?: number | null
   reason?: string | null

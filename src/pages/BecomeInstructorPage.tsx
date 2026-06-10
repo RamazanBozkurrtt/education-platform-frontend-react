@@ -18,12 +18,12 @@ const BecomeInstructorPage = () => {
 
   const copy = language === 'tr'
     ? {
-      eyebrow: 'Egitmen basvurusu',
-      title: 'Egitmen profili olustur',
-      description: 'Kurs olusturmak ve ders yonetmek icin temel bilgilerini tamamla.',
-      alreadyInstructorTitle: 'Egitmen hesabin aktif',
-      alreadyInstructorDescription: 'Kurslarini ve derslerini yonetmek icin paneli acabilirsin.',
-      alreadyInstructorButton: 'Egitmen paneline git',
+      eyebrow: 'Eğitmen başvurusu',
+      title: 'Eğitmen profili oluştur',
+      description: 'Kurs oluşturmak ve ders yönetmek için temel bilgilerini tamamla.',
+      alreadyInstructorTitle: 'Eğitmen hesabın aktif',
+      alreadyInstructorDescription: 'Kurslarını ve derslerini yönetmek için paneli açabilirsin.',
+      alreadyInstructorButton: 'Eğitmen paneline git',
       submitLabel: 'Basvuruyu tamamla',
       submittingLabel: 'Gonderiliyor...',
     }

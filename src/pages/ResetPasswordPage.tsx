@@ -5,6 +5,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { z } from 'zod'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+import { useLanguage } from '../hooks/useLanguage'
 import { authApi } from '../services/authApi'
 import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { getFirstFieldErrorMap } from '../shared/errors/types'
@@ -86,6 +87,7 @@ const resolveResetErrorMessage = (error: unknown) => {
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate()
+  const { language } = useLanguage()
   const [searchParams] = useSearchParams()
   const token = useMemo(() => searchParams.get('token')?.trim() || '', [searchParams])
 
@@ -100,6 +102,42 @@ const ResetPasswordPage = () => {
   const resetPasswordMutation = useMutation({
     mutationFn: authApi.resetPassword,
   })
+
+  const copy = language === 'tr'
+    ? {
+      eyebrow: 'Hesap kurtarma',
+      invalidTitle: 'Geçersiz sıfırlama bağlantısı',
+      title: 'Yeni şifre belirle',
+      description: 'Hesap kurtarma işlemini tamamlamak için yeni şifrenizi girin.',
+      newPassword: 'Yeni şifre',
+      newPasswordPlaceholder: 'Yeni şifrenizi girin',
+      confirmPassword: 'Yeni şifre tekrar',
+      confirmPasswordPlaceholder: 'Yeni şifrenizi tekrar girin',
+      showNewPassword: 'Yeni şifreyi göster',
+      hideNewPassword: 'Yeni şifreyi gizle',
+      showConfirmPassword: 'Şifre tekrarını göster',
+      hideConfirmPassword: 'Şifre tekrarını gizle',
+      submitting: 'Şifre güncelleniyor...',
+      submit: 'Şifreyi güncelle',
+      backToSignIn: 'Giriş sayfasına dön',
+    }
+    : {
+      eyebrow: 'Account recovery',
+      invalidTitle: 'Invalid reset link',
+      title: 'Set a new password',
+      description: 'Enter your new password to complete account recovery.',
+      newPassword: 'New password',
+      newPasswordPlaceholder: 'Enter your new password',
+      confirmPassword: 'Confirm password',
+      confirmPasswordPlaceholder: 'Re-enter your new password',
+      showNewPassword: 'Show new password',
+      hideNewPassword: 'Hide new password',
+      showConfirmPassword: 'Show confirm password',
+      hideConfirmPassword: 'Hide confirm password',
+      submitting: 'Updating password...',
+      submit: 'Update password',
+      backToSignIn: 'Back to sign in',
+    }
 
   useEffect(() => {
     if (!successMessage) {
@@ -159,14 +197,14 @@ const ResetPasswordPage = () => {
   if (!token) {
     return (
       <div className="mx-auto flex max-w-sm flex-col">
-        <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">Account recovery</p>
-        <h2 className="theme-heading mt-3 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">Invalid reset link</h2>
-        <div className="mt-6 rounded-2xl border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
+        <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">{copy.eyebrow}</p>
+        <h2 className="theme-heading mt-3 text-2xl font-semibold sm:text-3xl">{copy.invalidTitle}</h2>
+        <div className="mt-6 rounded-md border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
           {INVALID_OR_MISSING_MESSAGE}
         </div>
         <Link className="mt-5" to={ROUTES.login}>
           <Button asChild className="w-full text-white" size="lg">
-            Back to sign in
+            {copy.backToSignIn}
           </Button>
         </Link>
       </div>
@@ -175,10 +213,10 @@ const ResetPasswordPage = () => {
 
   return (
     <div className="mx-auto flex max-w-sm flex-col">
-      <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">Account recovery</p>
-      <h2 className="theme-heading mt-3 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">Set a new password</h2>
+      <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">{copy.eyebrow}</p>
+      <h2 className="theme-heading mt-3 text-2xl font-semibold sm:text-3xl">{copy.title}</h2>
       <p className="theme-muted mt-3 text-sm leading-6">
-        Enter your new password to complete account recovery.
+        {copy.description}
       </p>
 
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
@@ -187,18 +225,18 @@ const ResetPasswordPage = () => {
             error={fieldErrors.newPassword}
             icon={<Lock className="h-4 w-4" />}
             id="reset-password-new"
-            label="New password"
+            label={copy.newPassword}
             helperText={PASSWORD_POLICY_MESSAGE}
             onChange={(event) => {
               setNewPassword(event.target.value)
               setFieldErrors((current) => ({ ...current, newPassword: '' }))
             }}
-            placeholder="Enter your new password"
+            placeholder={copy.newPasswordPlaceholder}
             type={showNewPassword ? 'text' : 'password'}
             value={newPassword}
           />
           <button
-            aria-label={showNewPassword ? 'Hide new password' : 'Show new password'}
+            aria-label={showNewPassword ? copy.hideNewPassword : copy.showNewPassword}
             className="theme-muted absolute right-3 top-[2.35rem] rounded-md p-1 transition hover:bg-[color:var(--surface-muted)] hover:text-[color:var(--text-heading)]"
             onClick={() => setShowNewPassword((current) => !current)}
             type="button"
@@ -212,17 +250,17 @@ const ResetPasswordPage = () => {
             error={fieldErrors.confirmPassword}
             icon={<Lock className="h-4 w-4" />}
             id="reset-password-confirm"
-            label="Confirm password"
+            label={copy.confirmPassword}
             onChange={(event) => {
               setConfirmPassword(event.target.value)
               setFieldErrors((current) => ({ ...current, confirmPassword: '' }))
             }}
-            placeholder="Re-enter your new password"
+            placeholder={copy.confirmPasswordPlaceholder}
             type={showConfirmPassword ? 'text' : 'password'}
             value={confirmPassword}
           />
           <button
-            aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+            aria-label={showConfirmPassword ? copy.hideConfirmPassword : copy.showConfirmPassword}
             className="theme-muted absolute right-3 top-[2.35rem] rounded-md p-1 transition hover:bg-[color:var(--surface-muted)] hover:text-[color:var(--text-heading)]"
             onClick={() => setShowConfirmPassword((current) => !current)}
             type="button"
@@ -232,12 +270,12 @@ const ResetPasswordPage = () => {
         </div>
 
         {formError ? (
-          <div className="rounded-2xl border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
+          <div className="rounded-md border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
             {formError}
           </div>
         ) : null}
         {successMessage ? (
-          <div className="rounded-2xl border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] px-4 py-3 text-sm theme-heading">
+          <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-sky-haze)] px-4 py-3 text-sm theme-heading">
             {successMessage}
           </div>
         ) : null}
@@ -248,13 +286,13 @@ const ResetPasswordPage = () => {
           size="lg"
           type="submit"
         >
-          {resetPasswordMutation.isPending ? 'Şifre güncelleniyor...' : 'Şifreyi güncelle'}
+          {resetPasswordMutation.isPending ? copy.submitting : copy.submit}
         </Button>
       </form>
 
       <Link className="mt-4" to={ROUTES.login}>
         <Button asChild className="w-full" size="lg" variant="secondary">
-          Back to sign in
+          {copy.backToSignIn}
         </Button>
       </Link>
     </div>

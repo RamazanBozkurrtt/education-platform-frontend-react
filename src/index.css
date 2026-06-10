@@ -67,10 +67,6 @@ select {
   border-radius: 0 !important;
 }
 
-.app-input-shell {
-  border-radius: 0 !important;
-}
-
 button {
   cursor: pointer;
 }
@@ -115,10 +111,7 @@ input:-webkit-autofill:focus {
 }
 
 .page-shell::after {
-  inset: 0;
-  background: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 40px 40px;
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.1), transparent 85%);
+  display: none;
 }
 
 .surface-grid {
@@ -203,9 +196,10 @@ input:-webkit-autofill:focus {
 }
 
 .app-input-shell {
+  border-radius: var(--radius-navigation) !important;
   border-color: color-mix(in srgb, var(--border) 90%, transparent);
   background: color-mix(in srgb, var(--surface-soft) 74%, var(--surface-white));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  box-shadow: none;
 }
 
 .app-input-shell:hover {
@@ -440,9 +434,9 @@ html[data-theme='dark'] .complete-profile-overlay {
 
 .public-nav-panel > div {
   border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
-  border-radius: 16px;
+  border-radius: var(--radius-cards);
   background: color-mix(in srgb, var(--surface-white) 90%, var(--surface-soft));
-  box-shadow: 0 16px 36px color-mix(in srgb, var(--text-heading) 12%, transparent);
+  box-shadow: var(--shadow-card);
   padding: 1rem;
 }
 

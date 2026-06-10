@@ -10,10 +10,13 @@ const requireEnvelopeData = <T>(envelope: ApiEnvelope<T>, fallbackMessage: strin
   throw new Error(envelope.message || fallbackMessage)
 }
 
+const RECOMMENDATION_LIST_TIMEOUT_MS = 30_000
+
 export const recommendationService = {
   async getDashboardRecommendations(limit = 10) {
     const response = await api.get<ApiEnvelope<RecommendationListPayload>>(API_ENDPOINTS.recommendations.dashboard, {
       params: { limit },
+      timeout: RECOMMENDATION_LIST_TIMEOUT_MS,
     })
 
     return requireEnvelopeData(response.data, 'Recommendation dashboard response is missing data.')
@@ -25,6 +28,7 @@ export const recommendationService = {
         query,
         limit,
       },
+      timeout: RECOMMENDATION_LIST_TIMEOUT_MS,
     })
 
     return requireEnvelopeData(response.data, 'Recommendation search response is missing data.')

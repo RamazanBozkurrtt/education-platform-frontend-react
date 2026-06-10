@@ -51,7 +51,7 @@ const RegisterPage = () => {
   return (
     <div className="mx-auto flex max-w-sm flex-col">
       <p className="theme-subtle text-xs font-semibold uppercase tracking-[0.26em]">{t('auth.createWorkspace')}</p>
-      <h2 className="theme-heading mt-3 text-2xl font-semibold tracking-[-0.04em] sm:text-3xl">{t('auth.createAccount')}</h2>
+      <h2 className="theme-heading mt-3 text-2xl font-semibold sm:text-3xl">{t('auth.createAccount')}</h2>
 
       <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
         <Input
@@ -93,7 +93,7 @@ const RegisterPage = () => {
           value={password}
         />
         {formError ? (
-          <div className="rounded-2xl border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
+          <div className="rounded-md border border-[color:var(--danger)]/30 bg-[color:var(--surface-soft-peach)] px-4 py-3 text-sm text-[color:var(--danger)]">
             {formError}
           </div>
         ) : null}

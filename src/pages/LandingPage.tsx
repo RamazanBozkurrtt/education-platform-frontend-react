@@ -17,18 +17,7 @@ import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import { buildCatalogPath, getCatalogCategories } from '../utils/catalogFilters'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryFilterKeys, getCourseCategoryLabel } from '../utils/courseCategory'
-
-const parseStudentCount = (value: string) => {
-  const normalized = value.trim().toLowerCase()
-
-  if (normalized.endsWith('k')) {
-    const parsed = Math.round(Number.parseFloat(normalized) * 1000)
-    return Number.isFinite(parsed) ? parsed : 0
-  }
-
-  const parsed = Number.parseInt(value.replace(/,/g, ''), 10)
-  return Number.isFinite(parsed) ? parsed : 0
-}
+import { parseStudentCount } from '../utils/helpers'
 
 const LandingPage = () => {
   const { t } = useTranslation()
@@ -37,116 +26,116 @@ const LandingPage = () => {
   const copy = language === 'tr'
     ? {
       navSections: [
-        { id: 'discovery', label: 'Kurs Kesfi' },
+        { id: 'discovery', label: 'Kurs Keşfi' },
         { id: 'institutions', label: 'Kurumlar' },
-        { id: 'features', label: 'Ozellikler' },
+        { id: 'features', label: 'Özellikler' },
       ],
-      heroEyebrow: 'EduBase | Kurumsal Dijital Egitim Altyapisi',
-      heroTitle: 'Kurs operasyonlarini ve ogrenme surecini tek platformda yonetin.',
-      heroDescription: 'EduBase; ogrenci, egitmen ve kurum ekipleri icin kurs kesfi, ders yapisi ve ilerleme takibini net bir urun deneyiminde birlestirir.',
-      heroPrimaryCta: 'Hesap Olustur',
-      heroSecondaryCta: 'Kurslari Incele',
-      heroQuickCardsTitle: 'Platform Gorunumu',
-      heroVisualTitle: 'Programlar, kategoriler ve ogrenme akislari ayni merkezde',
-      heroVisualDescription: 'Kurs seciminden ders ilerlemesine kadar her adim izlenebilir ve raporlanabilir bir duzende ilerler.',
+      heroEyebrow: 'EduBase | Kurumsal Dijital Eğitim Altyapısı',
+      heroTitle: 'Kurs operasyonlarını ve öğrenme sürecini tek platformda yönetin.',
+      heroDescription: 'EduBase; öğrenci, eğitmen ve kurum ekipleri için kurs keşfi, ders yapısı ve ilerleme takibini net bir ürün deneyiminde birleştirir.',
+      heroPrimaryCta: 'Hesap Oluştur',
+      heroSecondaryCta: 'Kursları İncele',
+      heroQuickCardsTitle: 'Platform Görünümü',
+      heroVisualTitle: 'Programlar, kategoriler ve öğrenme akışları aynı merkezde',
+      heroVisualDescription: 'Kurs seçiminden ders ilerlemesine kadar her adım izlenebilir ve raporlanabilir bir düzende ilerler.',
       heroTrackActionLabel: 'Detaya Git',
-      heroSecurityLabel: 'Guvenli Altyapi',
-      heroStructureLabel: 'Program Yapisi',
-      heroAnalyticsLabel: 'Ilerleme Analizi',
-      heroProofPoints: ['Duzenli ders yapisi', 'Olculebilir ogrenci ilerlemesi'],
-      heroLearnersLabel: 'Toplam Ogrenci',
+      heroSecurityLabel: 'Güvenli Altyapı',
+      heroStructureLabel: 'Program Yapısı',
+      heroAnalyticsLabel: 'İlerleme Analizi',
+      heroProofPoints: ['Düzenli ders yapısı', 'Ölçülebilir öğrenci ilerlemesi'],
+      heroLearnersLabel: 'Toplam Öğrenci',
       heroRatingLabel: 'Ortalama Puan',
       heroCoursesLabel: 'Aktif Kurs',
-      trustTitle: 'Kurumsal ogrenme icin net ve guvenilir bir temel',
-      trustDescription: 'Platform, gunluk operasyonlarda hiz kadar tutarlilik ve denetlenebilirlik ihtiyacini da gozetir.',
+      trustTitle: 'Kurumsal öğrenme için net ve güvenilir bir temel',
+      trustDescription: 'Platform, günlük operasyonlarda hız kadar tutarlılık ve denetlenebilirlik ihtiyacını da gözetir.',
       trustItems: [
         {
           id: 'discover',
-          title: 'Yapisal kurs kesfi',
-          description: 'Ogrenciler kurslari konu, seviye ve kapsam bilgisiyle karsilastirir.',
+          title: 'Yapısal kurs keşfi',
+          description: 'Öğrenciler kursları konu, seviye ve kapsam bilgisiyle karşılaştırır.',
           icon: 'discover' as const,
         },
         {
           id: 'track',
-          title: 'Ilerleme takibi',
-          description: 'Ders bazli durum gorunur, ogrenme sureci kesintisiz izlenir.',
+          title: 'İlerleme takibi',
+          description: 'Ders bazlı durum görünür, öğrenme süreci kesintisiz izlenir.',
           icon: 'track' as const,
         },
         {
           id: 'instructor',
-          title: 'Egitmen verimliligi',
-          description: 'Icerik planlama, ders duzeni ve ogrenci yonlendirmesi tek panelde ilerler.',
+          title: 'Eğitmen verimliliği',
+          description: 'İçerik planlama, ders düzeni ve öğrenci yönlendirmesi tek panelde ilerler.',
           icon: 'instructor' as const,
         },
         {
           id: 'secure',
-          title: 'Guvenli platform deneyimi',
-          description: 'Tutarli erisim akislariyla kurumsal kullanima uygun bir deneyim sunulur.',
+          title: 'Güvenli platform deneyimi',
+          description: 'Tutarlı erişim akışlarıyla kurumsal kullanıma uygun bir deneyim sunulur.',
           icon: 'secure' as const,
         },
       ],
-      discoveryTitle: 'Kurs kesfi sade, karar sureci hizli',
-      discoveryDescription: 'Katalog deneyimi; arama, filtreleme ve karsilastirma adimlarini tek bir akista birlestirir.',
+      discoveryTitle: 'Kurs keşfi sade, karar süreci hızlı',
+      discoveryDescription: 'Katalog deneyimi; arama, filtreleme ve karşılaştırma adımlarını tek bir akışta birleştirir.',
       discoverySteps: [
-        'Konuya gore ara, seviyeye gore daralt, hedefe gore sec.',
-        'Kurs ozetlerini ve ders kapsamlarini tek ekranda degerlendir.',
-        'Uygun kursu belirle ve detay sayfasina tek adimda gec.',
+        'Konuya göre ara, seviyeye göre daralt, hedefe göre seç.',
+        'Kurs özetlerini ve ders kapsamlarını tek ekranda değerlendir.',
+        'Uygun kursu belirle ve detay sayfasına tek adımda geç.',
       ],
-      discoveryCategoriesTitle: 'One Cikan Kategoriler',
-      discoveryCoursesTitle: 'Degerlendirme Listesi',
-      discoveryCatalogCta: 'Tum Kataloga Git',
-      institutionTitle: 'Kurum ve egitmen ekipleri icin operasyonel netlik',
-      institutionDescription: 'EduBase, egitim ekiplerinin kurs yasam dongusunu standart bir yapida yonetmesine yardimci olur.',
-      institutionMainTitle: 'Kurum Olceginde Yonetim',
-      institutionMainDescription: 'Kurs acma, icerik duzeni ve ogrenci izleme surecleri daginik araclar yerine tek platformda toplanir.',
-      instructorTitle: 'Egitmen Yonetim Paneli',
-      instructorDescription: 'Egitmenler ders akislarini, icerik seviyelerini ve ogrenci ilerlemesini odakli bir duzende yonetir.',
+      discoveryCategoriesTitle: 'Öne Çıkan Kategoriler',
+      discoveryCoursesTitle: 'Değerlendirme Listesi',
+      discoveryCatalogCta: 'Tüm Kataloğa Git',
+      institutionTitle: 'Kurum ve eğitmen ekipleri için operasyonel netlik',
+      institutionDescription: 'EduBase, eğitim ekiplerinin kurs yaşam döngüsünü standart bir yapıda yönetmesine yardımcı olur.',
+      institutionMainTitle: 'Kurum Ölçeğinde Yönetim',
+      institutionMainDescription: 'Kurs açma, içerik düzeni ve öğrenci izleme süreçleri dağınık araçlar yerine tek platformda toplanır.',
+      instructorTitle: 'Eğitmen Yönetim Paneli',
+      instructorDescription: 'Eğitmenler ders akışlarını, içerik seviyelerini ve öğrenci ilerlemesini odaklı bir düzende yönetir.',
       institutionHighlights: [
-        'Program bazli kurs organizasyonu',
-        'Tutarli ders yapisi ve icerik standartlari',
-        'Kurum ici raporlama ve izlenebilirlik',
+        'Program bazlı kurs organizasyonu',
+        'Tutarlı ders yapısı ve içerik standartları',
+        'Kurum içi raporlama ve izlenebilirlik',
       ],
       instructorCapabilities: [
-        'Kurs ve ders icerigini merkezi yonetme',
-        'Ogrenci ilerlemesini ders bazinda izleme',
-        'Yayin surecini sade adimlarla surdurme',
+        'Kurs ve ders içeriğini merkezi yönetme',
+        'Öğrenci ilerlemesini ders bazında izleme',
+        'Yayın sürecini sade adımlarla sürdürme',
       ],
-      featureTitle: 'Uretimde kullanima hazir ozellik seti',
-      featureDescription: 'Gereksiz gorsel kalabalik yerine islevsel, olgun ve kurumsal bir urun dili sunar.',
+      featureTitle: 'Üretimde kullanıma hazır özellik seti',
+      featureDescription: 'Gereksiz görsel kalabalık yerine işlevsel, olgun ve kurumsal bir ürün dili sunar.',
       featureItems: [
         {
           id: 'workflow',
-          title: 'Akis odakli arayuz',
-          description: 'Kesiften kayda kadar kullaniciyi dogal bir adim sirasinda ilerletir.',
+          title: 'Akış odaklı arayüz',
+          description: 'Keşiften kayda kadar kullanıcıyı doğal bir adım sırasında ilerletir.',
           icon: 'workflow' as const,
         },
         {
           id: 'insight',
-          title: 'Karar destekleyen gorunurluk',
-          description: 'Kurs ozetleri ve ilerleme bilgileri karar aninda erisilebilir durumdadir.',
+          title: 'Kararı destekleyen görünürlük',
+          description: 'Kurs özetleri ve ilerleme bilgileri karar anında erişilebilir durumdadır.',
           icon: 'insight' as const,
         },
         {
           id: 'quality',
           title: 'Akademik ciddiyet',
-          description: 'Kurs ve ders sunumu, profesyonel egitim ortamina uygun bicimde kurgulanir.',
+          description: 'Kurs ve ders sunumu, profesyonel eğitim ortamına uygun biçimde kurgulanır.',
           icon: 'quality' as const,
         },
         {
           id: 'security',
-          title: 'Guvenilir deneyim',
-          description: 'Platform geneli tutarli etkilesim dili, guven ve sureklilik hissini destekler.',
+          title: 'Güvenilir deneyim',
+          description: 'Platform geneli tutarlı etkileşim dili, güven ve süreklilik hissini destekler.',
           icon: 'security' as const,
         },
       ],
-      finalTitle: 'EduBase ile ogrenme operasyonlarini bugun baslatin',
-      finalDescription: 'Kurslari inceleyin, platform akisini gorun ve ekibinize uygun dijital egitim altyapisini degerlendirin.',
-      finalPrimaryCta: 'Hesap Olustur',
-      finalSecondaryCta: 'Kurslari Incele',
+      finalTitle: 'EduBase ile öğrenme operasyonlarını bugün başlatın',
+      finalDescription: 'Kursları inceleyin, platform akışını görün ve ekibinize uygun dijital eğitim altyapısını değerlendirin.',
+      finalPrimaryCta: 'Hesap Oluştur',
+      finalSecondaryCta: 'Kursları İncele',
       coursesLabel: 'kurs',
       lessonsLabel: 'ders',
-      emptyCategoryHighlight: 'Kurs kapsamlarini goruntule',
-      categoryLoadFailed: 'Kategoriler yuklenemedi.',
+      emptyCategoryHighlight: 'Kurs kapsamlarını görüntüle',
+      categoryLoadFailed: 'Kategoriler yüklenemedi.',
       retryCategoryLoad: 'Tekrar dene',
     }
     : {
@@ -293,9 +282,15 @@ const LandingPage = () => {
       }
     }
 
-    const sortedCourses = [...resolvedCourses].sort((left, right) => parseStudentCount(right.students) - parseStudentCount(left.students))
-    const totalLearners = resolvedCourses.reduce((sum, course) => sum + parseStudentCount(course.students), 0)
-    const averageRating = resolvedCourses.reduce((sum, course) => sum + course.rating, 0) / resolvedCourses.length
+    const sortedCourses = [...resolvedCourses].sort((left, right) => (
+      (right.studentsCount ?? parseStudentCount(right.students) ?? 0)
+      - (left.studentsCount ?? parseStudentCount(left.students) ?? 0)
+    ))
+    const totalLearners = resolvedCourses.reduce((sum, course) => sum + (course.studentsCount ?? parseStudentCount(course.students) ?? 0), 0)
+    const ratedCourses = resolvedCourses.filter((course) => (course.ratingCount ?? 0) > 0 || course.rating > 0)
+    const averageRating = ratedCourses.length > 0
+      ? ratedCourses.reduce((sum, course) => sum + course.rating, 0) / ratedCourses.length
+      : 0
 
     return {
       totalLearners,
@@ -320,15 +315,15 @@ const LandingPage = () => {
   }, [categoriesFromApi, copy.emptyCategoryHighlight, resolvedCourses])
 
   const fallbackCategories = useMemo(() => [
-    { key: 'software-development', label: language === 'tr' ? 'Yazilim Gelistirme' : 'Software Development', count: 0, highlight: copy.emptyCategoryHighlight },
+    { key: 'software-development', label: language === 'tr' ? 'Yazılım Geliştirme' : 'Software Development', count: 0, highlight: copy.emptyCategoryHighlight },
     { key: 'data-science', label: language === 'tr' ? 'Veri Bilimi' : 'Data Science', count: 0, highlight: copy.emptyCategoryHighlight },
     { key: 'mobile-development', label: language === 'tr' ? 'Mobil Uygulama' : 'Mobile Development', count: 0, highlight: copy.emptyCategoryHighlight },
-    { key: 'cyber-security', label: language === 'tr' ? 'Siber Guvenlik' : 'Cyber Security', count: 0, highlight: copy.emptyCategoryHighlight },
+    { key: 'cyber-security', label: language === 'tr' ? 'Siber Güvenlik' : 'Cyber Security', count: 0, highlight: copy.emptyCategoryHighlight },
   ], [copy.emptyCategoryHighlight, language])
 
   const categories = content.categories.length ? content.categories : fallbackCategories
   const learnersValue = content.totalLearners.toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')
-  const ratingValue = content.averageRating ? content.averageRating.toFixed(1) : '0.0'
+  const ratingValue = content.averageRating ? content.averageRating.toFixed(1) : (language === 'tr' ? 'Yok' : 'N/A')
   const coursesValue = resolvedCourses.length.toLocaleString(language === 'tr' ? 'tr-TR' : 'en-US')
 
   const heroCards = categories.slice(0, 4).map((category) => ({

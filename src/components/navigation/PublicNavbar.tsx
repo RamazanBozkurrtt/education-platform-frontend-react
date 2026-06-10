@@ -82,7 +82,7 @@ const PublicNavbar = ({
           </div>
           <div className="min-w-0">
             <p className="theme-subtle text-[11px] font-semibold uppercase tracking-[0.28em]">{copy.platformLabel}</p>
-            <p className="theme-heading truncate text-lg font-semibold tracking-[-0.02em]">{APP_NAME}</p>
+            <p className="theme-heading truncate text-lg font-semibold">{APP_NAME}</p>
           </div>
         </Link>
 
