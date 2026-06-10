@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, Filter, SlidersHorizontal, Star, UsersRound } from 'lucide-react'
+import { BookOpen, ChevronLeft, ChevronRight, Filter, SlidersHorizontal, Star, UsersRound } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import CourseCatalogList from '../components/dashboard/CourseCatalogList'
 import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
@@ -22,11 +22,14 @@ const chipClass = (active: boolean) => {
   return 'inline-flex min-h-8 items-center gap-1.5 rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-1.5 text-sm font-medium theme-muted transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
 }
 
+const COURSE_LIST_PAGE_SIZE = 50
+
 const CourseListPage = () => {
   const { t } = useTranslation()
   const { language } = useLanguage()
   const [activeCategory, setActiveCategory] = useState('')
   const [activeLevel, setActiveLevel] = useState('')
+  const [currentPage, setCurrentPage] = useState(0)
 
   const copy = language === 'tr'
     ? {
@@ -41,6 +44,9 @@ const CourseListPage = () => {
       filterToolbarTitle: 'Katalog filtreleri',
       activeFilters: 'Aktif filtre',
       filteredResults: 'Sonuç',
+      pageLabel: 'Sayfa',
+      previousPage: 'Önceki sayfa',
+      nextPage: 'Sonraki sayfa',
       noResultsTitle: 'Filtreye uygun kurs bulunamadı',
       noResultsDescription: 'Kategori veya seviye seçimini değiştirip tekrar dene.',
     }
@@ -56,6 +62,9 @@ const CourseListPage = () => {
       filterToolbarTitle: 'Catalog filters',
       activeFilters: 'Active filters',
       filteredResults: 'Results',
+      pageLabel: 'Page',
+      previousPage: 'Previous page',
+      nextPage: 'Next page',
       noResultsTitle: 'No courses match this filter',
       noResultsDescription: 'Try changing the selected category or level.',
     }
@@ -69,6 +78,10 @@ const CourseListPage = () => {
     setActiveCategory('')
     setActiveLevel('')
   }, [language])
+
+  useEffect(() => {
+    setCurrentPage(0)
+  }, [activeCategory, activeLevel])
 
   const categories = useMemo(() => {
     if (!data) {
@@ -131,6 +144,14 @@ const CourseListPage = () => {
   const filteredCourses = activeLevel === ''
     ? filteredByCategory
     : filteredByCategory.filter((course) => course.levelKey === activeLevel)
+  const totalPages = Math.max(1, Math.ceil(filteredCourses.length / COURSE_LIST_PAGE_SIZE))
+  const safeCurrentPage = Math.min(currentPage, totalPages - 1)
+  const paginatedCourses = filteredCourses.slice(
+    safeCurrentPage * COURSE_LIST_PAGE_SIZE,
+    (safeCurrentPage + 1) * COURSE_LIST_PAGE_SIZE,
+  )
+  const hasPreviousPage = safeCurrentPage > 0
+  const hasNextPage = safeCurrentPage < totalPages - 1
   const totalStudents = data.reduce((sum, course) => sum + (course.studentsCount ?? parseStudentCount(course.students) ?? 0), 0)
   const ratedCourses = data.filter((course) => (course.ratingCount ?? 0) > 0 || course.rating > 0)
   const averageRating = ratedCourses.length > 0
@@ -248,11 +269,42 @@ const CourseListPage = () => {
       </section>
 
       <DashboardSection
-        description={`${filteredCourses.length} / ${data.length}`}
+        description={`${paginatedCourses.length} / ${filteredCourses.length} (${data.length})`}
         title={t('routes.courses')}
       >
         {filteredCourses.length > 0 ? (
-          <CourseCatalogList courses={filteredCourses} />
+          <div className="space-y-4">
+            <CourseCatalogList courses={paginatedCourses} />
+            {totalPages > 1 ? (
+              <nav className="flex items-center justify-center gap-3" aria-label={t('routes.courses')}>
+                <Button
+                  aria-label={copy.previousPage}
+                  className="h-9 w-9 px-0"
+                  disabled={!hasPreviousPage}
+                  onClick={() => setCurrentPage((page) => Math.max(0, page - 1))}
+                  size="sm"
+                  title={copy.previousPage}
+                  variant="secondary"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="theme-muted min-w-24 text-center text-sm font-medium">
+                  {copy.pageLabel} {safeCurrentPage + 1} / {totalPages}
+                </span>
+                <Button
+                  aria-label={copy.nextPage}
+                  className="h-9 w-9 px-0"
+                  disabled={!hasNextPage}
+                  onClick={() => setCurrentPage((page) => Math.min(totalPages - 1, page + 1))}
+                  size="sm"
+                  title={copy.nextPage}
+                  variant="secondary"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </nav>
+            ) : null}
+          </div>
         ) : (
           <EmptyState description={copy.noResultsDescription} title={copy.noResultsTitle} />
         )}

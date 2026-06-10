@@ -83,7 +83,7 @@ type LocalizedMilestone = {
 export const currentUser: User = {
   id: 'usr_01',
   name: 'Avery Coleman',
-  email: 'avery@lumaacademy.dev',
+  email: 'avery@edubase.dev',
   firstName: 'Avery',
   lastName: 'Coleman',
   headline: 'Learning Program Lead',

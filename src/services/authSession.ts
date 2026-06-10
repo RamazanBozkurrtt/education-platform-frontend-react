@@ -3,8 +3,10 @@ import {
   AUTH_REFRESH_TOKEN_KEY,
   AUTH_TOKEN_KEY,
   AUTH_USER_KEY,
+  LEGACY_AUTH_CLAIMS_KEY,
   LEGACY_AUTH_REFRESH_TOKEN_KEY,
   LEGACY_AUTH_TOKEN_KEY,
+  LEGACY_AUTH_USER_KEY,
 } from '../utils/constants'
 import { getInitials } from '../utils/helpers'
 import { authFlowTrace } from '../shared/authFlowDebug'
@@ -145,13 +147,31 @@ const readTokenWithLegacyFallback = (key: string, legacyKey: string) => {
   return null
 }
 
+const readStorageWithLegacyFallback = (key: string, legacyKey: string) => {
+  const preferred = localStorage.getItem(key)
+
+  if (preferred?.trim()) {
+    return preferred
+  }
+
+  const legacy = localStorage.getItem(legacyKey)
+
+  if (legacy?.trim()) {
+    localStorage.setItem(key, legacy)
+    localStorage.removeItem(legacyKey)
+    return legacy
+  }
+
+  return null
+}
+
 export const getAccessToken = () => readTokenWithLegacyFallback(AUTH_TOKEN_KEY, LEGACY_AUTH_TOKEN_KEY)
 
 export const getRefreshToken = () => readTokenWithLegacyFallback(AUTH_REFRESH_TOKEN_KEY, LEGACY_AUTH_REFRESH_TOKEN_KEY)
 
-export const getStoredClaims = () => safeParse<AuthClaims>(localStorage.getItem(AUTH_CLAIMS_KEY))
+export const getStoredClaims = () => safeParse<AuthClaims>(readStorageWithLegacyFallback(AUTH_CLAIMS_KEY, LEGACY_AUTH_CLAIMS_KEY))
 
-export const getStoredUser = () => safeParse<User>(localStorage.getItem(AUTH_USER_KEY))
+export const getStoredUser = () => safeParse<User>(readStorageWithLegacyFallback(AUTH_USER_KEY, LEGACY_AUTH_USER_KEY))
 
 export const parseTokenClaims = (token?: string | null): AuthClaims | null => {
   if (!token) {
@@ -308,16 +328,20 @@ export const setSession = ({
 
   if (user) {
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(user))
+    localStorage.removeItem(LEGACY_AUTH_USER_KEY)
   } else {
     localStorage.removeItem(AUTH_USER_KEY)
+    localStorage.removeItem(LEGACY_AUTH_USER_KEY)
   }
 
   const nextClaims = claims ?? parseTokenClaims(normalizedAccessToken)
 
   if (nextClaims) {
     localStorage.setItem(AUTH_CLAIMS_KEY, JSON.stringify(nextClaims))
+    localStorage.removeItem(LEGACY_AUTH_CLAIMS_KEY)
   } else {
     localStorage.removeItem(AUTH_CLAIMS_KEY)
+    localStorage.removeItem(LEGACY_AUTH_CLAIMS_KEY)
   }
 }
 
@@ -329,4 +353,6 @@ export const clearSession = () => {
   localStorage.removeItem(LEGACY_AUTH_REFRESH_TOKEN_KEY)
   localStorage.removeItem(AUTH_USER_KEY)
   localStorage.removeItem(AUTH_CLAIMS_KEY)
+  localStorage.removeItem(LEGACY_AUTH_USER_KEY)
+  localStorage.removeItem(LEGACY_AUTH_CLAIMS_KEY)
 }

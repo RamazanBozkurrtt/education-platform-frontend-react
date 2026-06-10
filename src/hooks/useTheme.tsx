@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { THEME_STORAGE_KEY } from '../utils/constants'
+import { LEGACY_THEME_STORAGE_KEY, THEME_STORAGE_KEY } from '../utils/constants'
 
 export type ThemeMode = 'dark' | 'light'
 
@@ -26,9 +26,11 @@ const getPreferredTheme = (): ThemeMode => {
   }
 
   try {
-    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY)
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_THEME_STORAGE_KEY)
 
     if (isThemeMode(storedTheme)) {
+      window.localStorage.setItem(THEME_STORAGE_KEY, storedTheme)
+      window.localStorage.removeItem(LEGACY_THEME_STORAGE_KEY)
       return storedTheme
     }
   } catch {

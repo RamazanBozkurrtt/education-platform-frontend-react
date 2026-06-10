@@ -727,18 +727,6 @@ const PaymentPage = () => {
               <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4">
                 <p className="theme-heading text-sm font-semibold">{language === 'tr' ? 'Ödeme Bilgileri' : 'Payment details'}</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <label className="flex flex-col gap-2">
-                    <span className="theme-heading text-sm font-semibold">Provider</span>
-                    <select
-                      className="h-12 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 text-sm theme-text outline-none focus:border-[color:var(--primary)] focus:ring-2 focus:ring-[color:var(--focus-ring)]"
-                      onChange={(event) => setBuyerFormValue('provider', event.target.value as PaymentProvider)}
-                      value={buyerForm.provider}
-                    >
-                      <option value="MOCK_GATEWAY">MOCK_GATEWAY</option>
-                      <option value="STRIPE">STRIPE</option>
-                      <option value="IYZICO">IYZICO</option>
-                    </select>
-                  </label>
 
                   <label className="flex flex-col gap-2">
                     <span className="theme-heading text-sm font-semibold">{language === 'tr' ? 'Ödeme Yöntemi' : 'Payment method'}</span>

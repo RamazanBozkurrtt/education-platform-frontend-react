@@ -4,7 +4,6 @@ import { ArrowRight, CirclePlay, GraduationCap, LayoutDashboard, UserRoundCheck 
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import ActivityList from '../components/dashboard/ActivityList'
-import CourseImage from '../components/CourseImage'
 import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
 import DashboardSection from '../components/dashboard/DashboardSection'
 import MetricTile from '../components/dashboard/MetricTile'
@@ -15,9 +14,7 @@ import RecommendationSection from '../components/recommendations/RecommendationS
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Loader from '../components/ui/Loader'
-import MetaRow from '../components/ui/MetaRow'
 import QueryErrorState from '../components/ui/QueryErrorState'
-import TagList from '../components/ui/TagList'
 import { useAuth } from '../hooks/useAuth'
 import { useCourseProgressSummaries } from '../hooks/useCourseProgress'
 import { useLanguage } from '../hooks/useLanguage'
@@ -27,7 +24,6 @@ import { recommendationService } from '../services/recommendationService'
 import { ROUTES } from '../utils/constants'
 import { getCourseCategoryLabel } from '../utils/courseCategory'
 import { buildCoursePlayerPath, resolveContinueLessonId } from '../utils/courseProgress'
-import { resolveCourseDurationLabel } from '../utils/duration'
 import { extractAuthRoles, isAdmin, isInstructor } from '../utils/roles'
 
 const DashboardPage = () => {
@@ -105,39 +101,6 @@ const DashboardPage = () => {
 
     return 'primary'
   }
-
-  const nextFocusModule = data.focusCourse.modules.find((module) => !module.completed) ?? null
-  const focusCourseContinuePath = buildCoursePlayerPath(data.focusCourse.slug, nextFocusModule?.id)
-  const focusCourseHasImage = typeof data.focusCourse.imageUrl === 'string' && data.focusCourse.imageUrl.trim().length > 0
-  const focusCourseProgressLabel = data.focusCourse.progress > 0
-    ? (language === 'tr' ? 'Devam et' : 'Continue')
-    : (language === 'tr' ? 'Kursa basla' : 'Start course')
-  const studentCourseProgressResults = purchasedCourses
-    .map((course) => studentCourseProgressMap[course.id])
-    .filter((result): result is NonNullable<typeof result> => Boolean(result))
-  const isStudentProgressLoading = audience === 'student'
-    && purchasedCourses.length > 0
-    && studentCourseProgressResults.some((result) => result.isLoading || result.isFetching)
-  const areAllStudentCoursesCompleted = audience === 'student'
-    && purchasedCourses.length > 0
-    && !isStudentProgressLoading
-    && purchasedCourses.every((course) => {
-      const summary = studentCourseProgressMap[course.id]?.data
-      const completionPercentage = typeof summary?.overallPercentage === 'number'
-        ? summary.overallPercentage
-        : course.progress
-
-      return completionPercentage >= 100
-    })
-  const shouldShowCourseCompletionCongrats = areAllStudentCoursesCompleted
-  const focusSectionTitle = shouldShowCourseCompletionCongrats
-    ? (language === 'tr' ? 'Tebrikler' : 'Congratulations')
-    : (language === 'tr' ? 'Odak kurs' : 'Focus course')
-  const focusSectionDescription = shouldShowCourseCompletionCongrats
-    ? (language === 'tr'
-      ? 'Tüm derslerini tamamladın. Yeni hedefler için hazırsın.'
-      : 'You completed all lessons. You are ready for your next goals.')
-    : data.focusCourse.description
 
   return (
     <div className="space-y-8">
@@ -219,6 +182,9 @@ const DashboardPage = () => {
         errorMessage={isDashboardRecommendationError ? 'failed' : null}
         isLoading={isDashboardRecommendationLoading}
         language={language}
+        loadingMessage={language === 'tr'
+          ? 'Sizin için önerdiğimiz kurslar yükleniyor lütfen bekleyiniz'
+          : 'Recommended courses for you are loading. Please wait.'}
         recommendations={dashboardRecommendationData?.recommendations ?? []}
         title={language === 'tr' ? 'Senin İçin Önerilen Kurslar' : 'Recommended For You'}
       />
@@ -330,143 +296,33 @@ const DashboardPage = () => {
         </DashboardSection>
       ) : null}
 
-      <section className="grid gap-7 xl:grid-cols-[1.35fr_0.95fr]">
-        <DashboardSection
-          description={focusSectionDescription}
-          title={focusSectionTitle}
-        >
-          {shouldShowCourseCompletionCongrats ? (
-            <Card className="space-y-4 p-5">
-              <p className="theme-heading text-lg font-semibold">
-                {language === 'tr' ? 'Tum derslerini tamamladin, tebrikler!' : 'You completed all your lessons, congratulations!'}
-              </p>
-              <p className="theme-muted text-sm leading-6">
-                {language === 'tr'
-                  ? 'Yeni bir ogrenme hedefi belirlemek icin yeni kurslara goz atabilirsin.'
-                  : 'You can explore new courses to set your next learning goal.'}
-              </p>
-              <Link to={ROUTES.courses}>
-                <Button asChild size="sm">
-                  {language === 'tr' ? 'Yeni kurslara goz at' : 'Explore new courses'}
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-            </Card>
-          ) : (
-            <Card className="overflow-hidden p-0">
-            <div className="grid border-b border-[color:var(--border)] lg:grid-cols-[0.72fr_1fr]">
-              <div className="relative overflow-hidden border-b border-[color:var(--border)] bg-[color:var(--surface-soft)] p-4 lg:self-start lg:border-b-0 lg:border-r">
-                {focusCourseHasImage ? (
-                  <CourseImage
-                    alt={data.focusCourse.title}
-                    className="h-44 rounded-[var(--radius-navigation)] border border-[color:var(--border)] sm:h-52 lg:h-56"
-                    fallbackSrc={data.focusCourse.imageUrl}
-                    imageClassName="p-3"
-                    loading="lazy"
-                    src={data.focusCourse.imageUrl}
-                  />
-                ) : (
-                  <div className="h-44 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[linear-gradient(120deg,var(--surface-soft),var(--surface-hover))] sm:h-52 lg:h-56" />
-                )}
-                <div className="pointer-events-none absolute inset-4 rounded-[var(--radius-navigation)] bg-[linear-gradient(180deg,rgba(15,23,42,0.02),rgba(15,23,42,0.68))]" />
-
-                <div className="absolute inset-x-7 top-7 flex flex-wrap items-center gap-2">
-                  <span className="rounded-[var(--radius-badges)] bg-[color:rgba(255,255,255,0.94)] px-2.5 py-1 text-xs font-semibold text-[color:var(--text-heading)]">
-                    {getCourseCategoryLabel(data.focusCourse)}
-                  </span>
-                  <span className="rounded-[var(--radius-badges)] bg-[color:rgba(20,20,20,0.45)] px-2.5 py-1 text-xs font-medium text-white backdrop-blur-sm">
-                    {resolveCourseDurationLabel(data.focusCourse, language)}
-                  </span>
-                </div>
-
-                <div className="absolute inset-x-7 bottom-7">
-                  <p className="text-sm font-medium text-white/90">
-                {language === 'tr' ? 'Odak kurs' : 'Focus course'}
-                  </p>
-                  <h3 className="mt-1 line-clamp-2 text-lg font-semibold leading-tight text-white md:text-xl">
-                    {data.focusCourse.title}
-                  </h3>
-                  <p className="mt-2 line-clamp-2 text-sm text-white/80">
-                    {data.focusCourse.summary}
-                  </p>
-                </div>
-              </div>
-
-              <div className="space-y-4 px-5 py-5">
-                <MetaRow
-                  items={[
-                    { key: 'progress', label: t('dashboard.progress'), value: `${data.focusCourse.progress}%` },
-                    { key: 'duration', label: t('courseDetail.duration'), value: resolveCourseDurationLabel(data.focusCourse, language) },
-                    { key: 'category', label: language === 'tr' ? 'Kategori' : 'Category', value: getCourseCategoryLabel(data.focusCourse) },
-                  ]}
-                />
-
-                <div className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-4 py-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="theme-muted text-xs font-medium">
-                      {language === 'tr' ? 'Kurs ilerleme durumu' : 'Course progress'}
-                    </p>
-                    <span className="theme-heading text-xs font-semibold">{data.focusCourse.progress}%</span>
-                  </div>
-                  <div className="mt-2">
-                    <CourseProgressBar
-                      compact
-                      language={language}
-                      percentage={data.focusCourse.progress}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <Link to={focusCourseContinuePath}>
-                    <Button asChild size="sm">
-                      <CirclePlay className="h-4 w-4" />
-                      {focusCourseProgressLabel}
-                    </Button>
-                  </Link>
-                  <Link to={ROUTES.courseDetail(data.focusCourse.slug)}>
-                    <Button asChild size="sm" variant="secondary">
-                      {language === 'tr' ? 'Detayları aç' : 'View details'}
-                    </Button>
-                  </Link>
-                </div>
-
-                <TagList hideWhenEmpty label={language === 'tr' ? 'Etiketler' : 'Tags'} tags={data.focusCourse.tags} />
-              </div>
-            </div>
-
-            </Card>
-          )}
+      <div className="space-y-7">
+        <DashboardSection title={t('dashboard.upcomingMilestones')}>
+          <ActivityList
+            items={data.upcomingMilestones.map((milestone) => ({
+              id: milestone.id,
+              title: milestone.label,
+              meta: milestone.due,
+              badge: <StatusBadge>{milestone.status}</StatusBadge>,
+            }))}
+          />
         </DashboardSection>
 
-        <div className="space-y-7">
-          <DashboardSection title={t('dashboard.upcomingMilestones')}>
-            <ActivityList
-              items={data.upcomingMilestones.map((milestone) => ({
-                id: milestone.id,
-                title: milestone.label,
-                meta: milestone.due,
-                badge: <StatusBadge>{milestone.status}</StatusBadge>,
-              }))}
-            />
-          </DashboardSection>
-
-          <DashboardSection
-            description={t('dashboard.recentActivityDescription')}
-            title={t('dashboard.recentActivity')}
-          >
-            <ActivityList
-              items={data.recentActivity.map((activity) => ({
-                id: activity.id,
-                title: activity.title,
-                description: activity.description,
-                meta: activity.time,
-                badge: <StatusBadge>{activity.tag}</StatusBadge>,
-              }))}
-            />
-          </DashboardSection>
-        </div>
-      </section>
+        <DashboardSection
+          description={t('dashboard.recentActivityDescription')}
+          title={t('dashboard.recentActivity')}
+        >
+          <ActivityList
+            items={data.recentActivity.map((activity) => ({
+              id: activity.id,
+              title: activity.title,
+              description: activity.description,
+              meta: activity.time,
+              badge: <StatusBadge>{activity.tag}</StatusBadge>,
+            }))}
+          />
+        </DashboardSection>
+      </div>
     </div>
   )
 }

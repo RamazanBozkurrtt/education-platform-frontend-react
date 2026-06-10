@@ -566,10 +566,10 @@ const CourseDetailPage = () => {
       <section className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
         <article className="overflow-hidden rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
           <div className="grid lg:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]">
-            <div className="relative flex min-h-[260px] items-center justify-center bg-[linear-gradient(145deg,var(--surface-soft),var(--surface-hover))] p-4 md:min-h-[320px] md:p-5">
+            <div className="relative flex max-w-full items-center justify-center justify-self-center overflow-hidden bg-[color:var(--surface-strong)]">
               <img
                 alt={data.title}
-                className="h-full max-h-[420px] w-full rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-strong)] object-contain"
+                className="block h-auto max-h-[420px] max-w-full"
                 loading="lazy"
                 onError={(event) => handleMediaImageError(event, fallbackCourseImageUrl)}
                 src={courseImageUrl}

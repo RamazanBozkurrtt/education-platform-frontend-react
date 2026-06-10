@@ -2,7 +2,7 @@ export const resources = {
   en: {
     translation: {
       app: {
-        name: 'Luma Academy',
+        name: 'EduBase',
       },
       language: {
         label: 'Language',
@@ -38,7 +38,7 @@ export const resources = {
       },
       auth: {
         badge: 'Online learning',
-        heroTitle: 'Learn practical skills with Edubase.',
+        heroTitle: 'Learn practical skills with EduBase.',
         heroDescription:
           'Browse courses, review instructors, and keep your learning progress in one account.',
         completionRate: 'Completion rate',
@@ -60,7 +60,7 @@ export const resources = {
         needAccount: 'Need an account?',
         createOne: 'Create one',
         createWorkspace: 'Create your workspace',
-        registerTitle: 'Create your Edubase account.',
+        registerTitle: 'Create your EduBase account.',
         registerDescription:
           'Set up your account to save courses and continue learning.',
         fullName: 'Full name',
@@ -543,7 +543,7 @@ export const resources = {
   tr: {
     translation: {
       app: {
-        name: 'Luma Academy',
+        name: 'EduBase',
       },
       language: {
         label: 'Dil',
@@ -579,7 +579,7 @@ export const resources = {
       },
       auth: {
         badge: 'Online eğitim',
-        heroTitle: 'Edubase ile pratik beceriler öğren.',
+        heroTitle: 'EduBase ile pratik beceriler öğren.',
         heroDescription:
           'Kursları incele, eğitmenleri değerlendir ve ilerlemeni hesabından takip et.',
         completionRate: 'Tamamlama orani',
@@ -601,7 +601,7 @@ export const resources = {
         needAccount: 'Hesabin yok mu?',
         createOne: 'Hesap olustur',
         createWorkspace: 'Calisma alanini olustur',
-        registerTitle: 'Edubase hesabını oluştur.',
+        registerTitle: 'EduBase hesabını oluştur.',
         registerDescription:
           'Kurslarını kaydetmek ve öğrenmeye devam etmek için hesabını hazırla.',
         fullName: 'Ad soyad',

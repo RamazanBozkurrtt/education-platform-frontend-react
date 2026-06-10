@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useQueries, useQuery } from '@tanstack/react-query'
-import { CART_STORAGE_KEY } from '../utils/constants'
+import { CART_STORAGE_KEY, LEGACY_CART_STORAGE_KEY } from '../utils/constants'
 import { useLanguage } from './useLanguage'
 import { useAuth } from './useAuth'
 import { courseService } from '../services/courseService'
@@ -35,6 +35,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const { isBootstrapping, user } = useAuth()
   const storageScope = user?.id ? encodeURIComponent(user.id) : 'guest'
   const storageKey = `${CART_STORAGE_KEY}.${storageScope}`
+  const legacyStorageKey = `${LEGACY_CART_STORAGE_KEY}.${storageScope}`
   const [courseIds, setCourseIds] = useState<string[]>([])
   const [hydratedStorageKey, setHydratedStorageKey] = useState<string | null>(null)
 
@@ -43,7 +44,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       return
     }
 
-    const storedCart = localStorage.getItem(storageKey)
+    const storedCart = localStorage.getItem(storageKey) ?? localStorage.getItem(legacyStorageKey)
 
     if (!storedCart) {
       setCourseIds([])
@@ -61,12 +62,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         ))
         : []
       setCourseIds(normalized)
+      localStorage.setItem(storageKey, JSON.stringify(normalized))
+      localStorage.removeItem(legacyStorageKey)
     } catch {
       setCourseIds([])
     }
 
     setHydratedStorageKey(storageKey)
-  }, [isBootstrapping, storageKey])
+  }, [isBootstrapping, legacyStorageKey, storageKey])
 
   useEffect(() => {
     if (isBootstrapping || hydratedStorageKey !== storageKey) {

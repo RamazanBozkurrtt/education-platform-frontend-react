@@ -11,6 +11,7 @@ interface RecommendationSectionProps {
   language: 'en' | 'tr'
   recommendations: RecommendationCourse[]
   isLoading?: boolean
+  loadingMessage?: string
   errorMessage?: string | null
   emptyTitle: string
   emptyDescription: string
@@ -25,12 +26,13 @@ const RecommendationSection = ({
   errorMessage,
   isLoading = false,
   language,
+  loadingMessage,
   recommendations,
   title,
 }: RecommendationSectionProps) => (
   <DashboardSection action={action} description={description} title={title}>
     {isLoading ? (
-      <RecommendationSkeleton count={3} />
+      <RecommendationSkeleton count={3} message={loadingMessage} />
     ) : errorMessage ? (
       <EmptyState
         description={errorMessage}
