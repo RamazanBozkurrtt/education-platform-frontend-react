@@ -11,12 +11,14 @@ const Loader = ({ fullScreen = false, label }: LoaderProps) => {
 
   return (
     <div
+      aria-live="polite"
       className={cn(
         'theme-text flex items-center justify-center gap-3',
-        fullScreen ? 'theme-overlay min-h-screen flex-col' : 'py-20',
+        fullScreen ? 'min-h-screen flex-col bg-[color:var(--bg)]/90 px-4' : 'py-20',
       )}
+      role="status"
     >
-      <span className="h-10 w-10 animate-spin rounded-full border-2 border-white/10 border-t-cyan-300" />
+      <span className="h-10 w-10 animate-spin rounded-full border-2 border-[color:var(--border)] border-t-[color:var(--primary)]" />
       <span className="theme-muted text-sm font-medium">{label ?? t('loader.default')}</span>
     </div>
   )

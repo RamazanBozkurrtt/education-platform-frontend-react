@@ -28,11 +28,11 @@ const Modal = ({ children, description, onClose, open, title }: ModalProps) => {
   }
 
   return (
-    <div className="theme-overlay fixed inset-0 z-50 flex items-center justify-center px-4 backdrop-blur-md">
-      <div className="glass-panel w-full max-w-2xl rounded-[32px] border border-white/10 p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--overlay)] px-4">
+      <div className="theme-surface-strong w-full max-w-2xl rounded-[var(--radius-cards)] border border-[color:var(--border)] p-8 shadow-[var(--shadow-sm)]">
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
-            <h3 className="theme-heading text-2xl font-semibold">{title}</h3>
+            <h3 className="theme-heading text-2xl font-semibold leading-[var(--leading-heading-sm)]">{title}</h3>
             {description ? <p className="theme-muted mt-2 text-sm">{description}</p> : null}
           </div>
           <Button aria-label="Close modal" onClick={onClose} size="sm" variant="ghost">

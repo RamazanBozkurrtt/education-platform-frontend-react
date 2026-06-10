@@ -1,231 +1,521 @@
-import { useEffect, useState } from 'react'
+﻿import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, CheckCircle2, Clock3, ListVideo, LockKeyhole, PlayCircle, ShoppingCart } from 'lucide-react'
+import { ListVideo, PanelRightClose, PanelRightOpen, ShoppingCart } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { Link, useParams } from 'react-router-dom'
-import PageHeader from '../components/PageHeader'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import CourseVideoPlayer from '../components/player/CourseVideoPlayer'
+import ResumePlaybackPrompt from '../components/player/ResumePlaybackPrompt'
+import LessonSidebar from '../components/player/watch/LessonSidebar'
+import WatchPageBackButton from '../components/player/watch/WatchPageBackButton'
+import CourseProgressBar from '../components/progress/CourseProgressBar'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
 import Loader from '../components/ui/Loader'
+import QueryErrorState from '../components/ui/QueryErrorState'
+import ThemeToggle from '../components/ui/ThemeToggle'
 import { useCart } from '../hooks/useCart'
+import { useCourseLessonProgress, useCourseProgressSummary } from '../hooks/useCourseProgress'
 import { useLanguage } from '../hooks/useLanguage'
 import { useLibrary } from '../hooks/useLibrary'
+import { useVideoProgressTracking } from '../hooks/useVideoProgressTracking'
+import { normalizeApiError } from '../shared/errors/normalizeApiError'
+import { emitAppToast } from '../shared/notifications/appToast'
+import { courseMediaService } from '../services/courseMediaService'
 import { courseService } from '../services/courseService'
+import { cn } from '../utils/helpers'
 import { ROUTES } from '../utils/constants'
+import type { LessonProgress } from '../utils/types'
 
-const sampleVideoSources = [
-  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
-]
+const PLAYBACK_URL_REFRESH_BUFFER_MS = 3_000
 
-const CoursePlayerPage = () => {
+type VideoLoadState = 'idle' | 'ready' | 'missing' | 'error'
+
+const isMissingVideoError = (error: unknown) => {
+  const appError = normalizeApiError(error)
+
+  if (appError.kind === 'not_found' || appError.httpStatus === 404) {
+    return true
+  }
+
+  const normalizedCode = appError.code?.trim().toUpperCase()
+
+  if (!normalizedCode) {
+    return false
+  }
+
+  return normalizedCode.includes('VIDEO') && (normalizedCode.includes('NOT') || normalizedCode.includes('MISSING'))
+}
+
+const CourseWatchPage = () => {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const { language } = useLanguage()
   const { slug = '' } = useParams()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedLessonId = searchParams.get('lessonId')?.trim() || null
   const { addCourse, isInCart } = useCart()
   const { isPurchased } = useLibrary()
-  const [activeModuleIndex, setActiveModuleIndex] = useState(0)
-  const { data, isLoading } = useQuery({
+
+  const [activeLessonId, setActiveLessonId] = useState<string | null>(null)
+  const [activeVideoSource, setActiveVideoSource] = useState('')
+  const [activeVideoExpiresAtMs, setActiveVideoExpiresAtMs] = useState<number | null>(null)
+  const [isVideoLoading, setIsVideoLoading] = useState(false)
+  const [videoErrorMessage, setVideoErrorMessage] = useState<string | null>(null)
+  const [videoLoadState, setVideoLoadState] = useState<VideoLoadState>('idle')
+  const [showLessonCompletedFeedback, setShowLessonCompletedFeedback] = useState(false)
+  const [isLessonSidebarOpen, setIsLessonSidebarOpen] = useState(true)
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false)
+
+  const playbackRequestIdRef = useRef(0)
+  const videoElementRef = useRef<HTMLVideoElement | null>(null)
+  const pendingResumeRef = useRef<{ currentTime: number; shouldResumePlayback: boolean } | null>(null)
+  const failedRefreshSourceRef = useRef<string | null>(null)
+
+  const { data, error, isLoading } = useQuery({
     queryKey: ['course-player', language, slug],
     queryFn: () => courseService.getCourseBySlug(slug, language),
   })
 
-  useEffect(() => {
-    setActiveModuleIndex(0)
-  }, [data?.id])
+  const purchased = data ? isPurchased(data.id) : false
+  const lessons = data?.modules ?? []
 
-  if (isLoading || !data) {
-    return <Loader label={t('loader.courseDetails')} />
+  const activeLesson = useMemo(() => {
+    if (!data) {
+      return undefined
+    }
+
+    if (activeLessonId) {
+      return data.modules.find((module) => module.id === activeLessonId) ?? data.modules[0]
+    }
+
+    return data.modules[0]
+  }, [activeLessonId, data])
+
+  const activeCourseId = data?.id ?? null
+  const resolvedActiveLessonId = activeLesson?.id ?? null
+
+  const { data: courseLessonProgress = [] } = useCourseLessonProgress(purchased ? activeCourseId : null)
+  const { data: courseProgressSummary } = useCourseProgressSummary(purchased ? activeCourseId : null)
+
+  const lessonProgressByLessonId = useMemo(
+    () => courseLessonProgress.reduce<Record<string, LessonProgress>>((accumulator, lessonProgress) => {
+      if (!lessonProgress.lessonId) {
+        return accumulator
+      }
+
+      accumulator[lessonProgress.lessonId] = lessonProgress
+      return accumulator
+    }, {}),
+    [courseLessonProgress],
+  )
+
+  const {
+    lessonProgress: activeLessonProgress,
+    resumePromptOpen,
+    resumePromptSecond,
+    handleVideoEnded,
+    handleVideoLoadedMetadata: handleTrackedVideoLoadedMetadata,
+    handleVideoPause,
+    handleVideoTimeUpdate,
+    handleRestartFromPrompt,
+    handleResumeFromPrompt,
+  } = useVideoProgressTracking({
+    courseId: purchased ? activeCourseId : null,
+    lessonId: purchased ? resolvedActiveLessonId : null,
+    enabled: Boolean(purchased && activeCourseId && resolvedActiveLessonId),
+    language,
+    videoRef: videoElementRef,
+    onLessonCompleted: () => {
+      setShowLessonCompletedFeedback(true)
+    },
+  })
+
+  useEffect(() => {
+    if (!data) {
+      return
+    }
+
+    const lessonIds = new Set(data.modules.map((module) => module.id))
+    const firstLessonId = data.modules[0]?.id ?? null
+    const nextLessonId = requestedLessonId && lessonIds.has(requestedLessonId)
+      ? requestedLessonId
+      : firstLessonId
+
+    setActiveLessonId((current) => (current === nextLessonId ? current : nextLessonId))
+
+    if (!nextLessonId && requestedLessonId) {
+      setSearchParams({}, { replace: true })
+      return
+    }
+
+    if (nextLessonId && requestedLessonId !== nextLessonId) {
+      setSearchParams({ lessonId: nextLessonId }, { replace: true })
+    }
+  }, [data, requestedLessonId, setSearchParams])
+
+  useEffect(() => {
+    if (!showLessonCompletedFeedback) {
+      return undefined
+    }
+
+    const timeout = window.setTimeout(() => {
+      setShowLessonCompletedFeedback(false)
+    }, 3_000)
+
+    return () => {
+      window.clearTimeout(timeout)
+    }
+  }, [showLessonCompletedFeedback])
+
+  useEffect(() => {
+    setShowLessonCompletedFeedback(false)
+  }, [resolvedActiveLessonId])
+
+  useEffect(() => {
+    if (!isMobileSidebarOpen) {
+      return undefined
+    }
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isMobileSidebarOpen])
+
+  const loadPlaybackUrl = useCallback(async (
+    params: { courseId: string; lessonId: string; preservePlaybackState?: boolean },
+  ) => {
+    if (params.preservePlaybackState) {
+      const videoElement = videoElementRef.current
+      if (videoElement) {
+        pendingResumeRef.current = {
+          currentTime: videoElement.currentTime,
+          shouldResumePlayback: !videoElement.paused && !videoElement.ended,
+        }
+      }
+    } else {
+      pendingResumeRef.current = null
+      setActiveVideoSource('')
+      setActiveVideoExpiresAtMs(null)
+      failedRefreshSourceRef.current = null
+    }
+
+    setIsVideoLoading(true)
+    setVideoErrorMessage(null)
+
+    const requestId = ++playbackRequestIdRef.current
+
+    try {
+      const { url, expiresAtMs } = await courseMediaService.getLessonPlaybackUrl(params.courseId, params.lessonId)
+
+      if (requestId !== playbackRequestIdRef.current) {
+        return
+      }
+
+      setActiveVideoSource(url)
+      setActiveVideoExpiresAtMs(expiresAtMs)
+      setVideoLoadState('ready')
+      failedRefreshSourceRef.current = null
+    } catch (loadError) {
+      if (requestId !== playbackRequestIdRef.current) {
+        return
+      }
+
+      setActiveVideoSource('')
+      setActiveVideoExpiresAtMs(null)
+      pendingResumeRef.current = null
+
+      if (isMissingVideoError(loadError)) {
+        setVideoLoadState('missing')
+        setVideoErrorMessage(null)
+      } else {
+        setVideoLoadState('error')
+        setVideoErrorMessage(normalizeApiError(loadError).message)
+      }
+    } finally {
+      if (requestId === playbackRequestIdRef.current) {
+        setIsVideoLoading(false)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!purchased || !activeCourseId || !resolvedActiveLessonId) {
+      setVideoErrorMessage(null)
+      setIsVideoLoading(false)
+      setActiveVideoSource('')
+      setActiveVideoExpiresAtMs(null)
+      setVideoLoadState('idle')
+      pendingResumeRef.current = null
+      failedRefreshSourceRef.current = null
+      return
+    }
+
+    void loadPlaybackUrl({ courseId: activeCourseId, lessonId: resolvedActiveLessonId })
+  }, [activeCourseId, loadPlaybackUrl, purchased, resolvedActiveLessonId])
+
+  const handleVideoPlay = () => {
+    if (!activeCourseId || !resolvedActiveLessonId || !activeVideoExpiresAtMs) {
+      return
+    }
+
+    const isExpiredOrNearExpiry = Date.now() >= activeVideoExpiresAtMs - PLAYBACK_URL_REFRESH_BUFFER_MS
+
+    if (!isExpiredOrNearExpiry) {
+      return
+    }
+
+    void loadPlaybackUrl({
+      courseId: activeCourseId,
+      lessonId: resolvedActiveLessonId,
+      preservePlaybackState: true,
+    })
   }
 
-  const purchased = isPurchased(data.id)
-  const activeModule = data.modules[activeModuleIndex] ?? data.modules[0]
-  const activeVideoSource = sampleVideoSources[activeModuleIndex % sampleVideoSources.length]
+  const handleVideoLoadedMetadata = () => {
+    const pendingResume = pendingResumeRef.current
+    const videoElement = videoElementRef.current
+
+    if (pendingResume && videoElement) {
+      const hasDuration = Number.isFinite(videoElement.duration) && videoElement.duration > 0
+
+      if (hasDuration && pendingResume.currentTime > 0 && pendingResume.currentTime < videoElement.duration) {
+        videoElement.currentTime = pendingResume.currentTime
+      }
+
+      pendingResumeRef.current = null
+
+      if (pendingResume.shouldResumePlayback) {
+        void videoElement.play().catch(() => undefined)
+      }
+    }
+
+    handleTrackedVideoLoadedMetadata()
+  }
+
+  const handleVideoError = () => {
+    if (!activeCourseId || !resolvedActiveLessonId || !purchased || !activeVideoSource) {
+      return
+    }
+
+    const refreshKey = `${activeCourseId}:${resolvedActiveLessonId}:${activeVideoSource}`
+
+    if (failedRefreshSourceRef.current === refreshKey) {
+      return
+    }
+
+    failedRefreshSourceRef.current = refreshKey
+
+    void loadPlaybackUrl({
+      courseId: activeCourseId,
+      lessonId: resolvedActiveLessonId,
+      preservePlaybackState: true,
+    })
+  }
+
+  const handleLessonSelect = (lessonId: string) => {
+    setActiveLessonId(lessonId)
+    setSearchParams({ lessonId })
+    setIsMobileSidebarOpen(false)
+  }
+
+  const handleAddToCart = (courseId: string) => {
+    addCourse(courseId)
+    navigate(ROUTES.cart)
+  }
+
+  if (error) {
+    return <QueryErrorState error={error} fullScreen />
+  }
+
+  if (isLoading || !data) {
+    return <Loader fullScreen label={t('loader.courseDetails')} />
+  }
 
   if (!purchased) {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          description={t('player.lockedDescription')}
-          eyebrow={data.category}
-          title={t('player.lockedTitle')}
-        />
+      <div className="theme-app min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl space-y-5">
+          <WatchPageBackButton label={t('common.backToCourse')} to={ROUTES.courseDetail(data.slug)} />
 
-        <Card className="overflow-hidden p-0">
-          <div className={`h-1.5 bg-gradient-to-r ${data.accent}`} />
-          <div className="grid gap-8 p-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-amber-400/10 text-amber-200">
-                <LockKeyhole className="h-7 w-7" />
-              </div>
-              <h2 className="mt-6 text-3xl font-semibold text-white">{data.title}</h2>
-              <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-300">{data.description}</p>
-              <div className="mt-6 flex flex-wrap gap-2">
-                {data.tags.map((tag) => (
-                  <span key={tag} className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-slate-300">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
+          <section className="rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-6 py-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[color:var(--text-subtle)]">{t('player.eyebrow')}</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[color:var(--text-heading)]">{t('player.lockedTitle')}</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-[color:var(--text-muted)]">{t('player.lockedDescription')}</p>
 
-            <Card className="h-fit border-amber-300/16 bg-amber-400/8">
-              <p className="text-xs uppercase tracking-[0.22em] text-amber-100">{t('player.accessRequired')}</p>
-              <p className="mt-4 text-sm leading-7 text-slate-300">{t('player.accessExplanation')}</p>
-              <div className="mt-6 space-y-3">
-                {isInCart(data.id) ? (
-                  <Link className="block" to={ROUTES.cart}>
-                    <Button asChild className="w-full justify-center" variant="secondary">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-300" />
-                      {t('common.goToCart')}
-                    </Button>
-                  </Link>
-                ) : (
-                  <Button className="w-full justify-center" onClick={() => addCourse(data.id)}>
-                    <ShoppingCart className="h-4 w-4" />
-                    {t('common.addToCart')}
-                  </Button>
-                )}
-                <Link className="block" to={ROUTES.courseDetail(data.slug)}>
-                  <Button asChild className="w-full justify-center" variant="ghost">
-                    {t('common.backToCourse')}
-                    <ArrowRight className="h-4 w-4" />
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+              {isInCart(data.id) ? (
+                <Link to={ROUTES.cart}>
+                  <Button asChild className="w-full justify-center sm:w-auto" variant="secondary">
+                    {t('common.goToCart')}
                   </Button>
                 </Link>
-              </div>
-            </Card>
-          </div>
-        </Card>
+              ) : (
+                <Button className="w-full justify-center sm:w-auto" onClick={() => handleAddToCart(data.id)} variant="secondary">
+                  <ShoppingCart className="h-4 w-4" />
+                  {t('common.addToCart')}
+                </Button>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
     )
   }
 
+  const lessonEmptyMessage = lessons.length === 0
+    ? (language === 'tr' ? 'Bu kurs için henüz ders eklenmemiş.' : 'No lessons have been added for this course yet.')
+    : videoLoadState === 'missing' && activeLesson
+      ? (language === 'tr' ? 'Bu derse henüz video eklenmemiş.' : 'No video has been added to this lesson yet.')
+      : t('player.chooseLesson')
+  const isFinalExamUnlocked = Boolean(courseProgressSummary && courseProgressSummary.overallPercentage >= 100)
+  const finalExamLockedMessage = language === 'tr'
+    ? 'Final sınavını açmak için tüm dersleri bitirmen gerekiyor.'
+    : 'You need to complete all lessons before opening the final exam.'
+  const playerProgressPercentage = courseProgressSummary?.overallPercentage ?? activeLessonProgress?.watchedPercentage ?? 0
+  const showPlayerProgress = Boolean(courseProgressSummary || activeLessonProgress)
+
+  const handleFinalExamSelect = () => {
+    if (!activeCourseId) {
+      return
+    }
+
+    if (!isFinalExamUnlocked) {
+      emitAppToast({
+        tone: 'info',
+        message: finalExamLockedMessage,
+      })
+      return
+    }
+
+    navigate(ROUTES.courseFinalExamOverview(activeCourseId))
+  }
+
   return (
-    <div className="space-y-6">
-      <PageHeader
-        actions={
-          <Link to={ROUTES.courseDetail(data.slug)}>
-            <Button asChild variant="secondary">
-              {t('common.backToCourse')}
-            </Button>
-          </Link>
-        }
-        description={t('player.description')}
-        eyebrow={t('player.eyebrow')}
-        title={data.title}
-      />
+    <div className="theme-app relative min-h-screen overflow-hidden bg-[color:var(--bg)]">
+      <div className="relative flex min-h-screen flex-col">
+        <header className="border-b border-[color:var(--border)] bg-[color:var(--surface-strong)]">
+          <div className="mx-auto flex w-full max-w-[1740px] items-center justify-between gap-3 px-3 py-3 sm:px-4 lg:px-6">
+            <WatchPageBackButton label={t('common.backToCourse')} to={ROUTES.courseDetail(data.slug)} />
 
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
-        <Card className="overflow-hidden p-0">
-          <div className={`h-1.5 bg-gradient-to-r ${data.accent}`} />
-          <div className="p-6">
-            <div className="overflow-hidden rounded-[28px] border border-white/8 bg-slate-950/70">
-              <video
-                className="aspect-video w-full bg-slate-950 object-cover"
-                controls
-                key={`${data.id}-${activeModule.id}`}
-                preload="metadata"
+            <div className="flex items-center gap-2">
+              <ThemeToggle compact />
+
+              {showLessonCompletedFeedback ? (
+                <span className="hidden rounded-full border border-[color:var(--success)]/30 bg-[color:var(--surface-sky-haze)] px-3 py-1 text-xs font-medium text-[color:var(--success)] sm:inline-flex">
+                  {language === 'tr' ? 'Ders tamamlandı' : 'Lesson completed'}
+                </span>
+              ) : null}
+
+              <button
+                aria-label={language === 'tr' ? 'Ders listesini aç veya kapat' : 'Toggle lesson list'}
+                className="hidden items-center gap-2 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2 text-sm font-medium text-[color:var(--text-heading)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] lg:inline-flex"
+                onClick={() => setIsLessonSidebarOpen((current) => !current)}
+                type="button"
               >
-                <source src={activeVideoSource} type="video/mp4" />
-              </video>
-            </div>
+                {isLessonSidebarOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRightOpen className="h-4 w-4" />}
+                <span>{language === 'tr' ? 'Dersler' : 'Lessons'}</span>
+              </button>
 
-            <div className="mt-6 grid gap-4 lg:grid-cols-[1fr_260px]">
-              <div>
-                <p className="text-xs uppercase tracking-[0.22em] text-cyan-200">{t('player.nowPlaying')}</p>
-                <h2 className="mt-3 text-2xl font-semibold text-white">{activeModule.title}</h2>
-                <p className="mt-3 text-sm leading-7 text-slate-300">{data.description}</p>
-              </div>
-              <Card className="h-fit border-sky-300/16 bg-sky-400/8">
-                <p className="text-xs uppercase tracking-[0.22em] text-sky-100">{t('player.moduleMeta')}</p>
-                <div className="mt-4 space-y-3 text-sm text-slate-200">
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{t('player.lessonType')}</span>
-                    <span>{activeModule.type}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{t('player.runtime')}</span>
-                    <span>{activeModule.duration}</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span>{t('player.accessStatus')}</span>
-                    <span>{t('player.purchasedAccess')}</span>
-                  </div>
-                </div>
-              </Card>
+              <button
+                aria-label={language === 'tr' ? 'Ders listesini aç' : 'Open lesson list'}
+                className="inline-flex items-center gap-2 rounded-[var(--radius-navigation)] border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2 text-sm font-medium text-[color:var(--text-heading)] transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)] lg:hidden"
+                onClick={() => setIsMobileSidebarOpen(true)}
+                type="button"
+              >
+                <ListVideo className="h-4 w-4" />
+                <span>{language === 'tr' ? 'Dersler' : 'Lessons'}</span>
+              </button>
             </div>
           </div>
-        </Card>
+        </header>
 
-        <div className="space-y-6">
-          <Card>
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200">
-                <ListVideo className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white">{t('player.courseContent')}</p>
-                <p className="text-sm text-slate-400">{t('player.chooseLesson')}</p>
-              </div>
-            </div>
+        <main className="flex-1 px-3 pb-3 pt-3 sm:px-4 lg:px-6">
+          <div className="mx-auto flex h-full min-h-[calc(100vh-92px)] w-full max-w-[1740px] gap-2 lg:gap-3">
+            <section className="min-w-0 flex-1">
+              <div
+                className={cn(
+                  'flex h-full min-h-[460px] flex-col rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] p-2 shadow-none transition-[padding] sm:p-3 lg:p-4',
+                  isLessonSidebarOpen ? 'xl:pr-4' : 'xl:pr-5',
+                )}
+              >
+                <div className="mb-3 flex flex-col gap-3 border-b border-[color:var(--border)] pb-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--text-subtle)]">
+                      {language === 'tr' ? 'Kurs' : 'Course'}
+                    </p>
+                    <h1 className="mt-1 truncate text-base font-semibold text-[color:var(--text-heading)] sm:text-lg">
+                      {data.title}
+                    </h1>
+                  </div>
 
-            <div className="mt-6 space-y-3">
-              {data.modules.map((module, index) => {
-                const active = module.id === activeModule.id
-
-                return (
-                  <button
-                    key={module.id}
-                    className={`w-full rounded-2xl border px-4 py-4 text-left transition ${
-                      active
-                        ? 'border-cyan-300/28 bg-cyan-400/12'
-                        : 'border-white/8 bg-white/4 hover:border-white/14 hover:bg-white/6'
-                    }`}
-                    onClick={() => setActiveModuleIndex(index)}
-                    type="button"
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <p className="font-medium text-white">{module.title}</p>
-                        <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
-                          <span className="inline-flex items-center gap-1">
-                            <Clock3 className="h-3.5 w-3.5" />
-                            {module.duration}
-                          </span>
-                          <span>{module.type}</span>
-                        </div>
-                      </div>
-                      <PlayCircle className={`h-5 w-5 shrink-0 ${active ? 'text-cyan-200' : 'text-slate-500'}`} />
+                  {showPlayerProgress ? (
+                    <div className="w-full sm:max-w-sm">
+                      <CourseProgressBar
+                        compact
+                        completedLessons={courseProgressSummary?.completedLessons}
+                        language={language}
+                        percentage={playerProgressPercentage}
+                        totalLessons={courseProgressSummary?.totalLessons}
+                      />
                     </div>
-                  </button>
-                )
-              })}
-            </div>
-          </Card>
-
-          <Card>
-            <p className="text-xs uppercase tracking-[0.22em] text-cyan-200">{t('courseDetail.instructor')}</p>
-            <h3 className="mt-3 text-2xl font-semibold text-white">{data.instructor.name}</h3>
-            <p className="mt-2 text-sm text-slate-400">{data.instructor.role}</p>
-            <p className="mt-5 text-sm leading-7 text-slate-300">{data.instructor.bio}</p>
-          </Card>
-
-          <Card className="border-emerald-300/16 bg-emerald-400/8">
-            <p className="text-xs uppercase tracking-[0.22em] text-emerald-100">{t('player.outcomes')}</p>
-            <div className="mt-4 space-y-3">
-              {data.outcomes.slice(0, 3).map((outcome) => (
-                <div key={outcome} className="rounded-2xl border border-white/8 bg-white/4 px-4 py-4 text-sm text-slate-100">
-                  {outcome}
+                  ) : null}
                 </div>
-              ))}
-            </div>
-          </Card>
-        </div>
-      </section>
+
+                <div className="min-h-0 flex-1">
+                  <CourseVideoPlayer
+                    emptyMessage={lessonEmptyMessage}
+                    isSourceLoading={isVideoLoading}
+                    language={language}
+                    onVideoEnded={handleVideoEnded}
+                    onVideoError={handleVideoError}
+                    onVideoLoadedMetadata={handleVideoLoadedMetadata}
+                    onVideoPause={handleVideoPause}
+                    onVideoPlay={handleVideoPlay}
+                    onVideoTimeUpdate={handleVideoTimeUpdate}
+                    sourceErrorMessage={videoLoadState === 'error' ? videoErrorMessage : null}
+                    src={activeVideoSource || undefined}
+                    title={activeLesson?.title || data.title}
+                    videoKey={activeLesson ? `${data.id}-${activeLesson.id}` : `${data.id}-empty`}
+                    videoRef={videoElementRef}
+                  />
+                </div>
+              </div>
+            </section>
+
+            <LessonSidebar
+              activeLessonId={resolvedActiveLessonId}
+              courseProgressSummary={courseProgressSummary}
+              courseTitle={data.title}
+              isDesktopOpen={isLessonSidebarOpen}
+              isMobileOpen={isMobileSidebarOpen}
+              language={language}
+              lessonProgressByLessonId={lessonProgressByLessonId}
+              lessons={lessons}
+              finalExamHint={language === 'tr'
+                ? (isFinalExamUnlocked ? 'Final sınavını başlatabilirsin.' : 'Final sınavını açmak için tüm dersleri tamamla.')
+                : (isFinalExamUnlocked ? 'You can start the final exam now.' : 'Complete all lessons to unlock the final exam.')}
+              finalExamLabel={language === 'tr' ? 'Final sınavı' : 'Final exam'}
+              isFinalExamLocked={!isFinalExamUnlocked}
+              onLessonSelect={handleLessonSelect}
+              onFinalExamSelect={handleFinalExamSelect}
+              onMobileClose={() => setIsMobileSidebarOpen(false)}
+              showFinalExamEntry
+            />
+          </div>
+        </main>
+      </div>
+
+      <ResumePlaybackPrompt
+        language={language}
+        lastWatchedSecond={resumePromptSecond}
+        onRestart={handleRestartFromPrompt}
+        onResume={handleResumeFromPrompt}
+        open={resumePromptOpen}
+      />
     </div>
   )
 }
 
-export default CoursePlayerPage
+export default CourseWatchPage

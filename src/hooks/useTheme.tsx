@@ -2,10 +2,11 @@ import {
   createContext,
   useContext,
   useEffect,
+  useLayoutEffect,
   useState,
   type ReactNode,
 } from 'react'
-import { THEME_STORAGE_KEY } from '../utils/constants'
+import { LEGACY_THEME_STORAGE_KEY, THEME_STORAGE_KEY } from '../utils/constants'
 
 export type ThemeMode = 'dark' | 'light'
 
@@ -17,23 +18,46 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
-const getPreferredTheme = (): ThemeMode => {
-  const storedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+const isThemeMode = (value: string | null): value is ThemeMode => value === 'light' || value === 'dark'
 
-  if (storedTheme === 'light' || storedTheme === 'dark') {
-    return storedTheme
+const getPreferredTheme = (): ThemeMode => {
+  if (typeof window === 'undefined') {
+    return 'light'
   }
 
-  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
+  try {
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY) ?? window.localStorage.getItem(LEGACY_THEME_STORAGE_KEY)
+
+    if (isThemeMode(storedTheme)) {
+      window.localStorage.setItem(THEME_STORAGE_KEY, storedTheme)
+      window.localStorage.removeItem(LEGACY_THEME_STORAGE_KEY)
+      return storedTheme
+    }
+  } catch {
+    // Ignore storage errors and fallback to system preference.
+  }
+
+  if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
+    return 'dark'
+  }
+
+  return 'light'
 }
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<ThemeMode>(() => getPreferredTheme())
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.documentElement.dataset.theme = theme
     document.documentElement.style.colorScheme = theme
-    localStorage.setItem(THEME_STORAGE_KEY, theme)
+  }, [theme])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, theme)
+    } catch {
+      // Ignore storage write errors.
+    }
   }, [theme])
 
   return (

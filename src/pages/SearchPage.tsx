@@ -1,24 +1,51 @@
-import { useDeferredValue, useEffect, useState } from 'react'
+﻿import { useDeferredValue, useEffect, useState } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Search } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import CourseCard from '../components/CourseCard'
-import PageHeader from '../components/PageHeader'
-import Card from '../components/ui/Card'
+import { useSearchParams } from 'react-router-dom'
+import CourseCatalogList from '../components/dashboard/CourseCatalogList'
+import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
+import DashboardSection from '../components/dashboard/DashboardSection'
+import EmptyState from '../components/dashboard/EmptyState'
+import RecommendationSection from '../components/recommendations/RecommendationSection'
+import StatusBadge from '../components/dashboard/StatusBadge'
 import Input from '../components/ui/Input'
 import Loader from '../components/ui/Loader'
+import QueryErrorState from '../components/ui/QueryErrorState'
+import { useAuth } from '../hooks/useAuth'
 import { useLanguage } from '../hooks/useLanguage'
+import { recommendationService } from '../services/recommendationService'
 import { searchService } from '../services/searchService'
+
+const chipClass = (active: boolean) => {
+  if (active) {
+    return 'rounded-sm border border-[color:var(--primary)] bg-[color:var(--surface-soft)] px-3 py-1.5 text-sm font-medium text-[color:var(--primary)]'
+  }
+
+  return 'rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-3 py-1.5 text-sm font-medium theme-muted transition hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]'
+}
 
 const SearchPage = () => {
   const { t } = useTranslation()
+  const { isAuthenticated, isBootstrapping, user } = useAuth()
   const { language } = useLanguage()
-  const [query, setQuery] = useState('')
+  const [searchParams] = useSearchParams()
+  const queryFromUrl = searchParams.get('q')?.trim() ?? ''
+  const [query, setQuery] = useState(queryFromUrl)
   const [category, setCategory] = useState('')
   const [level, setLevel] = useState('')
   const deferredQuery = useDeferredValue(query)
+  const recommendationQuery = deferredQuery.trim()
+  const shouldLoadSearchRecommendations =
+    !isBootstrapping &&
+    isAuthenticated &&
+    recommendationQuery.length > 0
 
-  const { data, isFetching, isLoading } = useQuery({
+  useEffect(() => {
+    setQuery(queryFromUrl)
+  }, [queryFromUrl])
+
+  const { data, error, isFetching, isLoading } = useQuery({
     queryKey: ['search-results', language, deferredQuery, category, level],
     queryFn: () =>
       searchService.search({
@@ -29,25 +56,42 @@ const SearchPage = () => {
     placeholderData: keepPreviousData,
   })
 
+  const {
+    data: searchRecommendationData,
+    isLoading: isSearchRecommendationLoading,
+    isError: isSearchRecommendationError,
+  } = useQuery({
+    queryKey: ['search-recommendations', user?.id, language, recommendationQuery],
+    queryFn: () => recommendationService.getSearchRecommendations(recommendationQuery, 6),
+    enabled: shouldLoadSearchRecommendations,
+    placeholderData: keepPreviousData,
+  })
+
   useEffect(() => {
     setCategory('')
     setLevel('')
   }, [language])
 
+  if (error) {
+    return <QueryErrorState error={error} />
+  }
+
   if (isLoading || !data) {
     return <Loader label={t('loader.searchExperience')} />
   }
 
+  const hasFilters = Boolean(query.trim() || category || level)
+
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <div className="space-y-8">
+      <DashboardPageHeader
         description={t('searchPage.description')}
         eyebrow={t('searchPage.eyebrow')}
         title={t('searchPage.title')}
       />
 
       <section className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <Card className="h-fit min-w-0">
+        <aside className="h-fit min-w-0 rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)] px-4 py-4 xl:sticky xl:top-24">
           <Input
             icon={<Search className="h-4 w-4" />}
             label={t('searchPage.search')}
@@ -56,15 +100,12 @@ const SearchPage = () => {
             value={query}
           />
 
-          <div className="mt-6">
-            <p className="text-sm font-semibold text-white">{t('searchPage.categories')}</p>
-            <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-5 border-t border-[color:var(--border)] pt-4">
+            <p className="theme-heading text-sm font-semibold">{t('searchPage.categories')}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
               <button
-                className={`rounded-full border px-3 py-2 text-sm transition ${
-                  category
-                    ? 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-white'
-                    : 'border-cyan-300/30 bg-cyan-400/12 text-cyan-100'
-                }`}
+                aria-pressed={!category}
+                className={chipClass(!category)}
                 onClick={() => setCategory('')}
                 type="button"
               >
@@ -72,12 +113,9 @@ const SearchPage = () => {
               </button>
               {data.filters.categories.map((item) => (
                 <button
+                  aria-pressed={category === item}
+                  className={chipClass(category === item)}
                   key={item}
-                  className={`rounded-full border px-3 py-2 text-sm transition ${
-                    category === item
-                      ? 'border-cyan-300/30 bg-cyan-400/12 text-cyan-100'
-                      : 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-white'
-                  }`}
                   onClick={() => setCategory(item)}
                   type="button"
                 >
@@ -87,15 +125,12 @@ const SearchPage = () => {
             </div>
           </div>
 
-          <div className="mt-6">
-            <p className="text-sm font-semibold text-white">{t('searchPage.levels')}</p>
-            <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-5 border-t border-[color:var(--border)] pt-4">
+            <p className="theme-heading text-sm font-semibold">{t('searchPage.levels')}</p>
+            <div className="mt-3 flex flex-wrap gap-2">
               <button
-                className={`rounded-full border px-3 py-2 text-sm transition ${
-                  level
-                    ? 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-white'
-                    : 'border-cyan-300/30 bg-cyan-400/12 text-cyan-100'
-                }`}
+                aria-pressed={!level}
+                className={chipClass(!level)}
                 onClick={() => setLevel('')}
                 type="button"
               >
@@ -103,12 +138,9 @@ const SearchPage = () => {
               </button>
               {data.filters.levels.map((item) => (
                 <button
+                  aria-pressed={level === item}
+                  className={chipClass(level === item)}
                   key={item}
-                  className={`rounded-full border px-3 py-2 text-sm transition ${
-                    level === item
-                      ? 'border-cyan-300/30 bg-cyan-400/12 text-cyan-100'
-                      : 'border-white/10 bg-white/5 text-slate-400 hover:border-white/20 hover:text-white'
-                  }`}
                   onClick={() => setLevel(item)}
                   type="button"
                 >
@@ -117,35 +149,44 @@ const SearchPage = () => {
               ))}
             </div>
           </div>
-        </Card>
+        </aside>
 
         <div className="min-w-0 space-y-5">
-          <Card className="overflow-hidden">
-            <div className="flex min-w-0 flex-wrap items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-xs uppercase tracking-[0.22em] text-slate-500">{t('searchPage.results')}</p>
-                <h2 className="mt-2 text-2xl font-semibold text-white">
-                  {t('searchPage.matchingCourses', { count: data.results.length })}
-                </h2>
-              </div>
-              <div className="flex min-w-0 flex-wrap items-center gap-3">
-                {isFetching ? (
-                  <span className="rounded-full border border-sky-300/18 bg-sky-400/10 px-3 py-1 text-xs font-semibold text-sky-100">
-                    {t('searchPage.updating')}
-                  </span>
-                ) : null}
-                <p className="max-w-md text-sm leading-7 text-slate-400">
-                  {t('searchPage.resultsDescription')}
-                </p>
-              </div>
-            </div>
-          </Card>
+          {recommendationQuery ? (
+            <RecommendationSection
+              description={language === 'tr'
+                ? 'Arama ifaden ve ogrenme gecmisine gore one cikan kurslar.'
+                : 'Courses highlighted for your query and learning history.'}
+              emptyDescription={language === 'tr'
+                ? 'Bu arama icin ek oneri bulunamadi. Sonuclari inceleyebilirsin.'
+                : 'No extra recommendation was found for this search yet. You can still review regular results.'}
+              emptyTitle={language === 'tr' ? 'Akilli oneri bulunamadi' : 'No smart recommendations found'}
+              errorMessage={isSearchRecommendationError ? 'failed' : null}
+              isLoading={isSearchRecommendationLoading}
+              language={language}
+              recommendations={searchRecommendationData?.recommendations ?? []}
+              title={language === 'tr' ? 'Aramana Gore Akilli Oneriler' : 'Smart Recommendations For Your Search'}
+            />
+          ) : null}
 
-          <div className="grid auto-rows-fr gap-6 xl:grid-cols-2">
-            {data.results.map((course) => (
-              <CourseCard course={course} key={course.id} />
-            ))}
-          </div>
+          <DashboardSection
+            action={isFetching ? <StatusBadge>{t('searchPage.updating')}</StatusBadge> : null}
+            description={t('searchPage.resultsDescription')}
+            title={t('searchPage.matchingCourses', { count: data.results.length })}
+          >
+            {data.results.length > 0 ? (
+              <CourseCatalogList courses={data.results} />
+            ) : (
+              <EmptyState
+                description={hasFilters
+                  ? language === 'tr' ? 'Filtrelerini guncelleyip yeniden dene.' : 'Adjust your filters and try again.'
+                  : language === 'tr' ? 'Kurs bulmak icin arama veya filtre kullan.' : 'Use search or filters to find courses.'}
+                title={hasFilters
+                  ? language === 'tr' ? 'Sonuc bulunamadi' : 'No results found'
+                  : language === 'tr' ? 'Arama yap' : 'Start searching'}
+              />
+            )}
+          </DashboardSection>
         </div>
       </section>
     </div>

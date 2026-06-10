@@ -10,16 +10,16 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants = {
   primary:
-    'bg-sky-600 text-white shadow-sm shadow-sky-950/10 hover:bg-sky-500',
+    'border border-[color:var(--primary)] bg-[color:var(--primary)] text-white hover:border-[color:var(--primary-strong)] hover:bg-[color:var(--primary-strong)]',
   secondary:
-    'border border-white/12 bg-white/6 text-slate-100 hover:border-white/20 hover:bg-white/10',
-  ghost: 'bg-transparent text-slate-300 hover:bg-white/6 hover:text-white',
+    'border border-[color:var(--border)] bg-[color:var(--surface-strong)] text-[color:var(--text-heading)] hover:border-[color:var(--border-strong)] hover:bg-[color:var(--surface-hover)]',
+  ghost: 'border border-transparent bg-transparent text-[color:var(--text-muted)] hover:bg-[color:var(--surface-muted)] hover:text-[color:var(--text-heading)]',
 }
 
 const sizes = {
-  sm: 'h-10 px-4 text-sm',
-  md: 'h-11 px-5 text-sm',
-  lg: 'h-12 px-6 text-base',
+  sm: 'h-8 px-3 text-sm',
+  md: 'h-10 px-4 text-sm',
+  lg: 'h-11 px-5 text-sm',
 }
 
 const Button = ({
@@ -32,7 +32,7 @@ const Button = ({
   ...props
 }: ButtonProps) => {
   const classes = cn(
-    'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-sky-300/40 disabled:cursor-not-allowed disabled:opacity-60',
+    'inline-flex items-center justify-center gap-2 rounded-[var(--radius-buttons)] font-semibold shadow-none transition-colors duration-150 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[color:var(--bg)] disabled:cursor-not-allowed disabled:opacity-45',
     variants[variant],
     sizes[size],
     className,

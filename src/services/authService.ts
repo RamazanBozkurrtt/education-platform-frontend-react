@@ -1,50 +1,294 @@
-import { mockRequest } from './api'
-import { getCurrentUser } from '../utils/mockData'
-import { getInitials } from '../utils/helpers'
-import type { AuthPayload, AuthResponse } from '../utils/types'
+import { authApi } from './authApi'
+import { userService } from './userService'
+import {
+  buildSessionSnapshot,
+  clearSession,
+  getAccessToken,
+  getRefreshToken,
+  getStoredClaims,
+  getStoredUser,
+  parseTokenClaims,
+  setSession,
+} from './authSession'
+import { sleep } from '../utils/helpers'
+import { authFlowLog } from '../shared/authFlowDebug'
+import type {
+  AuthActionResult,
+  AuthPayload,
+  AuthSessionSnapshot,
+  ChangePasswordPayload,
+  LoginSuccessData,
+} from '../utils/types'
+import { isAppError } from '../shared/errors/types'
+import { normalizeApiError } from '../shared/errors/normalizeApiError'
+
+const requireTokens = (accessToken: string, refreshToken: string, message?: string) => {
+  if (!accessToken || !refreshToken) {
+    throw new Error(message || 'Authentication response is missing tokens.')
+  }
+}
+
+const persistSnapshot = (snapshot: AuthSessionSnapshot) => {
+  setSession(snapshot)
+  return snapshot
+}
+
+const withLatestPersistedTokens = (
+  session: AuthSessionSnapshot,
+  user = session.user,
+): AuthSessionSnapshot => {
+  const accessToken = getAccessToken() ?? session.accessToken
+  const refreshToken = getRefreshToken() ?? session.refreshToken
+  const claims = parseTokenClaims(accessToken) ?? session.claims
+
+  return {
+    ...session,
+    accessToken,
+    refreshToken,
+    claims,
+    user,
+  }
+}
+
+const PROFILE_SYNC_RETRY_DELAYS = [250, 500, 900] as const
+const shouldCallServerLogout = import.meta.env.VITE_ENABLE_SERVER_LOGOUT === 'true'
+const DEACTIVATED_LOGIN_CODE = '1009'
+const DEACTIVATED_LOGIN_MESSAGE_HINTS = [
+  'deaktif',
+  'deactivated',
+  'reactivation',
+  'reactivate',
+  'inactive',
+  'not active',
+] as const
+
+const isDeactivatedLoginError = (message: string, code?: string, httpStatus?: number) => {
+  const normalizedMessage = message.toLowerCase()
+  const normalizedCode = (code || '').trim().toLowerCase()
+
+  if (normalizedCode === DEACTIVATED_LOGIN_CODE) {
+    return true
+  }
+
+  if (httpStatus !== 403) {
+    return false
+  }
+
+  return DEACTIVATED_LOGIN_MESSAGE_HINTS.some((hint) => normalizedMessage.includes(hint))
+}
+
+const normalizeAuthResponse = ({
+  data,
+  payload,
+  profileCompleted,
+}: {
+  data: LoginSuccessData
+  payload: AuthPayload
+  profileCompleted?: boolean
+}): AuthActionResult => {
+  authFlowLog('login response:', data)
+
+  if (data.reactivation_link) {
+    clearSession()
+
+    return {
+      status: 'deactivated',
+      reactivationLink: data.reactivation_link,
+    }
+  }
+
+  const accessToken = data.access_token?.trim() ?? ''
+  const refreshToken = data.refresh_token?.trim() ?? ''
+  authFlowLog('parsed token:', {
+    hasAccessToken: Boolean(accessToken),
+    hasRefreshToken: Boolean(refreshToken),
+    accessTokenLength: accessToken.length,
+    refreshTokenLength: refreshToken.length,
+  })
+
+  requireTokens(accessToken, refreshToken)
+
+  const session = persistSnapshot(
+    buildSessionSnapshot({
+      accessToken,
+      refreshToken,
+      existingUser: getStoredUser(),
+      fallbackUserId: data.user_id ?? data.userId,
+      fallbackEmail: payload.email,
+      fallbackName: payload.name,
+      profileCompleted,
+    }),
+  )
+  authFlowLog('normalized user:', session.user)
+  authFlowLog('stored access token:', localStorage.getItem('accessToken'))
+  authFlowLog('stored refresh token:', localStorage.getItem('refreshToken'))
+
+  return {
+    status: 'authenticated',
+    session,
+  }
+}
+
+const syncSessionProfile = async ({
+  session,
+  fallbackProfileCompleted,
+  retryDelays = [],
+}: {
+  session: AuthSessionSnapshot
+  fallbackProfileCompleted?: boolean
+  retryDelays?: number[]
+}) => {
+  for (let attempt = 0; attempt <= retryDelays.length; attempt += 1) {
+    try {
+      const syncedUser = await userService.syncMyProfile(session.user, {
+        skipGlobalErrorHandling: true,
+      })
+      authFlowLog('profile response/error:', syncedUser)
+
+      return persistSnapshot(withLatestPersistedTokens(session, syncedUser))
+    } catch (error) {
+      authFlowLog('profile response/error:', error)
+      const nextDelay = retryDelays[attempt]
+
+      if (typeof nextDelay === 'number') {
+        await sleep(nextDelay)
+      }
+    }
+  }
+
+  return persistSnapshot({
+    ...withLatestPersistedTokens(session),
+    user: {
+      ...session.user,
+      profileCompleted: fallbackProfileCompleted ?? session.user.profileCompleted ?? true,
+    },
+  })
+}
 
 export const authService = {
-  async login(payload: AuthPayload): Promise<AuthResponse> {
-    const currentUser = getCurrentUser()
-    const name = payload.email.split('@')[0].replace(/[._-]/g, ' ')
-    const formattedName = name
-      .split(' ')
-      .filter(Boolean)
-      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ')
+  restoreSession() {
+    const accessToken = getAccessToken()
+    const refreshToken = getRefreshToken()
 
-    return mockRequest(
-      { url: '/auth/login', method: 'POST', data: payload },
-      {
-        token: `mock-jwt-token-${Date.now()}`,
-        user: {
-          ...currentUser,
-          name: formattedName || currentUser.name,
-          email: payload.email,
-          initials: getInitials(formattedName || currentUser.name),
-        },
-      },
-    )
+    if (!accessToken) {
+      clearSession()
+      return null
+    }
+
+    const snapshot = buildSessionSnapshot({
+      accessToken,
+      refreshToken: refreshToken ?? '',
+      existingUser: getStoredUser(),
+      profileCompleted: getStoredUser()?.profileCompleted,
+    })
+
+    return persistSnapshot({
+      ...snapshot,
+      refreshToken: refreshToken ?? snapshot.refreshToken,
+      claims: getStoredClaims() ?? snapshot.claims,
+    })
   },
 
-  async register(payload: AuthPayload): Promise<AuthResponse> {
-    const currentUser = getCurrentUser()
+  async login(payload: AuthPayload): Promise<AuthActionResult> {
+    try {
+      const { data, message } = await authApi.login(payload)
+      const result = normalizeAuthResponse({
+        data,
+        payload,
+        profileCompleted: undefined,
+      })
 
-    return mockRequest(
-      { url: '/auth/register', method: 'POST', data: payload },
-      {
-        token: `mock-jwt-token-${Date.now()}`,
-        user: {
-          ...currentUser,
-          name: payload.name || currentUser.name,
-          email: payload.email,
-          initials: getInitials(payload.name || currentUser.name),
-        },
-      },
-    )
+      if (result.status === 'authenticated' && result.session) {
+        const session = await syncSessionProfile({
+          session: result.session,
+          fallbackProfileCompleted: undefined,
+        })
+
+        return {
+          ...result,
+          message,
+          session,
+        }
+      }
+
+      return {
+        ...result,
+        message,
+      }
+    } catch (error) {
+      const appError = normalizeApiError(error)
+
+      if (isDeactivatedLoginError(appError.message, appError.code, appError.httpStatus)) {
+        clearSession()
+        return {
+          status: 'deactivated',
+          message: appError.message,
+        }
+      }
+
+      throw appError
+    }
+  },
+
+  async register(payload: AuthPayload) {
+    const { message } = await authApi.register(payload)
+
+    const loginResult = await authApi.login(payload)
+    authFlowLog('register/login response shape check:', {
+      registerReturnsTokens: false,
+      loginReturnsTokens: Boolean(loginResult.data?.access_token && loginResult.data?.refresh_token),
+    })
+    const authenticatedResult = normalizeAuthResponse({
+      data: loginResult.data,
+      payload,
+      profileCompleted: false,
+    })
+
+    if (authenticatedResult.status !== 'authenticated' || !authenticatedResult.session) {
+      throw new Error(
+        loginResult.message || message || 'Registration succeeded but automatic sign-in could not be completed.',
+      )
+    }
+
+    return syncSessionProfile({
+      session: authenticatedResult.session,
+      fallbackProfileCompleted: false,
+      retryDelays: [...PROFILE_SYNC_RETRY_DELAYS],
+    })
   },
 
   async logout() {
-    return mockRequest({ url: '/auth/logout', method: 'POST' }, { success: true })
+    const accessToken = getAccessToken()
+
+    if (!accessToken) {
+      clearSession()
+      return
+    }
+
+    try {
+      if (shouldCallServerLogout) {
+        await authApi.logout(accessToken)
+      } else {
+        authFlowLog('server logout skipped. Set VITE_ENABLE_SERVER_LOGOUT=true to enable.')
+      }
+    } catch (error) {
+      if (!isAppError(error) || ![401, 403].includes(error.httpStatus ?? 0)) {
+        throw error
+      }
+    } finally {
+      clearSession()
+    }
+  },
+
+  async changePassword(payload: ChangePasswordPayload) {
+    return authApi.changePassword(payload)
+  },
+
+  async deactivateMe() {
+    try {
+      await authApi.deactivateMe()
+    } finally {
+      clearSession()
+    }
   },
 }

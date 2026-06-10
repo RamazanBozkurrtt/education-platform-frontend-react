@@ -1,0 +1,92 @@
+.edu-video-range {
+  --range-progress: 0%;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.edu-video-range:focus-visible {
+  outline: none;
+}
+
+.edu-video-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    var(--color-muted-sage) 0%,
+    var(--color-muted-sage) var(--range-progress),
+    rgba(255, 255, 255, 0.2) var(--range-progress),
+    rgba(255, 255, 255, 0.2) 100%
+  );
+}
+
+.edu-video-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.edu-video-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-muted-sage);
+}
+
+.edu-video-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background: var(--color-muted-sage);
+  margin-top: -3px;
+}
+
+.edu-video-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  background: var(--color-muted-sage);
+}
+
+.edu-video-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.92);
+  transition: background-color 0.16s ease, border-color 0.16s ease;
+}
+
+.edu-video-icon-btn:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.edu-video-icon-btn:focus-visible,
+.edu-video-select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-muted-sage) 58%, transparent);
+}
+
+.edu-video-select {
+  height: 2rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.edu-video-select option {
+  background: #0d1520;
+  color: #f7fafc;
+}

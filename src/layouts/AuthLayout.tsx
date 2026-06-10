@@ -1,50 +1,92 @@
-import { Outlet } from 'react-router-dom'
-import { useTranslation } from 'react-i18next'
+import { Link, Outlet } from 'react-router-dom'
 import LanguageSwitcher from '../components/ui/LanguageSwitcher'
 import ThemeToggle from '../components/ui/ThemeToggle'
-import { APP_NAME } from '../utils/constants'
+import { APP_NAME, ROUTES } from '../utils/constants'
+import { cn } from '../utils/helpers'
+import authBackground from '../assets/AuthPages/auth_background.png'
 
 const AuthLayout = () => {
-  const { t } = useTranslation()
-
   return (
-    <main className="surface-grid page-shell flex min-h-screen items-center justify-center overflow-hidden px-4 py-10">
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.05),transparent_45%)]" />
-      <div className="glass-panel relative z-10 grid w-full max-w-6xl overflow-hidden rounded-[28px] border border-white/10 lg:grid-cols-[1.15fr_0.85fr]">
-      <section className="hidden flex-col justify-between border-r border-white/8 bg-slate-950/30 p-10 lg:flex">
-        <div>
-          <span className="inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-slate-300">
-            {t('auth.badge')}
-          </span>
-          <h1 className="theme-heading mt-6 max-w-md text-5xl font-semibold leading-tight">
-            {t('auth.heroTitle')}
-          </h1>
-          <p className="theme-muted mt-6 max-w-xl text-base leading-8">
-            {t('auth.heroDescription', { appName: APP_NAME })}
-          </p>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {[
-            { value: '84%', label: t('auth.completionRate') },
-            { value: '12k', label: t('auth.lessonsWatched') },
-            { value: '4.9', label: t('auth.learnerRating') },
-          ].map((item) => (
-            <div key={item.label} className="rounded-[24px] border border-white/8 bg-white/5 p-4">
-              <p className="theme-heading text-2xl font-semibold">{item.value}</p>
-              <p className="theme-muted mt-2 text-sm">{item.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-      <section className="p-6 sm:p-10">
-        <div className="mb-8 flex flex-wrap justify-end gap-3">
+    <main className="auth-shell page-shell relative h-[100dvh] overflow-hidden px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+      <div
+        className="auth-shell-bg absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${authBackground})` }}
+      />
+      <div className="auth-shell-overlay absolute inset-0" />
+
+      <div className="relative z-10 mx-auto flex max-w-[1480px] justify-end">
+        <div className="flex flex-wrap items-center gap-3">
           <LanguageSwitcher />
-          <ThemeToggle />
+          <ThemeToggle compact />
         </div>
-        <Outlet />
-      </section>
-    </div>
-  </main>
+      </div>
+
+      <div className="relative z-10 mx-auto grid h-[calc(100dvh-5.5rem)] w-full max-w-[1480px] items-center gap-8 lg:grid-cols-[1fr_500px]">
+        <section className="hidden h-full items-center lg:flex">
+          <div className="max-w-3xl">
+            <Link
+              aria-label={`${APP_NAME} landing page`}
+              className={cn(
+                'group relative inline-flex rounded-[var(--radius-cards)] px-6 py-4 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                'focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-[color:var(--surface-white)]',
+              )}
+              to={ROUTES.home}
+            >
+              <span
+                className={cn(
+                  'pointer-events-none absolute inset-x-6 bottom-3 h-[2px] origin-left scale-x-0 rounded-full transition-transform duration-300 group-hover:scale-x-100 group-focus-visible:scale-x-100',
+                  'bg-[color:var(--primary)]',
+                )}
+              />
+              <h1
+                className={cn(
+                  'theme-heading text-6xl font-semibold leading-none transition-all duration-300 group-hover:-translate-y-1 group-focus-visible:-translate-y-0.5 xl:text-[6.75rem]',
+                  'group-hover:text-[color:var(--text-heading)]',
+                )}
+              >
+                {APP_NAME}
+              </h1>
+            </Link>
+          </div>
+        </section>
+
+        <section className="flex h-full items-center justify-center lg:justify-end">
+          <div
+            className={cn(
+              'w-full max-w-[460px] rounded-[var(--radius-cards)] border p-5 shadow-[var(--shadow-sm)] sm:p-6 lg:-translate-x-12',
+              'border-[color:var(--border)] bg-[color:var(--surface-white)]/95',
+            )}
+          >
+            <div className="mb-8 lg:hidden">
+              <Link
+                aria-label={`${APP_NAME} landing page`}
+                className={cn(
+                  'group relative inline-flex rounded-[var(--radius-navigation)] px-2 py-1 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                  'focus-visible:ring-[color:var(--focus-ring)] focus-visible:ring-offset-[color:var(--surface-white)] hover:bg-[color:var(--surface-soft)]',
+                )}
+                to={ROUTES.home}
+              >
+                <span
+                  className={cn(
+                    'pointer-events-none absolute inset-x-2 bottom-0 h-[2px] origin-left scale-x-0 rounded-full transition-transform duration-300 group-hover:scale-x-100 group-focus-visible:scale-x-100',
+                    'bg-[color:var(--primary)]',
+                  )}
+                />
+                <h1
+                  className={cn(
+                    'theme-heading text-3xl font-semibold transition-all duration-300 group-hover:-translate-y-0.5 group-focus-visible:-translate-y-0.5',
+                    'group-hover:text-[color:var(--text-heading)]',
+                  )}
+                >
+                  {APP_NAME}
+                </h1>
+              </Link>
+            </div>
+            <Outlet />
+          </div>
+        </section>
+      </div>
+    </main>
   )
 }
 

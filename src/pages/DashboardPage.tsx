@@ -1,210 +1,332 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowRight, CirclePlay, Rocket, Sparkles, Target } from 'lucide-react'
+import { ArrowRight, CirclePlay, GraduationCap, LayoutDashboard, UserRoundCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
-import { useLanguage } from '../hooks/useLanguage'
-import PageHeader from '../components/PageHeader'
-import StatCard from '../components/StatCard'
+import ActivityList from '../components/dashboard/ActivityList'
+import DashboardPageHeader from '../components/dashboard/DashboardPageHeader'
+import DashboardSection from '../components/dashboard/DashboardSection'
+import MetricTile from '../components/dashboard/MetricTile'
+import StatusBadge from '../components/dashboard/StatusBadge'
+import InstructorCtaCard from '../components/instructor/InstructorCtaCard'
+import CourseProgressBar from '../components/progress/CourseProgressBar'
+import RecommendationSection from '../components/recommendations/RecommendationSection'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import Loader from '../components/ui/Loader'
-import Modal from '../components/ui/Modal'
+import QueryErrorState from '../components/ui/QueryErrorState'
+import { useAuth } from '../hooks/useAuth'
+import { useCourseProgressSummaries } from '../hooks/useCourseProgress'
+import { useLanguage } from '../hooks/useLanguage'
+import { useLibrary } from '../hooks/useLibrary'
 import { courseService } from '../services/courseService'
+import { recommendationService } from '../services/recommendationService'
 import { ROUTES } from '../utils/constants'
+import { getCourseCategoryLabel } from '../utils/courseCategory'
+import { buildCoursePlayerPath, resolveContinueLessonId } from '../utils/courseProgress'
+import { extractAuthRoles, isAdmin, isInstructor } from '../utils/roles'
 
 const DashboardPage = () => {
   const { t } = useTranslation()
   const { language } = useLanguage()
-  const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false)
-  const { data, isLoading } = useQuery({
-    queryKey: ['dashboard-overview', language],
-    queryFn: () => courseService.getDashboardOverview(language),
+  const { isAuthenticated, isBootstrapping, user, claims } = useAuth()
+  const { purchasedCourses } = useLibrary()
+  const isCurrentUserInstructor = isInstructor(user, claims)
+  const audience = (isCurrentUserInstructor || isAdmin(user, claims)) ? 'instructor' : 'student'
+  const studentCourseProgressMap = useCourseProgressSummaries(purchasedCourses.map((course) => course.id))
+  const [showRecommendationExplain, setShowRecommendationExplain] = useState(false)
+  const shouldLoadRecommendations = !isBootstrapping && isAuthenticated && Boolean(user)
+
+  const { data, error, isLoading } = useQuery({
+    queryKey: ['dashboard-overview', user?.id, language, audience],
+    queryFn: () => courseService.getDashboardOverview(language, audience),
+    enabled: !isBootstrapping && isAuthenticated && Boolean(user),
   })
+
+  const {
+    data: dashboardRecommendationData,
+    isLoading: isDashboardRecommendationLoading,
+    isError: isDashboardRecommendationError,
+  } = useQuery({
+    queryKey: ['dashboard-recommendations', user?.id, language],
+    queryFn: () => recommendationService.getDashboardRecommendations(6),
+    enabled: shouldLoadRecommendations,
+  })
+
+  const {
+    data: recommendationExplainData,
+    isLoading: isRecommendationExplainLoading,
+  } = useQuery({
+    queryKey: ['recommendation-explain', user?.id, language],
+    queryFn: () => recommendationService.getRecommendationExplain(),
+    enabled: shouldLoadRecommendations && showRecommendationExplain,
+  })
+
+  useEffect(() => {
+    console.log('[INSTRUCTOR_FLOW] current user:', user)
+    console.log('[INSTRUCTOR_FLOW] current roles:', extractAuthRoles(user, claims))
+    console.log('[INSTRUCTOR_FLOW] isInstructor:', isCurrentUserInstructor)
+  }, [claims, isCurrentUserInstructor, user])
+
+  const formatRate = (value?: number | null) => {
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return null
+    }
+
+    const normalized = value <= 1 ? value * 100 : value
+    const percentage = Math.max(0, Math.min(100, Math.round(normalized)))
+    return language === 'tr' ? `%${percentage}` : `${percentage}%`
+  }
+
+  if (error) {
+    return <QueryErrorState error={error} />
+  }
 
   if (isLoading || !data) {
     return <Loader label={t('loader.dashboardMetrics')} />
   }
 
+  const getMetricTone = (tone: 'cyan' | 'emerald' | 'amber' | 'indigo') => {
+    if (tone === 'emerald') {
+      return 'success'
+    }
+
+    if (tone === 'amber') {
+      return 'warning'
+    }
+
+    if (tone === 'indigo') {
+      return 'neutral'
+    }
+
+    return 'primary'
+  }
+
   return (
-    <div className="space-y-6">
-      <PageHeader
+    <div className="space-y-8">
+      <DashboardPageHeader
         actions={
           <>
-            <Button onClick={() => setIsGoalsModalOpen(true)} variant="secondary">
-              <Target className="h-4 w-4" />
-              {t('dashboard.quarterlyGoals')}
-            </Button>
             <Link to={ROUTES.courses}>
               <Button asChild>
-                {t('common.exploreCatalog')}
+                {language === 'tr' ? 'Kursları görüntüle' : 'View courses'}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </Link>
+
+            {user && !user.profileCompleted ? (
+              <Link to={ROUTES.completeProfile}>
+                <Button asChild variant="secondary">
+                  <UserRoundCheck className="h-4 w-4" />
+                  {language === 'tr' ? 'Profilini tamamla' : 'Complete profile'}
+                </Button>
+              </Link>
+            ) : null}
+
+            {isCurrentUserInstructor ? (
+              <Link to={ROUTES.instructorDashboard}>
+                <Button asChild variant="secondary">
+                  <LayoutDashboard className="h-4 w-4" />
+                  {language === 'tr' ? 'Eğitmen paneline git' : 'Go to instructor panel'}
+                </Button>
+              </Link>
+            ) : (
+              <Link to={ROUTES.becomeInstructor}>
+                <Button asChild variant="secondary">
+                  <GraduationCap className="h-4 w-4" />
+                  {language === 'tr' ? 'Eğitmen ol' : 'Become instructor'}
+                </Button>
+              </Link>
+            )}
           </>
         }
-        description={t('dashboard.description')}
+        description={language === 'tr'
+          ? 'Kurslarını, ilerlemeni ve sonraki adımlarını tek ekranda yönet.'
+          : 'Manage your courses, progress, and next actions from one screen.'}
         eyebrow={t('dashboard.eyebrow')}
         title={t('dashboard.title')}
       />
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         {data.metrics.map((metric) => (
-          <StatCard key={metric.label} {...metric} />
+          <MetricTile
+            hint={language === 'tr' ? `Tamamlanma ${Math.round(metric.progress)}%` : `${Math.round(metric.progress)}% completed`}
+            key={metric.label}
+            label={metric.label}
+            progress={metric.progress}
+            tone={getMetricTone(metric.tone)}
+            value={metric.value}
+          />
         ))}
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[1.35fr_0.95fr]">
-        <Card className="overflow-hidden p-0">
-          <div className="border-b border-white/8 px-6 py-6">
-            <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-              <div className="max-w-xl">
-                <div className={`mb-5 h-1.5 w-20 rounded-full bg-gradient-to-r ${data.focusCourse.accent}`} />
-                <span className="rounded-full border border-white/12 bg-slate-950/30 px-3 py-1 text-xs font-semibold text-slate-100">
-                  {t('dashboard.focusCourse')}
-                </span>
-                <h2 className="mt-5 text-3xl font-semibold text-white">{data.focusCourse.title}</h2>
-                <p className="mt-4 max-w-lg text-sm leading-7 text-slate-200/90">
-                  {data.focusCourse.description}
-                </p>
-              </div>
-              <div className="rounded-[20px] border border-white/8 bg-white/4 px-5 py-4 lg:min-w-[240px]">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">{t('common.currentStatus')}</p>
-                <p className="mt-3 text-2xl font-semibold text-white">
-                  {t('dashboard.progressComplete', { progress: data.focusCourse.progress })}
-                </p>
-                <p className="mt-2 text-sm text-slate-400">
-                  {t('dashboard.progressMeta', {
-                    lessons: data.focusCourse.lessons,
-                    duration: data.focusCourse.duration,
-                  })}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="grid gap-6 p-6 lg:grid-cols-[1fr_280px]">
-            <div>
-              <div className="flex flex-wrap gap-2">
-                {data.focusCourse.tags.map((tag) => (
-                  <span key={tag} className="rounded-full border border-white/8 bg-white/5 px-3 py-1 text-xs text-slate-300">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              <div className="mt-6 space-y-4">
-                {data.focusCourse.modules.map((module, index) => (
-                  <div
-                    key={module.id}
-                    className="flex items-center justify-between gap-4 rounded-2xl border border-white/8 bg-white/4 px-4 py-4"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-400/10 text-cyan-200">
-                        {String(index + 1).padStart(2, '0')}
-                      </div>
-                      <div>
-                        <p className="font-medium text-white">{module.title}</p>
-                        <p className="mt-1 text-sm text-slate-400">
-                          {module.type} - {module.duration}
-                        </p>
-                      </div>
-                    </div>
-                    <CirclePlay className="h-5 w-5 text-slate-500" />
-                  </div>
-                ))}
-              </div>
-            </div>
+      <InstructorCtaCard isInstructor={isCurrentUserInstructor} />
 
-            <div className="space-y-4">
-              <Card className="border-sky-400/16 bg-sky-500/8">
-                <p className="text-xs uppercase tracking-[0.24em] text-cyan-100">{t('dashboard.progress')}</p>
-                <p className="mt-3 text-4xl font-semibold text-white">{data.focusCourse.progress}%</p>
-                <div className="mt-4 h-2 rounded-full bg-slate-900/70">
-                  <div
-                    className="h-2 rounded-full bg-gradient-to-r from-cyan-300 to-blue-400"
-                    style={{ width: `${data.focusCourse.progress}%` }}
-                  />
-                </div>
-                <p className="mt-4 text-sm text-slate-300">{t('dashboard.keepMomentum')}</p>
-              </Card>
-              <Card>
-                <p className="text-sm font-semibold text-white">{t('dashboard.upcomingMilestones')}</p>
-                <div className="mt-4 space-y-4">
-                  {data.upcomingMilestones.map((milestone) => (
-                    <div key={milestone.id} className="rounded-2xl border border-white/8 bg-white/4 p-4">
-                      <div className="flex items-center justify-between gap-4">
-                        <p className="text-sm font-medium text-slate-100">{milestone.label}</p>
-                        <span className="rounded-full bg-white/6 px-3 py-1 text-xs text-slate-300">
-                          {milestone.status}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-sm text-slate-400">{milestone.due}</p>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            </div>
-          </div>
-        </Card>
+      <RecommendationSection
+        action={shouldLoadRecommendations ? (
+          <Button
+            onClick={() => setShowRecommendationExplain((currentValue) => !currentValue)}
+            size="sm"
+            variant="ghost"
+          >
+            {language === 'tr' ? 'Neden bu oneriler?' : 'Why these recommendations?'}
+          </Button>
+        ) : null}
+        description={language === 'tr'
+          ? 'İzleme alışkanlıkların ve ilgi alanlarına göre kişiselleştirilmiş öneriler.'
+          : 'Personalized suggestions based on your activity and interests.'}
+        emptyDescription={language === 'tr'
+          ? 'Henüz öneri oluşturmak için yeterli veri yok. Popüler kursları keşfedebilirsin.'
+          : 'There is not enough data to generate recommendations yet. Explore popular courses.'}
+        emptyTitle={language === 'tr' ? 'Henüz özel öneriler yok' : 'No personalized recommendations yet'}
+        errorMessage={isDashboardRecommendationError ? 'failed' : null}
+        isLoading={isDashboardRecommendationLoading}
+        language={language}
+        loadingMessage={language === 'tr'
+          ? 'Sizin için önerdiğimiz kurslar yükleniyor lütfen bekleyiniz'
+          : 'Recommended courses for you are loading. Please wait.'}
+        recommendations={dashboardRecommendationData?.recommendations ?? []}
+        title={language === 'tr' ? 'Senin İçin Önerilen Kurslar' : 'Recommended For You'}
+      />
 
-        <div className="space-y-6">
-          <Card>
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-400/12 text-emerald-200">
-                <Rocket className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">{t('dashboard.recentActivity')}</h3>
-                <p className="text-sm text-slate-400">{t('dashboard.recentActivityDescription')}</p>
-              </div>
-            </div>
-            <div className="mt-6 space-y-4">
-              {data.recentActivity.map((activity) => (
-                <div key={activity.id} className="rounded-2xl border border-white/8 bg-white/4 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-slate-100">{activity.title}</p>
-                    <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs text-cyan-100">
-                      {activity.tag}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm text-slate-400">{activity.description}</p>
-                  <p className="mt-3 text-xs uppercase tracking-[0.18em] text-slate-500">{activity.time}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
+      {showRecommendationExplain ? (
+        <Card className="space-y-3 p-5">
+          <p className="theme-heading text-sm font-semibold">
+            {language === 'tr' ? 'Öneri özeti' : 'Recommendation summary'}
+          </p>
 
-          <Card className="border-slate-400/12 bg-white/4">
-            <div className="flex items-center gap-3">
-              <Sparkles className="h-5 w-5 text-sky-300" />
-              <p className="text-sm font-semibold text-white">{t('dashboard.operationalInsight')}</p>
+          {isRecommendationExplainLoading ? (
+            <p className="theme-muted text-sm">{language === 'tr' ? 'Açıklama yükleniyor...' : 'Loading explanation...'}</p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {recommendationExplainData?.favoriteCategories && recommendationExplainData.favoriteCategories.length > 0 ? (
+                <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
+                  <p className="theme-subtle text-xs">{language === 'tr' ? 'İlgi kategorileri' : 'Top categories'}</p>
+                  <p className="theme-heading mt-1 text-sm">{recommendationExplainData.favoriteCategories.join(', ')}</p>
+                </div>
+              ) : null}
+
+              {recommendationExplainData?.preferredDurationLabel ? (
+                <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
+                  <p className="theme-subtle text-xs">{language === 'tr' ? 'Tercih edilen süre' : 'Preferred duration'}</p>
+                  <p className="theme-heading mt-1 text-sm">{recommendationExplainData.preferredDurationLabel}</p>
+                </div>
+              ) : null}
+
+              {formatRate(recommendationExplainData?.averageCompletionRate) ? (
+                <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
+                  <p className="theme-subtle text-xs">{language === 'tr' ? 'Ortalama tamamlama' : 'Avg completion'}</p>
+                  <p className="theme-heading mt-1 text-sm">{formatRate(recommendationExplainData?.averageCompletionRate)}</p>
+                </div>
+              ) : null}
+
+              {formatRate(recommendationExplainData?.dropoutRate) ? (
+                <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
+                  <p className="theme-subtle text-xs">{language === 'tr' ? 'Bırakma oranı' : 'Dropout rate'}</p>
+                  <p className="theme-heading mt-1 text-sm">{formatRate(recommendationExplainData?.dropoutRate)}</p>
+                </div>
+              ) : null}
             </div>
-            <p className="mt-4 text-sm leading-7 text-slate-300">
-              {t('dashboard.operationalInsightText')}
+          )}
+
+          {dashboardRecommendationData?.strategy || recommendationExplainData?.recommendationStrategy ? (
+            <p className="theme-subtle text-xs">
+              {language === 'tr' ? 'Model stratejisi:' : 'Model strategy:'}{' '}
+              {recommendationExplainData?.recommendationStrategy ?? dashboardRecommendationData?.strategy}
             </p>
-          </Card>
-        </div>
-      </section>
+          ) : null}
 
-      <Modal
-        description={t('dashboard.quarterlyGoalsDescription')}
-        onClose={() => setIsGoalsModalOpen(false)}
-        open={isGoalsModalOpen}
-        title={t('dashboard.quarterlyGoalsTitle')}
-      >
-        <div className="space-y-4">
-          {[
-            t('dashboard.quarterlyGoalOne'),
-            t('dashboard.quarterlyGoalTwo'),
-            t('dashboard.quarterlyGoalThree'),
-          ].map((goal) => (
-            <div key={goal} className="rounded-2xl border border-white/8 bg-white/4 px-4 py-4 text-sm text-slate-200">
-              {goal}
+          {recommendationExplainData?.explanation ? (
+            <p className="theme-muted text-sm leading-6">{recommendationExplainData.explanation}</p>
+          ) : null}
+        </Card>
+      ) : null}
+
+      {audience === 'student' ? (
+        <DashboardSection
+          description={language === 'tr'
+            ? 'Kayitli kurslarinda son ilerlemene gore devam et.'
+            : 'Continue from your latest lesson in enrolled courses.'}
+          title={language === 'tr' ? 'Kurslarım' : 'My courses'}
+        >
+          {purchasedCourses.length > 0 ? (
+            <div className="overflow-hidden rounded-md border border-[color:var(--border)] bg-[color:var(--surface-strong)]">
+              <ul className="divide-y divide-[color:var(--border)]">
+                {purchasedCourses.slice(0, 4).map((course) => {
+                  const summaryResult = studentCourseProgressMap[course.id]
+                  const summary = summaryResult?.data ?? null
+                  const hasResumeData = Boolean(summary && (summary.overallPercentage > 0 || summary.lastLessonId))
+                  const continueLabel = hasResumeData
+                    ? (language === 'tr' ? 'Devam et' : 'Continue')
+                    : (language === 'tr' ? 'Kursa basla' : 'Start course')
+                  const continueLessonId = resolveContinueLessonId(summary, course.modules)
+                  const continuePath = buildCoursePlayerPath(course.slug, continueLessonId)
+
+                  return (
+                    <li className="flex flex-col gap-3 px-4 py-4 md:flex-row md:items-center md:justify-between" key={course.id}>
+                      <div className="min-w-0">
+                        <p className="theme-heading truncate text-sm font-semibold">{course.title}</p>
+                        <p className="theme-muted mt-1 text-xs">{getCourseCategoryLabel(course)}</p>
+                        <div className="mt-3 w-[220px] max-w-full">
+                          <CourseProgressBar
+                            compact
+                            completedLessons={summary?.completedLessons}
+                            language={language}
+                            percentage={summary?.overallPercentage ?? course.progress}
+                            totalLessons={summary?.totalLessons}
+                          />
+                        </div>
+                      </div>
+                      <Link className="md:shrink-0" to={continuePath}>
+                        <Button asChild className="w-full justify-center md:w-auto" size="sm">
+                          <CirclePlay className="h-4 w-4" />
+                          {continueLabel}
+                        </Button>
+                      </Link>
+                    </li>
+                  )
+                })}
+              </ul>
             </div>
-          ))}
-        </div>
-      </Modal>
+          ) : (
+            <p className="theme-muted text-sm">
+              {language === 'tr' ? 'Henüz kayıtlı kursun yok.' : 'You do not have any enrolled courses yet.'}
+            </p>
+          )}
+        </DashboardSection>
+      ) : null}
+
+      <div className="space-y-7">
+        <DashboardSection title={t('dashboard.upcomingMilestones')}>
+          <ActivityList
+            items={data.upcomingMilestones.map((milestone) => ({
+              id: milestone.id,
+              title: milestone.label,
+              meta: milestone.due,
+              badge: <StatusBadge>{milestone.status}</StatusBadge>,
+            }))}
+          />
+        </DashboardSection>
+
+        <DashboardSection
+          description={t('dashboard.recentActivityDescription')}
+          title={t('dashboard.recentActivity')}
+        >
+          <ActivityList
+            items={data.recentActivity.map((activity) => ({
+              id: activity.id,
+              title: activity.title,
+              description: activity.description,
+              meta: activity.time,
+              badge: <StatusBadge>{activity.tag}</StatusBadge>,
+            }))}
+          />
+        </DashboardSection>
+      </div>
     </div>
   )
 }
 
 export default DashboardPage
+
+

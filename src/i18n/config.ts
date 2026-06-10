@@ -1,8 +1,20 @@
 import i18n from 'i18next'
 import LanguageDetector from 'i18next-browser-languagedetector'
 import { initReactI18next } from 'react-i18next'
-import { LANGUAGE_STORAGE_KEY } from '../utils/constants'
+import { LANGUAGE_STORAGE_KEY, LEGACY_LANGUAGE_STORAGE_KEY } from '../utils/constants'
 import { resources } from './resources'
+
+try {
+  const storedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY)
+  const legacyLanguage = localStorage.getItem(LEGACY_LANGUAGE_STORAGE_KEY)
+
+  if (!storedLanguage && legacyLanguage) {
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, legacyLanguage)
+    localStorage.removeItem(LEGACY_LANGUAGE_STORAGE_KEY)
+  }
+} catch {
+  // Ignore storage errors and let language detection fall back naturally.
+}
 
 void i18n
   .use(LanguageDetector)
