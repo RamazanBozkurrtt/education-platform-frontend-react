@@ -150,10 +150,8 @@ const InstructorFinalExamPanel = ({ courseId }: InstructorFinalExamPanelProps) =
   const uploadQuestionImageMutation = useUploadQuestionImage(courseId)
   const deleteQuestionImageMutation = useDeleteQuestionImage(courseId)
 
-  const manageError = error ? normalizeApiError(error) : null
-  const canCreateExamFromEmptyState = manageError?.httpStatus === 404
-  const questions = canCreateExamFromEmptyState ? [] : (data?.questions ?? [])
-  const exam = canCreateExamFromEmptyState ? null : (data?.exam ?? null)
+  const questions = data?.questions ?? []
+  const exam = data?.exam ?? null
   const editingQuestion = useMemo(
     () => questions.find((item) => item.id === editingQuestionId) ?? null,
     [editingQuestionId, questions],
@@ -477,7 +475,7 @@ const InstructorFinalExamPanel = ({ courseId }: InstructorFinalExamPanelProps) =
     )
   }
 
-  if (error && !canCreateExamFromEmptyState) {
+  if (error) {
     return (
       <Card className="border-l-4 border-l-[color:var(--danger)]">
         <QueryErrorState error={error} />
@@ -493,7 +491,7 @@ const InstructorFinalExamPanel = ({ courseId }: InstructorFinalExamPanelProps) =
           title={txt('5. Final sinavi', '5. Final exam')}
         />
 
-        {canCreateExamFromEmptyState ? (
+        {!exam ? (
           <div className="mt-4 rounded-md border border-[color:var(--border-strong)] bg-[color:var(--surface-soft)] px-4 py-3 text-sm theme-muted">
             {txt(
               'Bu kurs icin final sinavi henuz bulunmuyor. Asagidaki alanlari doldurup kaydederek 5. adimi tamamlayabilirsiniz.',
