@@ -1,5 +1,6 @@
 import api from './api'
 import { API_ENDPOINTS } from './endpoints'
+import { normalizeApiError } from '../shared/errors/normalizeApiError'
 import type { ApiEnvelope } from '../utils/types'
 import type {
   AttemptStatus,
@@ -585,16 +586,30 @@ export interface SaveAttemptAnswersPayload {
 
 export const finalExamService = {
   async getManage(courseId: string) {
-    const response = await api.get<ApiEnvelope<unknown>>(API_ENDPOINTS.courses.finalExam.manage(courseId))
-    const payload = requireEnvelopeData(response.data, 'Final exam manage response is missing data.')
-    const source = toRecord(payload)
-    const exam = toFinalExam(source.exam ?? source.finalExam ?? source, courseId)
-    const questions = toExamQuestions(source.questions ?? source.items ?? source.examQuestions)
+    try {
+      const response = await api.get<ApiEnvelope<unknown>>(
+        API_ENDPOINTS.courses.finalExam.manage(courseId),
+        { skipGlobalErrorHandling: true },
+      )
+      const payload = requireEnvelopeData(response.data, 'Final exam manage response is missing data.')
+      const source = toRecord(payload)
+      const exam = toFinalExam(source.exam ?? source.finalExam ?? source, courseId)
+      const questions = toExamQuestions(source.questions ?? source.items ?? source.examQuestions)
 
-    return {
-      exam,
-      questions,
-    } satisfies FinalExamManageResponse
+      return {
+        exam,
+        questions,
+      } satisfies FinalExamManageResponse
+    } catch (error) {
+      if (normalizeApiError(error).httpStatus === 404) {
+        return {
+          exam: null,
+          questions: [],
+        } satisfies FinalExamManageResponse
+      }
+
+      throw error
+    }
   },
 
   async createFinalExam(courseId: string, payload: UpsertFinalExamPayload) {

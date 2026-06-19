@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, CirclePlay, GraduationCap, LayoutDashboard, UserRoundCheck } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -12,7 +12,6 @@ import InstructorCtaCard from '../components/instructor/InstructorCtaCard'
 import CourseProgressBar from '../components/progress/CourseProgressBar'
 import RecommendationSection from '../components/recommendations/RecommendationSection'
 import Button from '../components/ui/Button'
-import Card from '../components/ui/Card'
 import Loader from '../components/ui/Loader'
 import QueryErrorState from '../components/ui/QueryErrorState'
 import { useAuth } from '../hooks/useAuth'
@@ -34,7 +33,6 @@ const DashboardPage = () => {
   const isCurrentUserInstructor = isInstructor(user, claims)
   const audience = (isCurrentUserInstructor || isAdmin(user, claims)) ? 'instructor' : 'student'
   const studentCourseProgressMap = useCourseProgressSummaries(purchasedCourses.map((course) => course.id))
-  const [showRecommendationExplain, setShowRecommendationExplain] = useState(false)
   const shouldLoadRecommendations = !isBootstrapping && isAuthenticated && Boolean(user)
 
   const { data, error, isLoading } = useQuery({
@@ -53,30 +51,11 @@ const DashboardPage = () => {
     enabled: shouldLoadRecommendations,
   })
 
-  const {
-    data: recommendationExplainData,
-    isLoading: isRecommendationExplainLoading,
-  } = useQuery({
-    queryKey: ['recommendation-explain', user?.id, language],
-    queryFn: () => recommendationService.getRecommendationExplain(),
-    enabled: shouldLoadRecommendations && showRecommendationExplain,
-  })
-
   useEffect(() => {
     console.log('[INSTRUCTOR_FLOW] current user:', user)
     console.log('[INSTRUCTOR_FLOW] current roles:', extractAuthRoles(user, claims))
     console.log('[INSTRUCTOR_FLOW] isInstructor:', isCurrentUserInstructor)
   }, [claims, isCurrentUserInstructor, user])
-
-  const formatRate = (value?: number | null) => {
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
-      return null
-    }
-
-    const normalized = value <= 1 ? value * 100 : value
-    const percentage = Math.max(0, Math.min(100, Math.round(normalized)))
-    return language === 'tr' ? `%${percentage}` : `${percentage}%`
-  }
 
   if (error) {
     return <QueryErrorState error={error} />
@@ -163,15 +142,6 @@ const DashboardPage = () => {
       <InstructorCtaCard isInstructor={isCurrentUserInstructor} />
 
       <RecommendationSection
-        action={shouldLoadRecommendations ? (
-          <Button
-            onClick={() => setShowRecommendationExplain((currentValue) => !currentValue)}
-            size="sm"
-            variant="ghost"
-          >
-            {language === 'tr' ? 'Neden bu oneriler?' : 'Why these recommendations?'}
-          </Button>
-        ) : null}
         description={language === 'tr'
           ? 'İzleme alışkanlıkların ve ilgi alanlarına göre kişiselleştirilmiş öneriler.'
           : 'Personalized suggestions based on your activity and interests.'}
@@ -188,59 +158,6 @@ const DashboardPage = () => {
         recommendations={dashboardRecommendationData?.recommendations ?? []}
         title={language === 'tr' ? 'Senin İçin Önerilen Kurslar' : 'Recommended For You'}
       />
-
-      {showRecommendationExplain ? (
-        <Card className="space-y-3 p-5">
-          <p className="theme-heading text-sm font-semibold">
-            {language === 'tr' ? 'Öneri özeti' : 'Recommendation summary'}
-          </p>
-
-          {isRecommendationExplainLoading ? (
-            <p className="theme-muted text-sm">{language === 'tr' ? 'Açıklama yükleniyor...' : 'Loading explanation...'}</p>
-          ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {recommendationExplainData?.favoriteCategories && recommendationExplainData.favoriteCategories.length > 0 ? (
-                <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
-                  <p className="theme-subtle text-xs">{language === 'tr' ? 'İlgi kategorileri' : 'Top categories'}</p>
-                  <p className="theme-heading mt-1 text-sm">{recommendationExplainData.favoriteCategories.join(', ')}</p>
-                </div>
-              ) : null}
-
-              {recommendationExplainData?.preferredDurationLabel ? (
-                <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
-                  <p className="theme-subtle text-xs">{language === 'tr' ? 'Tercih edilen süre' : 'Preferred duration'}</p>
-                  <p className="theme-heading mt-1 text-sm">{recommendationExplainData.preferredDurationLabel}</p>
-                </div>
-              ) : null}
-
-              {formatRate(recommendationExplainData?.averageCompletionRate) ? (
-                <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
-                  <p className="theme-subtle text-xs">{language === 'tr' ? 'Ortalama tamamlama' : 'Avg completion'}</p>
-                  <p className="theme-heading mt-1 text-sm">{formatRate(recommendationExplainData?.averageCompletionRate)}</p>
-                </div>
-              ) : null}
-
-              {formatRate(recommendationExplainData?.dropoutRate) ? (
-                <div className="rounded-sm border border-[color:var(--border)] bg-[color:var(--surface-soft)] px-3 py-2">
-                  <p className="theme-subtle text-xs">{language === 'tr' ? 'Bırakma oranı' : 'Dropout rate'}</p>
-                  <p className="theme-heading mt-1 text-sm">{formatRate(recommendationExplainData?.dropoutRate)}</p>
-                </div>
-              ) : null}
-            </div>
-          )}
-
-          {dashboardRecommendationData?.strategy || recommendationExplainData?.recommendationStrategy ? (
-            <p className="theme-subtle text-xs">
-              {language === 'tr' ? 'Model stratejisi:' : 'Model strategy:'}{' '}
-              {recommendationExplainData?.recommendationStrategy ?? dashboardRecommendationData?.strategy}
-            </p>
-          ) : null}
-
-          {recommendationExplainData?.explanation ? (
-            <p className="theme-muted text-sm leading-6">{recommendationExplainData.explanation}</p>
-          ) : null}
-        </Card>
-      ) : null}
 
       {audience === 'student' ? (
         <DashboardSection
